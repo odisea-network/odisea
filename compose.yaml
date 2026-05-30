@@ -1,0 +1,45 @@
+# Odisea Network — local development stack.
+# Three services: postgres, the ASP.NET Core API (also serves Lit components + demo pages),
+# and the Angular portal behind nginx (which reverse-proxies /api and /health to the API).
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: odisea
+      POSTGRES_USER: odisea
+      POSTGRES_PASSWORD: odisea
+    ports:
+      - "5432:5432"
+    volumes:
+      - odisea-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odisea -d odisea"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/Odisea.WebAPI/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=odisea;Username=odisea;Password=odisea"
+    ports:
+      - "8080:8080"
+
+  portal:
+    build:
+      context: ./frontend/portal
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
+
+volumes:
+  odisea-db:

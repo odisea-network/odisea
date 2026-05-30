@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Green Path Tours — Last-Minute Egypt Deals</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: 'Helvetica Neue', system-ui, sans-serif;
+        margin: 0;
+        background: #f3f8f1;
+        color: #173d24;
+      }
+      header {
+        background: #2e7d32;
+        color: #fff;
+        padding: 28px 40px;
+        border-bottom: 4px solid #ffb300;
+      }
+      header h1 { margin: 0; font-size: 1.7rem; letter-spacing: 0.02em; }
+      main { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+      tp-offer-list {
+        /* Green Path's brand tokens — bold, larger radii, warm accent */
+        --tp-color-primary: #ffb300;
+        --tp-color-bg: #ffffff;
+        --tp-color-text: #173d24;
+        --tp-radius: 14px;
+        --tp-font: 'Helvetica Neue', system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Green Path Tours</h1>
+      <p>Hand-picked escapes, ready to go.</p>
+    </header>
+    <main>
+      <h2>Last-minute Egypt deals</h2>
+      <tp-offer-list collection="last-minute-egypt" layout="grid"></tp-offer-list>
+    </main>
+    <script src="/components/loader.js"></script>
+  </body>
+</html>

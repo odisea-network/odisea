@@ -1,0 +1,14 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+**/.vs
+**/.idea
+**/.vscode
+**/.git
+**/.gitignore
+**/*.user
+**/*.suo
+# Exclude generated component bundles from context, but keep the hand-written loader.
+backend/src/Api.Host/wwwroot/components/odisea-components*

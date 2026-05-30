@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Blue Horizon Travel — Summer in Greece</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        margin: 0;
+        background: #f4f8fc;
+        color: #0a2540;
+      }
+      header {
+        background: #0a4b8c;
+        color: #fff;
+        padding: 24px 40px;
+      }
+      header h1 { margin: 0; font-size: 1.6rem; }
+      main { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+      tp-offer-list {
+        /* Blue Horizon's brand tokens */
+        --tp-color-primary: #0a4b8c;
+        --tp-color-bg: #ffffff;
+        --tp-color-text: #0a2540;
+        --tp-radius: 6px;
+        --tp-font: 'Segoe UI', system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Blue Horizon Travel</h1>
+      <p>Discover the Greek isles this summer.</p>
+    </header>
+    <main>
+      <h2>Featured collection: Summer in Greece</h2>
+      <tp-offer-list collection="summer-greece" layout="grid"></tp-offer-list>
+    </main>
+    <script src="/components/loader.js"></script>
+  </body>
+</html>
