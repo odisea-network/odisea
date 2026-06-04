@@ -88,6 +88,19 @@ public static class Seeder
                 Status = CollectionStatus.Published,
                 Filter = Spec(("tag", "contains", "luxury")),
                 Sort = new SortSpec("price", "desc"),
+            },
+            new Collection
+            {
+                AgencyId = blue.Id,
+                Name = "Greek islands premium",
+                Slug = "greek-islands-premium",
+                Status = CollectionStatus.Published,
+                // country=GR AND (board=AllInclusive OR maxPrice<=600)
+                Filter = Spec(("country", "eq", "GR"))
+                    .WithGroup(Group("any",
+                        ("board", "eq", "AllInclusive"),
+                        ("maxPrice", "lte", 600m))),
+                Sort = new SortSpec("price", "desc"),
             }
         );
 
@@ -126,10 +139,27 @@ public static class Seeder
     {
         var spec = new FilterSpec();
         foreach (var (f, o, v) in conds)
-        {
-            var json = JsonSerializer.SerializeToElement(v);
-            spec.All.Add(new FilterCondition { Field = f, Op = o, Value = json });
-        }
+            spec.All.Add(Leaf(f, o, v));
+        return spec;
+    }
+
+    private static FilterGroup Group(string op, params (string field, string op, object value)[] conds)
+    {
+        var g = new FilterGroup { Op = op };
+        foreach (var (f, oo, v) in conds)
+            g.Conditions.Add(Leaf(f, oo, v));
+        return g;
+    }
+
+    private static FilterCondition Leaf(string field, string op, object value) =>
+        new() { Field = field, Op = op, Value = JsonSerializer.SerializeToElement(value) };
+}
+
+file static class FilterSpecSeedExtensions
+{
+    public static FilterSpec WithGroup(this FilterSpec spec, FilterGroup group)
+    {
+        spec.Groups.Add(group);
         return spec;
     }
 }
