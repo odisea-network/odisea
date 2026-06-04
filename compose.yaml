@@ -10,7 +10,9 @@ services:
       POSTGRES_USER: odisea
       POSTGRES_PASSWORD: odisea
     ports:
-      - "5432:5432"
+      # Host port 5433 to avoid conflict with a native Windows Postgres on 5432.
+      # Inside the compose network, services still talk on 5432 (see `Host=db;Port=5432`).
+      - "5433:5432"
     volumes:
       - odisea-db:/var/lib/postgresql/data
     healthcheck:

@@ -3,7 +3,6 @@ using Microsoft.OpenApi.Models;
 using Odisea.Application;
 using Odisea.Infrastructure;
 using Odisea.Infrastructure.Data;
-using Odisea.WebAPI.Endpoints;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +15,7 @@ builder.Host.UseSerilog((ctx, _, lc) => lc
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -43,15 +43,13 @@ if (app.Environment.IsDevelopment())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapHealthEndpoints();
-app.MapOffersEndpoints();
-app.MapCollectionsEndpoints();
+app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    //await db.Database.MigrateAsync();
     await Seeder.SeedAsync(db);
 }
 
