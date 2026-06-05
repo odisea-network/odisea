@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8" />
+  <title>Odisea Components Showcase</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Onest', system-ui, sans-serif;
+      background: #f7f9f8;
+      color: #0e1618;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── page header ── */
+    .page-header {
+      background: #0f3a40;
+      color: #fff;
+      padding: 28px 40px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: #c69b54;
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-weight: 800; font-size: 18px; color: #0f3a40;
+    }
+    .page-header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+    .page-header p  { margin: 0; font-size: 13px; opacity: 0.7; }
+
+    /* ── layout ── */
+    main { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+    .section { margin-bottom: 56px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #5f6b68;
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 20px;
+      color: #0e1618;
+    }
+
+    /* ── filter + grid layout ── */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 700px) { .filter-grid { grid-template-columns: 1fr; } }
+
+    /* ── default --odc-* (Odisea neutral) ── */
+    .odisea-theme {
+      --odc-font:         'Onest', system-ui, sans-serif;
+      --odc-font-head:    'Onest', system-ui, sans-serif;
+      --odc-accent:       #1a5a61;
+      --odc-accent-ink:   #ffffff;
+      --odc-accent-soft:  #eef6f6;
+      --odc-price:        #0e1618;
+      --odc-ink:          #15201f;
+      --odc-muted:        #5f6b68;
+      --odc-bg:           #ffffff;
+      --odc-surface:      #ffffff;
+      --odc-border:       rgba(20,30,28,0.12);
+      --odc-radius:       14px;
+      --odc-radius-sm:    9px;
+      --odc-shadow:       0 1px 2px rgba(16,24,22,0.06);
+      --odc-shadow-hover: 0 12px 30px rgba(16,24,22,0.14);
+      --odc-tag-bg:       #15201f;
+      --odc-tag-ink:      #ffffff;
+    }
+
+    /* chips for style switcher */
+    .style-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .chip-btn {
+      padding: 5px 14px; border-radius: 999px;
+      border: 1px solid rgba(20,30,28,0.15);
+      background: #fff; font-family: inherit; font-size: 13px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .chip-btn.active, .chip-btn:hover {
+      background: #1a5a61; color: #fff; border-color: #1a5a61;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="logo-mark">O</div>
+    <div>
+      <h1>Odisea Components — Showcase</h1>
+      <p>Default Odisea theme · всички od-* компоненти</p>
+    </div>
+  </header>
+
+  <main class="odisea-theme">
+
+    <!-- 1. od-destination-hero -->
+    <section class="section">
+      <div class="section-label">od-destination-hero</div>
+      <od-destination-hero
+        id="hero1"
+        eyebrow="🇬🇷 Гърция · Морска почивка"
+        title="Санторини — кикладска магия"
+        subtitle="от €760 на човек · 7 нощувки · самолет от София"
+        cta-label="Разгледай офертите"
+        min-height="300px"
+      ></od-destination-hero>
+    </section>
+
+    <!-- 2. od-offer-carousel -->
+    <section class="section">
+      <div class="section-label">od-offer-carousel</div>
+      <od-offer-carousel id="carousel1" title="Препоръчани оферти"></od-offer-carousel>
+    </section>
+
+    <!-- 3. od-filter-panel + od-offer-grid -->
+    <section class="section">
+      <div class="section-label">od-filter-panel + od-offer-grid</div>
+      <div class="style-row">
+        <button class="chip-btn active" onclick="setCardStyle('default',this)">Default</button>
+        <button class="chip-btn" onclick="setCardStyle('compact',this)">Compact</button>
+        <button class="chip-btn" onclick="setCardStyle('editorial',this)">Editorial</button>
+      </div>
+      <div class="filter-grid">
+        <od-filter-panel id="filter1" title="Филтри" max-price="3500"></od-filter-panel>
+        <od-offer-grid id="grid1" title="Всички оферти"></od-offer-grid>
+      </div>
+    </section>
+
+    <!-- 4. od-featured-collections -->
+    <section class="section">
+      <div class="section-label">od-featured-collections</div>
+      <od-featured-collections id="collections1" title="Колекции" columns="4"></od-featured-collections>
+    </section>
+
+    <!-- 5. od-offer-details + od-booking-inquiry -->
+    <section class="section">
+      <div class="section-label">od-offer-details · od-booking-inquiry · od-price-table</div>
+      <od-offer-details id="details1" cta-label="Изпрати запитване"></od-offer-details>
+    </section>
+
+    <!-- 6. od-price-table standalone -->
+    <section class="section">
+      <div class="section-label">od-price-table</div>
+      <od-price-table id="ptable1" caption="Налични дати и цени"></od-price-table>
+    </section>
+
+  </main>
+
+  <!-- UMD bundle (registers all od-* elements) -->
+  <script src="/components/loader.js"></script>
+
+  <script>
+    // ── mock data (mirrors the design catalog) ────────────────────────────
+    const IMG = (id, w = 800) =>
+      `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+
+    const offers = [
+      { id:'o-101', title:'Санторини — кикладска магия край калдерата', country:'GR', region:'Санторини', cat:'beach', board:'bb', transport:'plane', price:760, nights:7, rating:4.8, img:IMG('1570077188670-e3a8d69ac5ff'), popular:true },
+      { id:'o-102', title:'Халкидики — All inclusive на Касандра', country:'GR', region:'Халкидики', cat:'beach', board:'ai', transport:'bus', price:540, nights:7, rating:4.6, img:IMG('1530841377377-3ff06c0ca713'), popular:true },
+      { id:'o-103', title:'Крит — фамилна почивка край Ханя', country:'GR', region:'Крит', cat:'beach', board:'ai', transport:'plane', price:690, nights:7, rating:4.7, img:IMG('1601581875309-fafbf2d3ed3a') },
+      { id:'o-104', title:'Анталия — лукс на турската ривиера', country:'TR', region:'Анталия', cat:'beach', board:'ai', transport:'plane', price:610, nights:7, rating:4.5, img:IMG('1566073771259-6a8506099945'), popular:true },
+      { id:'o-105', title:'Кападокия — балони над лунен пейзаж', country:'TR', region:'Кападокия', cat:'tour', board:'bb', transport:'plane', price:720, nights:5, rating:4.9, img:IMG('1531168556467-80aace0d0144') },
+      { id:'o-106', title:'Истанбул — между два континента', country:'TR', region:'Истанбул', cat:'city', board:'bb', transport:'plane', price:340, nights:3, rating:4.6, img:IMG('1524231757912-21f4fe3a7200') },
+      { id:'o-107', title:'Хургада — Червено море и коралови рифове', country:'EG', region:'Хургада', cat:'beach', board:'ai', transport:'plane', price:580, nights:7, rating:4.4, img:IMG('1505228395891-9a51e7e86bf6') },
+      { id:'o-108', title:'Кайро и Нил — съкровищата на фараоните', country:'EG', region:'Кайро', cat:'tour', board:'hb', transport:'plane', price:890, nights:8, rating:4.8, img:IMG('1539768942893-daf53e448371') },
+      { id:'o-109', title:'Амалфи — крайбрежие на лимоните', country:'IT', region:'Амалфи', cat:'tour', board:'bb', transport:'plane', price:980, nights:6, rating:4.7, img:IMG('1534445867742-43195f401b6c') },
+      { id:'o-110', title:'Рим — вечният град за уикенд', country:'IT', region:'Рим', cat:'city', board:'bb', transport:'plane', price:420, nights:3, rating:4.6, img:IMG('1552832230-c0197dd311b5') },
+      { id:'o-112', title:'Барселона — Гауди и средиземноморски ритъм', country:'ES', region:'Барселона', cat:'city', board:'bb', transport:'plane', price:480, nights:4, rating:4.7, img:IMG('1583422409516-2895a77efded') },
+      { id:'o-114', title:'Малдиви — вила над водата', country:'MV', region:'Мале атол', cat:'honey', board:'fb', transport:'plane', price:2480, nights:7, rating:4.9, img:IMG('1514282401047-d79a71a590e8'), popular:true },
+      { id:'o-116', title:'Дубровник — перлата на Адриатика', country:'HR', region:'Дубровник', cat:'tour', board:'bb', transport:'bus', price:640, nights:5, rating:4.7, img:IMG('1499678329028-101435549a4e') },
+      { id:'o-117', title:'Лисабон — хълмове, трамваи и океан', country:'PT', region:'Лисабон', cat:'city', board:'bb', transport:'plane', price:560, nights:4, rating:4.6, img:IMG('1585208798174-6cedd86e019a') },
+      { id:'o-118', title:'Серенгети — голямото сафари приключение', country:'TZ', region:'Серенгети', cat:'safari', board:'fb', transport:'plane', price:3150, nights:8, rating:4.9, img:IMG('1516426122078-c23e76319801') },
+      { id:'o-119', title:'Закинтос — заливът на корабокрушението', country:'GR', region:'Закинтос', cat:'beach', board:'ai', transport:'plane', price:720, nights:7, rating:4.7, img:IMG('1533105079780-92b9be482077'), popular:true },
+    ];
+
+    const collections = [
+      { id:'c-1', title:'Гърция — летни острови', count:12, description:'Санторини, Крит, Закинтос и още', imageUrl:IMG('1570077188670-e3a8d69ac5ff',400) },
+      { id:'c-2', title:'All Inclusive хитове', count:8, description:'Пълно изхранване без притеснения', imageUrl:IMG('1530841377377-3ff06c0ca713',400) },
+      { id:'c-3', title:'Луксозни дестинации', count:5, description:'Малдиви, Дубай, Мавриций', imageUrl:IMG('1514282401047-d79a71a590e8',400) },
+      { id:'c-4', title:'Обиколни турове', count:9, description:'Кападокия, Египет, Балкани', imageUrl:IMG('1531168556467-80aace0d0144',400) },
+    ];
+
+    const featuredOffer = offers[0];
+
+    // ── wire up components once custom elements are defined ───────────────
+    Promise.all([
+      customElements.whenDefined('od-destination-hero'),
+      customElements.whenDefined('od-offer-carousel'),
+      customElements.whenDefined('od-offer-grid'),
+      customElements.whenDefined('od-filter-panel'),
+      customElements.whenDefined('od-featured-collections'),
+      customElements.whenDefined('od-offer-details'),
+      customElements.whenDefined('od-price-table'),
+      customElements.whenDefined('od-booking-inquiry'),
+    ]).then(() => {
+      // Hero image
+      document.getElementById('hero1').image = IMG('1570077188670-e3a8d69ac5ff', 1400);
+
+      // Carousel
+      document.getElementById('carousel1').offers = offers.filter(o => o.popular);
+
+      // Filter panel + grid
+      const filter = document.getElementById('filter1');
+      const grid   = document.getElementById('grid1');
+      filter.offers = offers;
+      grid.offers   = offers;
+
+      filter.addEventListener('od-filter-change', e => {
+        const { countries, boards, cats, maxPrice } = e.detail;
+        grid.offers = offers.filter(o => {
+          if (countries.length && !countries.includes(o.country)) return false;
+          const bk = o.board || o.boardBasis || '';
+          if (boards.length && !boards.includes(bk)) return false;
+          if (cats.length && !cats.includes(o.cat || '')) return false;
+          if (o.price > maxPrice) return false;
+          return true;
+        });
+      });
+
+      // Collections
+      document.getElementById('collections1').collections = collections;
+
+      // Details + price table
+      const details = document.getElementById('details1');
+      details.offer = { ...featuredOffer, description: 'Санторини е един от най-романтичните острови в света. Калдерата, белите кикладски сгради и легендарните залези правят това пътуване незабравимо.' };
+
+      // Inject booking inquiry into the details slot
+      const inq = document.createElement('od-booking-inquiry');
+      inq.setAttribute('slot', 'booking-inquiry');
+      inq.setAttribute('offer-title', featuredOffer.title);
+      inq.setAttribute('offer-id', featuredOffer.id);
+      details.appendChild(inq);
+
+      // Price table
+      document.getElementById('ptable1').offerPrice = featuredOffer.price;
+    });
+
+    // ── card-style switcher ───────────────────────────────────────────────
+    function setCardStyle(style, btn) {
+      document.getElementById('grid1').cardStyle = style;
+      document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

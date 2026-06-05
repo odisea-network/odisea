@@ -10,6 +10,7 @@ public interface IAppDbContext
     DbSet<Agency> Agencies { get; }
     DbSet<Operator> Operators { get; }
     DbSet<Theme> Themes { get; }
+    DbSet<Publication> Publications { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

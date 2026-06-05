@@ -14,6 +14,28 @@ interface OfferDto {
   imageUrl: string;
 }
 
+interface PublicationManifest {
+  key: string;
+  version: number;
+  status: string;
+  collectionId: string;
+  collectionSlug: string;
+  collectionName: string;
+  offersUrl: string;
+  themeId: string | null;
+  experience: ExperienceConfig | null;
+  etag: string;
+}
+
+interface ExperienceConfig {
+  type: string;
+  columns: number;
+  cardStyle: string;
+  showPrice: boolean;
+  inquiry: boolean;
+  openNewTab: boolean;
+}
+
 @customElement('tp-offer-list')
 export class TpOfferList extends LitElement {
   static styles = css`
@@ -56,7 +78,15 @@ export class TpOfferList extends LitElement {
     .error { color: #c00; }
   `;
 
+  /** Stable public publication key — preferred over collection=. */
+  @property({ type: String }) publication?: string;
+
+  /**
+   * @deprecated Use publication= instead. Collection slug support will be
+   * removed in a future major version.
+   */
   @property({ type: String }) collection?: string;
+
   @property({ type: String }) endpoint?: string;
   @property({ type: String }) layout: 'grid' | 'carousel' = 'grid';
   @property({ type: String, attribute: 'api-base' }) apiBase = '';
@@ -70,28 +100,50 @@ export class TpOfferList extends LitElement {
     this.load();
   }
 
-  private get url(): string {
-    if (this.endpoint) return this.endpoint;
-    if (this.collection) return `${this.apiBase}/api/v1/collections/${this.collection}/offers`;
-    return '';
-  }
-
   private async load() {
-    const url = this.url;
-    if (!url) {
-      this.error = 'tp-offer-list: provide either "collection" or "endpoint"';
-      this.loading = false;
-      return;
-    }
     try {
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      this.offers = await r.json();
-    } catch (e) {
-      this.error = (e as Error).message;
+      if (this.publication) {
+        await this.loadViaManifest(this.publication);
+      } else {
+        if (this.collection) {
+          console.warn(
+            'tp-offer-list: the collection= attribute is deprecated. ' +
+            'Use publication= with a publication key from the Odisea platform instead.',
+          );
+        }
+        const url = this.legacyUrl;
+        if (!url) {
+          this.error = 'tp-offer-list: provide either "publication" or "collection"';
+          return;
+        }
+        await this.fetchOffers(url);
+      }
     } finally {
       this.loading = false;
     }
+  }
+
+  private async loadViaManifest(key: string) {
+    const manifestUrl = `${this.apiBase}/api/v1/publications/${key}`;
+    const res = await fetch(manifestUrl);
+    if (!res.ok) {
+      this.error = `Publication "${key}" not found (HTTP ${res.status})`;
+      return;
+    }
+    const manifest: PublicationManifest = await res.json();
+    await this.fetchOffers(`${this.apiBase}${manifest.offersUrl}`);
+  }
+
+  private async fetchOffers(url: string) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    this.offers = await r.json();
+  }
+
+  private get legacyUrl(): string {
+    if (this.endpoint) return this.endpoint;
+    if (this.collection) return `${this.apiBase}/api/v1/collections/${this.collection}/offers`;
+    return '';
   }
 
   private formatPrice(o: OfferDto) {
