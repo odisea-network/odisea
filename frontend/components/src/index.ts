@@ -9,3 +9,8 @@ export { OdOfferGrid } from './od-offer-grid.js';
 export { OdOfferCarousel } from './od-offer-carousel.js';
 export type { FilterState } from './od-filter-panel.js';
 export { OdFilterPanel } from './od-filter-panel.js';
+export { OdOfferDetails } from './od-offer-details.js';
+export type { PriceRow } from './od-price-table.js';
+export { OdPriceTable } from './od-price-table.js';
+export type { InquiryPayload } from './od-booking-inquiry.js';
+export { OdBookingInquiry } from './od-booking-inquiry.js';
