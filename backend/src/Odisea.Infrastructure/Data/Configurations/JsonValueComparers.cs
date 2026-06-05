@@ -50,4 +50,13 @@ internal static class JsonValueComparers
             (a, b) => a == b,
             v => v.GetHashCode(),
             v => v);
+
+    public static readonly ValueComparer<ThemeTokens> ThemeTokens =
+        new(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null)
+                   == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => v == null ? 0 : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+            v => JsonSerializer.Deserialize<ThemeTokens>(
+                    JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    (JsonSerializerOptions?)null) ?? new ThemeTokens());
 }

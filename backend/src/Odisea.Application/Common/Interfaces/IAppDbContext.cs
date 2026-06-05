@@ -9,6 +9,7 @@ public interface IAppDbContext
     DbSet<Collection> Collections { get; }
     DbSet<Agency> Agencies { get; }
     DbSet<Operator> Operators { get; }
+    DbSet<Theme> Themes { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
