@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<Agency> Agencies => Set<Agency>();
     public DbSet<Operator> Operators => Set<Operator>();
+    public DbSet<Publication> Publications => Set<Publication>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

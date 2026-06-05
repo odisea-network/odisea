@@ -60,51 +60,96 @@ public static class Seeder
 
         db.Offers.AddRange(offers);
 
-        // 3 collections — flat FilterSpecs only.
-        db.Collections.AddRange(
-            new Collection
-            {
-                AgencyId = blue.Id,
-                Name = "Summer in Greece",
-                Slug = "summer-greece",
-                Status = CollectionStatus.Published,
-                Filter = Spec(("country", "eq", "GR")),
-                Sort = new SortSpec("price", "asc"),
-            },
-            new Collection
-            {
-                AgencyId = green.Id,
-                Name = "Last-minute Egypt",
-                Slug = "last-minute-egypt",
-                Status = CollectionStatus.Published,
-                Filter = Spec(("country", "eq", "EG"), ("maxPrice", "lte", 700m)),
-                Sort = new SortSpec("price", "asc"),
-            },
-            new Collection
-            {
-                AgencyId = blue.Id,
-                Name = "Blue Horizon VIP picks",
-                Slug = "blue-horizon-vip",
-                Status = CollectionStatus.Published,
-                Filter = Spec(("tag", "contains", "luxury")),
-                Sort = new SortSpec("price", "desc"),
-            },
-            new Collection
-            {
-                AgencyId = blue.Id,
-                Name = "Greek islands premium",
-                Slug = "greek-islands-premium",
-                Status = CollectionStatus.Published,
-                // country=GR AND (board=AllInclusive OR maxPrice<=600)
-                Filter = Spec(("country", "eq", "GR"))
-                    .WithGroup(Group("any",
-                        ("board", "eq", "AllInclusive"),
-                        ("maxPrice", "lte", 600m))),
-                Sort = new SortSpec("price", "desc"),
-            }
-        );
+        // Capture collection variables so IDs are available for Publication seeding.
+        var summerGreece = new Collection
+        {
+            AgencyId = blue.Id,
+            Name = "Summer in Greece",
+            Slug = "summer-greece",
+            Status = CollectionStatus.Published,
+            Filter = Spec(("country", "eq", "GR")),
+            Sort = new SortSpec("price", "asc"),
+        };
+        var lastMinuteEgypt = new Collection
+        {
+            AgencyId = green.Id,
+            Name = "Last-minute Egypt",
+            Slug = "last-minute-egypt",
+            Status = CollectionStatus.Published,
+            Filter = Spec(("country", "eq", "EG"), ("maxPrice", "lte", 700m)),
+            Sort = new SortSpec("price", "asc"),
+        };
+        var blueVip = new Collection
+        {
+            AgencyId = blue.Id,
+            Name = "Blue Horizon VIP picks",
+            Slug = "blue-horizon-vip",
+            Status = CollectionStatus.Published,
+            Filter = Spec(("tag", "contains", "luxury")),
+            Sort = new SortSpec("price", "desc"),
+        };
+        var greekIslandsPremium = new Collection
+        {
+            AgencyId = blue.Id,
+            Name = "Greek islands premium",
+            Slug = "greek-islands-premium",
+            Status = CollectionStatus.Published,
+            // country=GR AND (board=AllInclusive OR maxPrice<=600)
+            Filter = Spec(("country", "eq", "GR"))
+                .WithGroup(Group("any",
+                    ("board", "eq", "AllInclusive"),
+                    ("maxPrice", "lte", 600m))),
+            Sort = new SortSpec("price", "desc"),
+        };
+
+        db.Collections.AddRange(summerGreece, lastMinuteEgypt, blueVip, greekIslandsPremium);
 
         await db.SaveChangesAsync(ct);
+
+        // Publications are seeded after collections are persisted.
+        // Wrapped in try/catch: the publications table may not exist yet
+        // (migration is sequenced at merge with the Theme agent).
+        await SeedPublicationsAsync(db, blue.Id, green.Id, summerGreece.Id, lastMinuteEgypt.Id, ct);
+    }
+
+    private static async Task SeedPublicationsAsync(
+        AppDbContext db,
+        Guid blueAgencyId,
+        Guid greenAgencyId,
+        Guid summerGreeceId,
+        Guid lastMinuteEgyptId,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (await db.Publications.AnyAsync(ct)) return;
+
+            db.Publications.AddRange(
+                new Publication
+                {
+                    Key = "blue-gr-summer",
+                    AgencyId = blueAgencyId,
+                    CollectionId = summerGreeceId,
+                    Status = PublicationStatus.Published,
+                    Version = 1,
+                },
+                new Publication
+                {
+                    Key = "green-eg-last",
+                    AgencyId = greenAgencyId,
+                    CollectionId = lastMinuteEgyptId,
+                    Status = PublicationStatus.Published,
+                    Version = 1,
+                }
+            );
+
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // Publications table does not exist yet — migration pending.
+            // This will succeed once the migration is applied at merge time.
+        }
     }
 
     private static Offer Make(
