@@ -6,3 +6,6 @@ export type { OfferDto, CollectionDto } from './od-types.js';
 export { BOARD_LABELS, CAT_LABELS } from './od-types.js';
 export { OdOfferCard } from './od-offer-card.js';
 export { OdOfferGrid } from './od-offer-grid.js';
+export { OdOfferCarousel } from './od-offer-carousel.js';
+export type { FilterState } from './od-filter-panel.js';
+export { OdFilterPanel } from './od-filter-panel.js';
