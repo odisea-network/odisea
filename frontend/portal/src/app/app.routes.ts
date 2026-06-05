@@ -12,5 +12,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./placeholder.page').then(m => m.PlaceholderPage),
   },
+  {
+    path: 'themes/:id',
+    title: 'Theme studio — Odisea',
+    loadComponent: () =>
+      import('./theme-studio.page').then(m => m.ThemeStudioPage),
+  },
   { path: '**', redirectTo: 'offers' },
 ];
