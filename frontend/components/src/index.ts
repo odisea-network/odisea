@@ -14,3 +14,5 @@ export type { PriceRow } from './od-price-table.js';
 export { OdPriceTable } from './od-price-table.js';
 export type { InquiryPayload } from './od-booking-inquiry.js';
 export { OdBookingInquiry } from './od-booking-inquiry.js';
+export { OdDestinationHero } from './od-destination-hero.js';
+export { OdFeaturedCollections } from './od-featured-collections.js';

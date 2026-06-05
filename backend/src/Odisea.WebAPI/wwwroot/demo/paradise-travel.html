@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8" />
+  <title>Paradise Travel — Гърция и Средиземноморие</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Agency fonts: Prata (headings) + Manrope (body) — proves --odc-font-head override -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Prata&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: #f6f1ea;
+      color: #1a1a1a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── agency header ── */
+    .site-header {
+      background: #ffffff;
+      border-bottom: 1px solid rgba(26,26,26,0.08);
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .site-logo {
+      font-family: 'Prata', Georgia, serif;
+      font-size: 22px;
+      color: #1a1a1a;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .site-logo span { color: #C85727; }
+    .site-nav { display: flex; gap: 24px; }
+    .site-nav a {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(26,26,26,0.7);
+      text-decoration: none;
+    }
+    .site-nav a:hover { color: #C85727; }
+    .nav-cta {
+      padding: 8px 18px;
+      background: #C85727;
+      color: #fff !important;
+      border-radius: 999px;
+      font-weight: 600 !important;
+    }
+
+    /* ── layout ── */
+    main { max-width: 1160px; margin: 0 auto; padding: 48px 24px 80px; }
+    .section { margin-bottom: 60px; }
+
+    /* ── filter + grid layout ── */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 700px) { .filter-grid { grid-template-columns: 1fr; } }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       PARADISE TRAVEL THEME
+       All od-* components read these --odc-* vars — zero JS needed.
+       Proves the --odc-* contract for real agency theming.
+    ────────────────────────────────────────────────────────────────────── */
+    .paradise {
+      --odc-font:         'Manrope', system-ui, sans-serif;
+      --odc-font-head:    'Prata', Georgia, serif;
+      --odc-accent:       #C85727;
+      --odc-accent-ink:   #ffffff;
+      --odc-accent-soft:  rgba(200,87,39,0.07);
+      --odc-price:        #1a1a1a;
+      --odc-ink:          #1a1a1a;
+      --odc-muted:        rgba(26,26,26,0.55);
+      --odc-bg:           #f6f1ea;
+      --odc-surface:      #ffffff;
+      --odc-border:       rgba(26,26,26,0.10);
+      --odc-radius:       20px;
+      --odc-radius-sm:    999px;
+      --odc-shadow:       0 4px 20px rgba(0,0,0,0.06);
+      --odc-shadow-hover: 0 10px 30px rgba(0,0,0,0.12);
+      --odc-tag-bg:       #C85727;
+      --odc-tag-ink:      #ffffff;
+    }
+
+    /* page section headings */
+    .section-heading {
+      font-family: 'Prata', Georgia, serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: #1a1a1a;
+      margin: 0 0 20px;
+    }
+    .section-sub {
+      font-size: 15px;
+      color: rgba(26,26,26,0.6);
+      margin: -12px 0 20px;
+    }
+
+    /* "Powered by Odisea" credit */
+    .credit {
+      margin-top: 64px;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(26,26,26,0.35);
+    }
+    .credit a { color: inherit; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="site-logo" href="#">Paradise<span>Travel</span></a>
+    <nav class="site-nav">
+      <a href="#">Дестинации</a>
+      <a href="#">Почивки</a>
+      <a href="#">Турове</a>
+      <a href="#" class="nav-cta">Запитване</a>
+    </nav>
+  </header>
+
+  <main class="paradise">
+
+    <!-- Hero: featured summer destination -->
+    <section class="section">
+      <od-destination-hero
+        id="hero1"
+        eyebrow="🇬🇷 Гърция · Лято 2026"
+        title="Открийте магията на гръцките острови"
+        subtitle="Санторини, Крит, Закинтос — незабравими спомени от €540 на човек"
+        cta-label="Разгледай оферти"
+        min-height="340px"
+      ></od-destination-hero>
+    </section>
+
+    <!-- Featured carousel -->
+    <section class="section">
+      <h2 class="section-heading">Препоръчани от нас</h2>
+      <p class="section-sub">Внимателно подбрани от нашия екип</p>
+      <od-offer-carousel id="carousel1" card-width="260"></od-offer-carousel>
+    </section>
+
+    <!-- Filter + grid -->
+    <section class="section">
+      <h2 class="section-heading">Всички оферти</h2>
+      <div class="filter-grid">
+        <od-filter-panel id="filter1" max-price="3500"></od-filter-panel>
+        <od-offer-grid id="grid1" cta-label="Виж офертата"></od-offer-grid>
+      </div>
+    </section>
+
+    <!-- Featured collections -->
+    <section class="section">
+      <h2 class="section-heading">Тематични колекции</h2>
+      <od-featured-collections id="collections1" columns="3"></od-featured-collections>
+    </section>
+
+    <!-- Offer detail + inquiry -->
+    <section class="section">
+      <h2 class="section-heading">Санторини — кикладска магия</h2>
+      <od-offer-details id="details1" cta-label="Изпрати запитване"></od-offer-details>
+    </section>
+
+    <!-- Price table -->
+    <section class="section">
+      <h2 class="section-heading">Налични дати и цени</h2>
+      <od-price-table id="ptable1" caption="Санторини · 7 нощувки"></od-price-table>
+    </section>
+
+    <p class="credit">Powered by <a href="#">Odisea Network</a></p>
+  </main>
+
+  <!-- UMD bundle -->
+  <script src="/components/loader.js"></script>
+
+  <script>
+    const IMG = (id, w = 800) =>
+      `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+
+    const offers = [
+      { id:'o-101', title:'Санторини — кикладска магия край калдерата', country:'GR', region:'Санторини', cat:'beach', board:'bb', transport:'plane', price:760, nights:7, rating:4.8, img:IMG('1570077188670-e3a8d69ac5ff'), popular:true },
+      { id:'o-102', title:'Халкидики — All inclusive на Касандра', country:'GR', region:'Халкидики', cat:'beach', board:'ai', transport:'bus', price:540, nights:7, rating:4.6, img:IMG('1530841377377-3ff06c0ca713'), popular:true },
+      { id:'o-103', title:'Крит — фамилна почивка край Ханя', country:'GR', region:'Крит', cat:'beach', board:'ai', transport:'plane', price:690, nights:7, rating:4.7, img:IMG('1601581875309-fafbf2d3ed3a') },
+      { id:'o-104', title:'Анталия — лукс на турската ривиера', country:'TR', region:'Анталия', cat:'beach', board:'ai', transport:'plane', price:610, nights:7, rating:4.5, img:IMG('1566073771259-6a8506099945'), popular:true },
+      { id:'o-105', title:'Кападокия — балони над лунен пейзаж', country:'TR', region:'Кападокия', cat:'tour', board:'bb', transport:'plane', price:720, nights:5, rating:4.9, img:IMG('1531168556467-80aace0d0144') },
+      { id:'o-106', title:'Истанбул — между два континента', country:'TR', region:'Истанбул', cat:'city', board:'bb', transport:'plane', price:340, nights:3, rating:4.6, img:IMG('1524231757912-21f4fe3a7200') },
+      { id:'o-107', title:'Хургада — Червено море и коралови рифове', country:'EG', region:'Хургада', cat:'beach', board:'ai', transport:'plane', price:580, nights:7, rating:4.4, img:IMG('1505228395891-9a51e7e86bf6') },
+      { id:'o-108', title:'Кайро и Нил — съкровищата на фараоните', country:'EG', region:'Кайро', cat:'tour', board:'hb', transport:'plane', price:890, nights:8, rating:4.8, img:IMG('1539768942893-daf53e448371') },
+      { id:'o-109', title:'Амалфи — крайбрежие на лимоните', country:'IT', region:'Амалфи', cat:'tour', board:'bb', transport:'plane', price:980, nights:6, rating:4.7, img:IMG('1534445867742-43195f401b6c') },
+      { id:'o-112', title:'Барселона — Гауди и средиземноморски ритъм', country:'ES', region:'Барселона', cat:'city', board:'bb', transport:'plane', price:480, nights:4, rating:4.7, img:IMG('1583422409516-2895a77efded') },
+      { id:'o-114', title:'Малдиви — вила над водата', country:'MV', region:'Мале атол', cat:'honey', board:'fb', transport:'plane', price:2480, nights:7, rating:4.9, img:IMG('1514282401047-d79a71a590e8'), popular:true },
+      { id:'o-116', title:'Дубровник — перлата на Адриатика', country:'HR', region:'Дубровник', cat:'tour', board:'bb', transport:'bus', price:640, nights:5, rating:4.7, img:IMG('1499678329028-101435549a4e') },
+      { id:'o-119', title:'Закинтос — заливът на корабокрушението', country:'GR', region:'Закинтос', cat:'beach', board:'ai', transport:'plane', price:720, nights:7, rating:4.7, img:IMG('1533105079780-92b9be482077'), popular:true },
+    ];
+
+    const collections = [
+      { id:'c-1', title:'Гръцки острови',       count:6, description:'Санторини · Крит · Закинтос', imageUrl:IMG('1570077188670-e3a8d69ac5ff',400) },
+      { id:'c-2', title:'Турция — лято 2026',   count:4, description:'Анталия · Кападокия · Истанбул', imageUrl:IMG('1566073771259-6a8506099945',400) },
+      { id:'c-3', title:'Луксозни почивки',     count:3, description:'Малдиви · Дубай и повече', imageUrl:IMG('1514282401047-d79a71a590e8',400) },
+    ];
+
+    const featuredOffer = offers[0];
+
+    Promise.all([
+      customElements.whenDefined('od-destination-hero'),
+      customElements.whenDefined('od-offer-carousel'),
+      customElements.whenDefined('od-offer-grid'),
+      customElements.whenDefined('od-filter-panel'),
+      customElements.whenDefined('od-featured-collections'),
+      customElements.whenDefined('od-offer-details'),
+      customElements.whenDefined('od-price-table'),
+      customElements.whenDefined('od-booking-inquiry'),
+    ]).then(() => {
+      document.getElementById('hero1').image = IMG('1570077188670-e3a8d69ac5ff', 1400);
+
+      document.getElementById('carousel1').offers = offers.filter(o => o.popular);
+
+      const filter = document.getElementById('filter1');
+      const grid   = document.getElementById('grid1');
+      filter.offers = offers;
+      grid.offers   = offers;
+
+      filter.addEventListener('od-filter-change', e => {
+        const { countries, boards, cats, maxPrice } = e.detail;
+        grid.offers = offers.filter(o => {
+          if (countries.length && !countries.includes(o.country)) return false;
+          const bk = o.board || o.boardBasis || '';
+          if (boards.length && !boards.includes(bk)) return false;
+          if (cats.length && !cats.includes(o.cat || '')) return false;
+          if (o.price > maxPrice) return false;
+          return true;
+        });
+      });
+
+      document.getElementById('collections1').collections = collections;
+
+      const details = document.getElementById('details1');
+      details.offer = {
+        ...featuredOffer,
+        description: 'Санторини е един от най-романтичните острови в света. Калдерата с бялата архитектура и известните залези ще ви оставят незабравими спомени. Включена е самолетна програма от София.'
+      };
+
+      const inq = document.createElement('od-booking-inquiry');
+      inq.setAttribute('slot', 'booking-inquiry');
+      inq.setAttribute('offer-title', featuredOffer.title);
+      inq.setAttribute('offer-id', featuredOffer.id);
+      details.appendChild(inq);
+
+      document.getElementById('ptable1').offerPrice = featuredOffer.price;
+    });
+  </script>
+</body>
+</html>
