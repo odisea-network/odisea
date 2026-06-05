@@ -11,3 +11,5 @@ public enum Transport { Plane, Bus, Own }
 public enum OfferStatus { Draft, Published }
 
 public enum CollectionStatus { Draft, Published }
+
+public enum PublicationStatus { Draft, Published }
