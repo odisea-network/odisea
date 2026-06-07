@@ -28,5 +28,8 @@ Thumbs.db
 *.env
 .env.local
 
+# Local appsettings overrides — use dotnet user-secrets instead
+appsettings.*.Local.json
+
 # Logs
 *.log
