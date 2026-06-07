@@ -11,7 +11,7 @@ export default defineConfig({
       formats: ['umd'],
       fileName: () => 'odisea-components.umd.js',
     },
-    outDir: 'dist',
+    outDir: 'dist/v1',
     emptyOutDir: false,
     sourcemap: true,
   },

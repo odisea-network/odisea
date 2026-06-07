@@ -50,6 +50,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Test (contract spec)
+        run: npm test
+
   portal:
     name: Angular portal (build)
     runs-on: ubuntu-latest

@@ -28,10 +28,12 @@ RUN dotnet publish src/Odisea.WebAPI/Odisea.WebAPI.csproj -c Release -o /publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=dotnet /publish ./
-# Demo pages were copied in via publish (wwwroot/demo). Component bundle is built fresh:
-COPY --from=components /src/components/dist/ ./wwwroot/components/
-# loader.js lives under wwwroot/components alongside the bundles — keep it from the source tree:
+# Versioned bundle — agencies embed via loader.js?data-version=1 or hardcode the v1 path:
+COPY --from=components /src/components/dist/v1/ ./wwwroot/components/v1/
+# loader.js and the legacy-path shim come from the source tree (published as wwwroot content).
+# dotnet publish already copied them; these lines guarantee the final image is up to date:
 COPY backend/src/Odisea.WebAPI/wwwroot/components/loader.js ./wwwroot/components/loader.js
+COPY backend/src/Odisea.WebAPI/wwwroot/components/odisea-components.umd.js ./wwwroot/components/odisea-components.umd.js
 
 ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Development \

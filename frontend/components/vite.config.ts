@@ -10,7 +10,7 @@ export default defineConfig({
       formats: ['es'],
       fileName: () => 'odisea-components.es.js',
     },
-    outDir: 'dist',
+    outDir: 'dist/v1',
     emptyOutDir: true,
     sourcemap: true,
   },

@@ -18,13 +18,13 @@
       }
       header h1 { margin: 0; font-size: 1.6rem; }
       main { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
-      tp-offer-list {
+      od-offer-grid {
         /* Blue Horizon's brand tokens */
-        --tp-color-primary: #0a4b8c;
-        --tp-color-bg: #ffffff;
-        --tp-color-text: #0a2540;
-        --tp-radius: 6px;
-        --tp-font: 'Segoe UI', system-ui, sans-serif;
+        --odc-accent: #0a4b8c;
+        --odc-bg: #ffffff;
+        --odc-ink: #0a2540;
+        --odc-radius: 6px;
+        --odc-font: 'Segoe UI', system-ui, sans-serif;
       }
     </style>
   </head>
@@ -35,9 +35,8 @@
     </header>
     <main>
       <h2>Featured collection: Summer in Greece</h2>
-      <!-- publication= resolves via the manifest endpoint; collection= is the deprecated path -->
-      <tp-offer-list publication="blue-gr-summer" layout="grid"></tp-offer-list>
+      <od-offer-grid publication="blue-gr-summer"></od-offer-grid>
     </main>
-    <script src="/components/loader.js"></script>
+    <script src="/components/loader.js" data-version="1"></script>
   </body>
 </html>
