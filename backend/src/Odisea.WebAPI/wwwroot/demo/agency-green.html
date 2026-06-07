@@ -19,13 +19,14 @@
       }
       header h1 { margin: 0; font-size: 1.7rem; letter-spacing: 0.02em; }
       main { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
-      tp-offer-list {
+      od-offer-grid {
         /* Green Path's brand tokens — bold, larger radii, warm accent */
-        --tp-color-primary: #ffb300;
-        --tp-color-bg: #ffffff;
-        --tp-color-text: #173d24;
-        --tp-radius: 14px;
-        --tp-font: 'Helvetica Neue', system-ui, sans-serif;
+        --odc-accent: #ffb300;
+        --odc-accent-ink: #173d24;
+        --odc-bg: #ffffff;
+        --odc-ink: #173d24;
+        --odc-radius: 14px;
+        --odc-font: 'Helvetica Neue', system-ui, sans-serif;
       }
     </style>
   </head>
@@ -36,8 +37,8 @@
     </header>
     <main>
       <h2>Last-minute Egypt deals</h2>
-      <tp-offer-list collection="last-minute-egypt" layout="grid"></tp-offer-list>
+      <od-offer-grid collection="last-minute-egypt"></od-offer-grid>
     </main>
-    <script src="/components/loader.js"></script>
+    <script src="/components/loader.js" data-version="1"></script>
   </body>
 </html>
