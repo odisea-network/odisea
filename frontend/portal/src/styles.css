@@ -1,1 +1,77 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --od-teal-900: #0b2a2e;
+  --od-teal-800: #0f3a40;
+  --od-teal-700: #14474e;
+  --od-teal-600: #1a5a61;
+  --od-teal-500: #237079;
+  --od-teal-400: #3f9098;
+  --od-teal-100: #dcebec;
+  --od-teal-50:  #eef6f6;
+
+  --od-gold-700: #9a7434;
+  --od-gold-600: #b3893f;
+  --od-gold-500: #c69b54;
+  --od-gold-200: #ecdcba;
+  --od-gold-50:  #faf4e7;
+
+  --od-ink:    #0e1618;
+  --od-900:    #16211f;
+  --od-800:    #283330;
+  --od-700:    #3a4744;
+  --od-600:    #525f5c;
+  --od-500:    #6c7976;
+  --od-400:    #97a3a0;
+  --od-300:    #c5cdca;
+  --od-200:    #e1e6e4;
+  --od-150:    #eaeeec;
+  --od-100:    #f1f4f3;
+  --od-50:     #f7f9f8;
+  --od-white:  #ffffff;
+
+  --od-success:    #1c7a4a;
+  --od-success-bg: #e7f3ec;
+  --od-warning:    #9a6a12;
+  --od-warning-bg: #fbf0d8;
+  --od-danger:     #b3261e;
+  --od-danger-bg:  #fbe9e7;
+
+  --od-bg:      var(--od-50);
+  --od-surface: #ffffff;
+  --od-border:  var(--od-200);
+  --od-border-2: var(--od-150);
+
+  --od-font: 'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --od-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --od-r-xs:   4px;
+  --od-r-sm:   6px;
+  --od-r-md:   8px;
+  --od-r-lg:   12px;
+  --od-r-xl:   16px;
+  --od-r-pill: 999px;
+
+  --od-shadow-xs:  0 1px 2px rgba(14,22,24,.05);
+  --od-shadow-sm:  0 1px 2px rgba(14,22,24,.06), 0 1px 1px rgba(14,22,24,.04);
+  --od-shadow-md:  0 4px 12px rgba(14,22,24,.08);
+  --od-shadow-lg:  0 12px 28px rgba(14,22,24,.12);
+  --od-shadow-pop: 0 16px 48px rgba(14,22,24,.18);
+
+  --od-fast: 120ms ease;
+  --od-base: 180ms ease;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--od-font);
+  color: var(--od-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background: var(--od-bg);
+}
+
+::selection { background: var(--od-gold-200); color: var(--od-ink); }

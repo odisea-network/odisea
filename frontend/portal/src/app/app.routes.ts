@@ -8,9 +8,9 @@ export const routes: Routes = [
   { path: 'collections', component: CollectionsPage, title: 'Collections — Odisea' },
   {
     path: 'builder',
-    title: 'Collection builder — Odisea',
+    title: 'Publication composer — Odisea',
     loadComponent: () =>
-      import('./placeholder.page').then(m => m.PlaceholderPage),
+      import('./builder.page').then(m => m.BuilderPage),
   },
   {
     path: 'themes/:id',

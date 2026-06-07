@@ -6,6 +6,7 @@ import { environment } from '../environments/environment';
 export interface OfferDto {
   id: string;
   title: string;
+  description: string;
   country: string;
   city: string;
   price: number;
@@ -15,6 +16,23 @@ export interface OfferDto {
   durationNights: number;
   imageUrl: string;
   visibility: string;
+  tags: string[];
+}
+
+export interface FilterCondition {
+  field: string;
+  op: string;
+  value: unknown;
+}
+
+export interface FilterSpec {
+  all?: FilterCondition[];
+  any?: FilterCondition[];
+}
+
+export interface SortSpec {
+  field: string;
+  direction: string;
 }
 
 export interface CollectionDto {
@@ -23,6 +41,47 @@ export interface CollectionDto {
   name: string;
   slug: string;
   status: string;
+  filter?: FilterSpec;
+  sort?: SortSpec;
+}
+
+export interface CreateCollectionRequest {
+  agencyId: string;
+  name: string;
+  slug: string;
+  filter: FilterSpec;
+  sort?: SortSpec;
+}
+
+export interface ExperienceConfig {
+  type: string;
+  columns: number;
+  cardStyle: string;
+  showPrice: boolean;
+  inquiry: boolean;
+  openNewTab: boolean;
+}
+
+export interface PublicationDto {
+  id: string;
+  agencyId: string;
+  key: string;
+  collectionId: string;
+  themeId: string | null;
+  experienceConfig: ExperienceConfig | null;
+  status: string;
+  allowedDomains: string[];
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePublicationRequest {
+  agencyId: string;
+  collectionId: string;
+  themeId?: string;
+  experienceConfig?: ExperienceConfig;
+  allowedDomains?: string[];
 }
 
 export interface ThemeTokens {
@@ -64,8 +123,24 @@ export class ApiService {
     return this.http.get<CollectionDto[]>(`${this.base}/collections`);
   }
 
+  createCollection(req: CreateCollectionRequest): Observable<CollectionDto> {
+    return this.http.post<CollectionDto>(`${this.base}/collections`, req);
+  }
+
   resolveCollection(idOrSlug: string): Observable<OfferDto[]> {
     return this.http.get<OfferDto[]>(`${this.base}/collections/${idOrSlug}/offers`);
+  }
+
+  listPublications(): Observable<PublicationDto[]> {
+    return this.http.get<PublicationDto[]>(`${this.base}/publications`);
+  }
+
+  createPublication(req: CreatePublicationRequest): Observable<PublicationDto> {
+    return this.http.post<PublicationDto>(`${this.base}/publications`, req);
+  }
+
+  publishPublication(id: string): Observable<PublicationDto> {
+    return this.http.post<PublicationDto>(`${this.base}/publications/${id}/publish`, {});
   }
 
   listThemes(agencyId?: string): Observable<ThemeDto[]> {
