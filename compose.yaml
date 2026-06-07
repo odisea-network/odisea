@@ -31,6 +31,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: "Host=db;Port=5432;Database=odisea;Username=odisea;Password=odisea"
+      # Dev-only JWT signing key (HS256). The host-side dev workflow uses
+      # `dotnet user-secrets`, but those don't propagate into the container,
+      # so we set the same `Jwt:Secret` key here via env-var override.
+      # DO NOT use this value in any non-dev environment.
+      Jwt__Secret: "dev-only-jwt-signing-key-please-replace-in-prod-this-string-is-at-least-32-bytes"
     ports:
       - "8080:8080"
 
