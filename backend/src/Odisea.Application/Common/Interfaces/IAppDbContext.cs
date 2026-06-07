@@ -11,6 +11,8 @@ public interface IAppDbContext
     DbSet<Operator> Operators { get; }
     DbSet<Theme> Themes { get; }
     DbSet<Publication> Publications { get; }
+    DbSet<User> Users { get; }
+    DbSet<Membership> Memberships { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

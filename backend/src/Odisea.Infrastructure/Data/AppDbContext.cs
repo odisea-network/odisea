@@ -13,6 +13,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Operator> Operators => Set<Operator>();
     public DbSet<Theme> Themes => Set<Theme>();
     public DbSet<Publication> Publications => Set<Publication>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Membership> Memberships => Set<Membership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

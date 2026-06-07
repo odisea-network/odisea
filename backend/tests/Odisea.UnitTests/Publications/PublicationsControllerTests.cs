@@ -5,6 +5,7 @@ using Odisea.Application.Publications.Dtos;
 using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
 using Odisea.Infrastructure.Data;
+using Odisea.UnitTests.Helpers;
 using Odisea.WebAPI.Controllers;
 
 namespace Odisea.UnitTests.Publications;
@@ -19,9 +20,12 @@ public class PublicationsControllerTests
         return new AppDbContext(options);
     }
 
-    private static PublicationsController CreateController(AppDbContext db, string? origin = null)
+    private static PublicationsController CreateController(
+        AppDbContext db,
+        string? origin = null,
+        Guid? agencyId = null)
     {
-        var controller = new PublicationsController(db);
+        var controller = new PublicationsController(db, new FakeAgencyContext(agencyId));
         var httpContext = new DefaultHttpContext();
         if (origin is not null)
             httpContext.Request.Headers.Origin = origin;
@@ -164,10 +168,11 @@ public class PublicationsControllerTests
     public async Task Create_ValidRequest_Returns201WithKey()
     {
         await using var db = CreateDb();
+        var agencyId = Guid.NewGuid();
 
         var collection = new Collection
         {
-            AgencyId = Guid.NewGuid(),
+            AgencyId = agencyId,
             Name = "Col",
             Slug = "col",
             Status = CollectionStatus.Published,
@@ -175,7 +180,8 @@ public class PublicationsControllerTests
         db.Collections.Add(collection);
         await db.SaveChangesAsync();
 
-        var controller = CreateController(db);
+        // AgencyId comes from the JWT context, not the request body.
+        var controller = CreateController(db, agencyId: agencyId);
         var req = new CreatePublicationRequest(
             AgencyId: collection.AgencyId,
             CollectionId: collection.Id,

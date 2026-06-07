@@ -5,6 +5,7 @@ using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
 using Odisea.Domain.ValueObjects;
 using Odisea.Infrastructure.Data;
+using Odisea.UnitTests.Helpers;
 using Odisea.WebAPI.Controllers;
 
 namespace Odisea.UnitTests;
@@ -19,6 +20,10 @@ public class ThemePublishFlowTests
         return new AppDbContext(opts);
     }
 
+    // PlatformAdmin context: HasAgency = false → ownership checks are skipped.
+    private static ThemesController BuildCtrl(AppDbContext db, Guid? agencyId = null) =>
+        new(db, new FakeAgencyContext(agencyId));
+
     [Fact]
     public async Task Publish_sets_status_to_Published_and_increments_version()
     {
@@ -27,8 +32,7 @@ public class ThemePublishFlowTests
         db.Themes.Add(theme);
         await db.SaveChangesAsync();
 
-        var ctrl = new ThemesController(db);
-        var result = await ctrl.Publish(theme.Id, CancellationToken.None);
+        var result = await BuildCtrl(db).Publish(theme.Id, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var dto = Assert.IsType<ThemeDto>(ok.Value);
@@ -44,8 +48,7 @@ public class ThemePublishFlowTests
         db.Themes.Add(theme);
         await db.SaveChangesAsync();
 
-        var ctrl = new ThemesController(db);
-        var result = await ctrl.Publish(theme.Id, CancellationToken.None);
+        var result = await BuildCtrl(db).Publish(theme.Id, CancellationToken.None);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(409, obj.StatusCode);
@@ -55,8 +58,7 @@ public class ThemePublishFlowTests
     public async Task Publish_unknown_id_returns_404()
     {
         await using var db = BuildDb(nameof(Publish_unknown_id_returns_404));
-        var ctrl = new ThemesController(db);
-        var result = await ctrl.Publish(Guid.NewGuid(), CancellationToken.None);
+        var result = await BuildCtrl(db).Publish(Guid.NewGuid(), CancellationToken.None);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -69,8 +71,7 @@ public class ThemePublishFlowTests
         db.Themes.Add(theme);
         await db.SaveChangesAsync();
 
-        var ctrl = new ThemesController(db);
-        var result = await ctrl.Update(theme.Id, new UpdateThemeRequest("New Name", null), CancellationToken.None);
+        var result = await BuildCtrl(db).Update(theme.Id, new UpdateThemeRequest("New Name", null), CancellationToken.None);
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(409, obj.StatusCode);
@@ -80,7 +81,8 @@ public class ThemePublishFlowTests
     public async Task Create_then_get_round_trips_name_and_tokens()
     {
         await using var db = BuildDb(nameof(Create_then_get_round_trips_name_and_tokens));
-        var ctrl = new ThemesController(db);
+        var agencyId = Guid.NewGuid();
+        var ctrl = BuildCtrl(db, agencyId);
 
         var tokens = ThemeTokens.Default();
         tokens.Foundation["accent"] = "#ff0000";
