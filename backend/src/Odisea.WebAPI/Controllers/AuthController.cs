@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Auth.Dtos;
@@ -16,9 +17,19 @@ namespace Odisea.WebAPI.Controllers;
 public class AuthController(
     IAppDbContext db,
     IJwtService jwt,
-    IPasswordHasherService hasher) : ControllerBase
+    IPasswordHasherService hasher,
+    IHostEnvironment env) : ControllerBase
 {
     private const int RefreshTokenExpiryDays = 7;
+
+    // Cookie names used by the portal cookie-auth endpoints.
+    private const string AccessCookie  = "od_at";
+    private const string RefreshCookie = "od_rt";
+
+    // Scope the refresh cookie to its endpoint so the browser only sends it there.
+    private const string RefreshCookiePath = "/api/v1/auth/cookie/refresh";
+
+    // ── Bearer endpoints (API consumers, embed widget) ─────────────────────────
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req, CancellationToken ct)
@@ -77,45 +88,17 @@ public class AuthController(
 
         await db.SaveChangesAsync(ct);
 
-        var (accessToken, expiresAt) = jwt.GenerateAccessToken(user, membership);
-        var (rawRefresh, hashedRefresh) = jwt.GenerateRefreshToken();
-
-        user.RefreshTokenHash = hashedRefresh;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryDays);
-        await db.SaveChangesAsync(ct);
-
+        var (accessToken, expiresAt, rawRefresh) = await IssueTokensAsync(user, membership, ct);
         return Ok(new TokenResponse(accessToken, rawRefresh, expiresAt));
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest req, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
-            return Problem(title: "Validation", detail: "Email and password are required.", statusCode: 400);
+        var (user, membership, error) = await ValidateCredentialsAsync(req.Email, req.Password, ct);
+        if (error is not null) return error;
 
-        var email = req.Email.Trim().ToLowerInvariant();
-
-        var user = await db.Users
-            .Include(u => u.Memberships)
-            .FirstOrDefaultAsync(u => u.Email == email, ct);
-
-        // Always call Verify — even for unknown users — to equalise response timing
-        // and prevent email enumeration via response-time side channel.
-        if (!hasher.Verify(user?.PasswordHash, req.Password))
-            return Problem(title: "Unauthorized", detail: "Invalid email or password.", statusCode: 401);
-
-        if (user!.Status == UserStatus.Suspended)
-            return Problem(title: "Forbidden", detail: "Account is suspended.", statusCode: 403);
-
-        var membership = user.Memberships.FirstOrDefault();
-        var (accessToken, expiresAt) = jwt.GenerateAccessToken(user, membership);
-        var (rawRefresh, hashedRefresh) = jwt.GenerateRefreshToken();
-
-        user.RefreshTokenHash = hashedRefresh;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryDays);
-        user.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
-
+        var (accessToken, expiresAt, rawRefresh) = await IssueTokensAsync(user!, membership, ct);
         return Ok(new TokenResponse(accessToken, rawRefresh, expiresAt));
     }
 
@@ -125,39 +108,10 @@ public class AuthController(
         if (string.IsNullOrWhiteSpace(req.RefreshToken))
             return Problem(title: "Validation", detail: "Refresh token is required.", statusCode: 400);
 
-        var hashed = Convert.ToBase64String(
-            SHA256.HashData(Encoding.UTF8.GetBytes(req.RefreshToken)));
+        var (user, membership, error) = await RotateRefreshTokenAsync(req.RefreshToken, ct);
+        if (error is not null) return error;
 
-        var user = await db.Users
-            .Include(u => u.Memberships)
-            .FirstOrDefaultAsync(u => u.RefreshTokenHash == hashed, ct);
-
-        // Invalidate the stored token on any failure to limit re-use window
-        // after expiry (also protects against a stolen-but-expired token).
-        if (user is null || user.RefreshTokenExpiry < DateTime.UtcNow)
-        {
-            if (user is not null)
-            {
-                user.RefreshTokenHash = null;
-                user.RefreshTokenExpiry = null;
-                await db.SaveChangesAsync(ct);
-            }
-            return Problem(title: "Unauthorized", detail: "Invalid or expired refresh token.", statusCode: 401);
-        }
-
-        if (user.Status == UserStatus.Suspended)
-            return Problem(title: "Forbidden", detail: "Account is suspended.", statusCode: 403);
-
-        var membership = user.Memberships.FirstOrDefault();
-        var (accessToken, expiresAt) = jwt.GenerateAccessToken(user, membership);
-        var (rawRefresh, hashedRefresh) = jwt.GenerateRefreshToken();
-
-        // Rotate: old token is immediately replaced — reuse of the previous value returns 401.
-        user.RefreshTokenHash = hashedRefresh;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryDays);
-        user.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
-
+        var (accessToken, expiresAt, rawRefresh) = await IssueTokensAsync(user!, membership, ct);
         return Ok(new TokenResponse(accessToken, rawRefresh, expiresAt));
     }
 
@@ -184,5 +138,155 @@ public class AuthController(
             membership?.Role.ToString() ?? UserRole.PlatformAdmin.ToString(),
             membership?.TenantType.ToString(),
             membership?.TenantId));
+    }
+
+    // ── Cookie endpoints (Angular portal) ─────────────────────────────────────
+    // Credentials-enabled CORS is scoped to these endpoints only via PortalCors.
+    // Both tokens are set as HttpOnly + Secure + SameSite=Strict cookies;
+    // JavaScript cannot read them even if the page is XSS-compromised.
+
+    [EnableCors("PortalCors")]
+    [HttpPost("cookie/login")]
+    public async Task<IActionResult> CookieLogin(LoginRequest req, CancellationToken ct)
+    {
+        var (user, membership, error) = await ValidateCredentialsAsync(req.Email, req.Password, ct);
+        if (error is not null) return error;
+
+        var (accessToken, expiresAt, rawRefresh) = await IssueTokensAsync(user!, membership, ct);
+        SetAuthCookies(accessToken, expiresAt, rawRefresh);
+
+        return Ok(new { expiresAt });
+    }
+
+    [EnableCors("PortalCors")]
+    [HttpPost("cookie/refresh")]
+    public async Task<IActionResult> CookieRefresh(CancellationToken ct)
+    {
+        if (!Request.Cookies.TryGetValue(RefreshCookie, out var rawRefresh) ||
+            string.IsNullOrEmpty(rawRefresh))
+        {
+            return Problem(title: "Unauthorized", detail: "No refresh token cookie.", statusCode: 401);
+        }
+
+        var (user, membership, error) = await RotateRefreshTokenAsync(rawRefresh, ct);
+        if (error is not null)
+        {
+            ClearAuthCookies();
+            return error;
+        }
+
+        var (accessToken, expiresAt, newRawRefresh) = await IssueTokensAsync(user!, membership, ct);
+        SetAuthCookies(accessToken, expiresAt, newRawRefresh);
+
+        return Ok(new { expiresAt });
+    }
+
+    [EnableCors("PortalCors")]
+    [Authorize]
+    [HttpPost("cookie/logout")]
+    public IActionResult CookieLogout()
+    {
+        ClearAuthCookies();
+        return Ok();
+    }
+
+    // ── Shared helpers ─────────────────────────────────────────────────────────
+
+    // Validates email + password. Always runs hash comparison to prevent timing-based
+    // email enumeration even when the user record doesn't exist.
+    private async Task<(User? user, Membership? membership, IActionResult? error)>
+        ValidateCredentialsAsync(string rawEmail, string password, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(rawEmail) || string.IsNullOrWhiteSpace(password))
+            return (null, null, Problem(title: "Validation", detail: "Email and password are required.", statusCode: 400));
+
+        var email = rawEmail.Trim().ToLowerInvariant();
+
+        var user = await db.Users
+            .Include(u => u.Memberships)
+            .FirstOrDefaultAsync(u => u.Email == email, ct);
+
+        if (!hasher.Verify(user?.PasswordHash, password))
+            return (null, null, Problem(title: "Unauthorized", detail: "Invalid email or password.", statusCode: 401));
+
+        if (user!.Status == UserStatus.Suspended)
+            return (null, null, Problem(title: "Forbidden", detail: "Account is suspended.", statusCode: 403));
+
+        return (user, user.Memberships.FirstOrDefault(), null);
+    }
+
+    // Looks up the user by hashed refresh token and validates expiry.
+    // Invalidates the stored token on failure to prevent any future reuse.
+    private async Task<(User? user, Membership? membership, IActionResult? error)>
+        RotateRefreshTokenAsync(string rawToken, CancellationToken ct)
+    {
+        var hashed = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+
+        var user = await db.Users
+            .Include(u => u.Memberships)
+            .FirstOrDefaultAsync(u => u.RefreshTokenHash == hashed, ct);
+
+        if (user is null || user.RefreshTokenExpiry < DateTime.UtcNow)
+        {
+            if (user is not null)
+            {
+                user.RefreshTokenHash = null;
+                user.RefreshTokenExpiry = null;
+                await db.SaveChangesAsync(ct);
+            }
+            return (null, null, Problem(title: "Unauthorized", detail: "Invalid or expired refresh token.", statusCode: 401));
+        }
+
+        if (user.Status == UserStatus.Suspended)
+            return (null, null, Problem(title: "Forbidden", detail: "Account is suspended.", statusCode: 403));
+
+        return (user, user.Memberships.FirstOrDefault(), null);
+    }
+
+    // Issues a new access + refresh token pair and persists the hashed refresh token.
+    private async Task<(string accessToken, DateTime expiresAt, string rawRefresh)>
+        IssueTokensAsync(User user, Membership? membership, CancellationToken ct)
+    {
+        var (accessToken, expiresAt) = jwt.GenerateAccessToken(user, membership);
+        var (rawRefresh, hashedRefresh) = jwt.GenerateRefreshToken();
+
+        user.RefreshTokenHash = hashedRefresh;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryDays);
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        return (accessToken, expiresAt, rawRefresh);
+    }
+
+    private void SetAuthCookies(string accessToken, DateTime expiresAt, string rawRefresh)
+    {
+        // Secure=false in development so localhost (HTTP) still works.
+        var secure = !env.IsDevelopment();
+
+        Response.Cookies.Append(AccessCookie, accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure   = secure,
+            SameSite = SameSiteMode.Strict,
+            Expires  = expiresAt,
+            Path     = "/",
+        });
+
+        // Refresh cookie path is scoped to its own endpoint so the browser only
+        // sends it when the portal explicitly calls /cookie/refresh.
+        Response.Cookies.Append(RefreshCookie, rawRefresh, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure   = secure,
+            SameSite = SameSiteMode.Strict,
+            Expires  = DateTime.UtcNow.AddDays(RefreshTokenExpiryDays),
+            Path     = RefreshCookiePath,
+        });
+    }
+
+    private void ClearAuthCookies()
+    {
+        Response.Cookies.Delete(AccessCookie, new CookieOptions { Path = "/" });
+        Response.Cookies.Delete(RefreshCookie, new CookieOptions { Path = RefreshCookiePath });
     }
 }

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Odisea.Application.Common.Interfaces;
 using Odisea.Domain.Enums;
 
@@ -9,6 +11,14 @@ public class FakeAgencyContext(Guid? agencyId = null) : IAgencyContext
 {
     public bool HasAgency => agencyId.HasValue;
     public Guid AgencyId => agencyId ?? throw new InvalidOperationException("No agency in context");
+}
+
+public class FakeDevEnvironment : IHostEnvironment
+{
+    public string EnvironmentName { get; set; } = Environments.Development;
+    public string ApplicationName { get; set; } = "TestHost";
+    public string ContentRootPath { get; set; } = "/";
+    public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
 }
 
 public class FakeUserContext(

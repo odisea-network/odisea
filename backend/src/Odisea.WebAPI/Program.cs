@@ -37,6 +37,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
         };
+
+        // Allow the Angular portal to authenticate via HttpOnly cookie without
+        // exposing the token to JavaScript.  The Authorization header takes
+        // precedence: if both are present the header wins (API consumers).
+        opts.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                if (!ctx.Request.Headers.ContainsKey("Authorization") &&
+                    ctx.Request.Cookies.TryGetValue("od_at", out var token))
+                {
+                    ctx.Token = token;
+                }
+                return Task.CompletedTask;
+            },
+        };
     });
 
 // Authorization policies — PlatformAdmin satisfies every lower-tier policy.
@@ -100,9 +116,29 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-const string DevCors = "DevCors";
-builder.Services.AddCors(o => o.AddPolicy(DevCors, p =>
-    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+const string DevCors    = "DevCors";
+const string PortalCors = "PortalCors";
+
+var portalOrigins = builder.Configuration
+    .GetSection("Cors:PortalOrigins")
+    .Get<string[]>() ?? ["http://localhost:4200"];
+
+builder.Services.AddCors(o =>
+{
+    // DevCors — AllowAnyOrigin for the embed widget and API consumers.
+    // AllowAnyOrigin is incompatible with AllowCredentials, so this policy
+    // is never used for cookie-auth endpoints.
+    o.AddPolicy(DevCors, p =>
+        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+
+    // PortalCors — specific origins + credentials, applied only to the
+    // /auth/cookie/* endpoints via [EnableCors("PortalCors")].
+    o.AddPolicy(PortalCors, p =>
+        p.WithOrigins(portalOrigins)
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials());
+});
 
 var app = builder.Build();
 

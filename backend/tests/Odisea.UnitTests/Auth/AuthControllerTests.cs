@@ -37,7 +37,7 @@ public class AuthControllerTests
         var config = BuildConfig();
         var jwt = new JwtService(config);
         var hasher = new PasswordHasherService();
-        var ctrl = new AuthController(db, jwt, hasher);
+        var ctrl = new AuthController(db, jwt, hasher, new FakeDevEnvironment());
         return (ctrl, db, jwt, hasher);
     }
 
