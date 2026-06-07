@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Catalog.Collections;
@@ -12,7 +13,7 @@ namespace Odisea.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/collections")]
-public class CollectionsController(IAppDbContext db) : ControllerBase
+public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -44,6 +45,7 @@ public class CollectionsController(IAppDbContext db) : ControllerBase
         }
     }
 
+    [Authorize(Policy = "AgencyMember")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateCollectionRequest req, CancellationToken ct)
     {
@@ -58,7 +60,7 @@ public class CollectionsController(IAppDbContext db) : ControllerBase
 
         var entity = new Collection
         {
-            AgencyId = req.AgencyId,
+            AgencyId = agencyCtx.AgencyId,
             Name = req.Name,
             Slug = req.Slug,
             Status = CollectionStatus.Draft,

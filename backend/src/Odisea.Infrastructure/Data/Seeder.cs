@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
@@ -8,6 +9,11 @@ namespace Odisea.Infrastructure.Data;
 
 // Idempotent dev seed: 2 agencies, 1 operator, ~14 offers across BG/GR/TR/EG,
 // 3 collections with flat FilterSpecs that match the seeded data.
+// Seeded credentials (dev only — override via env in production):
+//   admin@odisea.net        / Admin1234!   → PlatformAdmin
+//   blue@blue-horizon.com   / Blue1234!    → AgencyAdmin  (Blue Horizon Travel)
+//   green@green-path.com    / Green1234!   → AgencyAdmin  (Green Path Tours)
+//   ops@sun-operators.com   / Ops1234!     → OperatorAdmin (Sun Operators Ltd)
 public static class Seeder
 {
     public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
@@ -110,6 +116,8 @@ public static class Seeder
         // Wrapped in try/catch: the publications table may not exist yet
         // (migration is sequenced at merge with the Theme agent).
         await SeedPublicationsAsync(db, blue.Id, green.Id, summerGreece.Id, lastMinuteEgypt.Id, ct);
+
+        await SeedUsersAsync(db, blue.Id, green.Id, sunOps.Id, ct);
     }
 
     private static async Task SeedPublicationsAsync(
@@ -198,6 +206,94 @@ public static class Seeder
 
     private static FilterCondition Leaf(string field, string op, object value) =>
         new() { Field = field, Op = op, Value = JsonSerializer.SerializeToElement(value) };
+
+    private static async Task SeedUsersAsync(
+        AppDbContext db,
+        Guid blueId,
+        Guid greenId,
+        Guid sunOpsId,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (await db.Users.AnyAsync(ct)) return;
+
+            var hasher = new PasswordHasher<User>();
+
+            var admin = new User
+            {
+                Email = "admin@odisea.net",
+                DisplayName = "Platform Admin",
+                PasswordHash = hasher.HashPassword(new User(), "Admin1234!"),
+                Status = UserStatus.Active,
+            };
+
+            var blueUser = new User
+            {
+                Email = "blue@blue-horizon.com",
+                DisplayName = "Blue Horizon Admin",
+                PasswordHash = hasher.HashPassword(new User(), "Blue1234!"),
+                Status = UserStatus.Active,
+            };
+
+            var greenUser = new User
+            {
+                Email = "green@green-path.com",
+                DisplayName = "Green Path Admin",
+                PasswordHash = hasher.HashPassword(new User(), "Green1234!"),
+                Status = UserStatus.Active,
+            };
+
+            var opsUser = new User
+            {
+                Email = "ops@sun-operators.com",
+                DisplayName = "Sun Operators Admin",
+                PasswordHash = hasher.HashPassword(new User(), "Ops1234!"),
+                Status = UserStatus.Active,
+            };
+
+            db.Users.AddRange(admin, blueUser, greenUser, opsUser);
+            await db.SaveChangesAsync(ct);
+
+            db.Memberships.AddRange(
+                // PlatformAdmin — no tenant
+                new Membership
+                {
+                    UserId = admin.Id,
+                    TenantType = TenantType.Agency,
+                    TenantId = null,
+                    Role = UserRole.PlatformAdmin,
+                },
+                new Membership
+                {
+                    UserId = blueUser.Id,
+                    TenantType = TenantType.Agency,
+                    TenantId = blueId,
+                    Role = UserRole.AgencyAdmin,
+                },
+                new Membership
+                {
+                    UserId = greenUser.Id,
+                    TenantType = TenantType.Agency,
+                    TenantId = greenId,
+                    Role = UserRole.AgencyAdmin,
+                },
+                new Membership
+                {
+                    UserId = opsUser.Id,
+                    TenantType = TenantType.Operator,
+                    TenantId = sunOpsId,
+                    Role = UserRole.OperatorAdmin,
+                });
+
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // Users table may not exist yet if the migration hasn't run.
+            // Will succeed once the migration is applied.
+        }
+    }
 }
 
 file static class FilterSpecSeedExtensions

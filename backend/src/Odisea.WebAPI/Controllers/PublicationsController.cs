@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Common.Interfaces;
@@ -10,7 +11,7 @@ namespace Odisea.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/publications")]
-public class PublicationsController(IAppDbContext db) : ControllerBase
+public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) : ControllerBase
 {
     // ── Public manifest ────────────────────────────────────────────────────────
 
@@ -55,25 +56,37 @@ public class PublicationsController(IAppDbContext db) : ControllerBase
 
     // ── Management CRUD ────────────────────────────────────────────────────────
 
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var list = await db.Publications.OrderByDescending(p => p.CreatedAt).ToListAsync(ct);
+        var q = db.Publications.AsQueryable();
+        if (agencyCtx.HasAgency)
+            q = q.Where(p => p.AgencyId == agencyCtx.AgencyId);
+
+        var list = await q.OrderByDescending(p => p.CreatedAt).ToListAsync(ct);
         return Ok(list.Select(p => p.ToDto()));
     }
 
+    [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var pub = await db.Publications.FirstOrDefaultAsync(p => p.Id == id, ct);
-        return pub is null ? NotFound() : Ok(pub.ToDto());
+        if (pub is null) return NotFound();
+
+        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+            return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
+
+        return Ok(pub.ToDto());
     }
 
+    [Authorize(Policy = "AgencyAdmin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreatePublicationRequest req, CancellationToken ct)
     {
-        if (req.AgencyId == Guid.Empty || req.CollectionId == Guid.Empty)
-            return Problem(title: "Validation", detail: "AgencyId and CollectionId are required.", statusCode: 400);
+        if (req.CollectionId == Guid.Empty)
+            return Problem(title: "Validation", detail: "CollectionId is required.", statusCode: 400);
 
         var collectionExists = await db.Collections.AnyAsync(c => c.Id == req.CollectionId, ct);
         if (!collectionExists)
@@ -81,7 +94,7 @@ public class PublicationsController(IAppDbContext db) : ControllerBase
 
         var pub = new Publication
         {
-            AgencyId = req.AgencyId,
+            AgencyId = agencyCtx.AgencyId,
             CollectionId = req.CollectionId,
             ThemeId = req.ThemeId,
             ExperienceId = req.ExperienceId,
@@ -97,11 +110,15 @@ public class PublicationsController(IAppDbContext db) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = pub.Id }, pub.ToDto());
     }
 
+    [Authorize(Policy = "AgencyMember")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, UpdatePublicationRequest req, CancellationToken ct)
     {
         var pub = await db.Publications.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
+
+        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+            return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         if (req.CollectionId.HasValue)
         {
@@ -122,11 +139,15 @@ public class PublicationsController(IAppDbContext db) : ControllerBase
         return Ok(pub.ToDto());
     }
 
+    [Authorize(Policy = "AgencyAdmin")]
     [HttpPost("{id:guid}/publish")]
     public async Task<IActionResult> Publish(Guid id, CancellationToken ct)
     {
         var pub = await db.Publications.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
+
+        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+            return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         if (pub.Status == PublicationStatus.Published)
             return Ok(pub.ToDto());

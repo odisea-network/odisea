@@ -15,3 +15,10 @@ public enum CollectionStatus { Draft, Published }
 public enum ThemeStatus { Draft, Published }
 
 public enum PublicationStatus { Draft, Published }
+
+public enum UserStatus { Active, Suspended }
+
+public enum TenantType { Agency, Operator }
+
+// Hierarchical: PlatformAdmin > OperatorAdmin > AgencyAdmin > AgencyEditor
+public enum UserRole { PlatformAdmin, OperatorAdmin, AgencyAdmin, AgencyEditor }
