@@ -10,7 +10,7 @@ namespace Odisea.UnitTests.Helpers;
 public class FakeAgencyContext(Guid? agencyId = null) : IAgencyContext
 {
     public bool HasAgency => agencyId.HasValue;
-    public Guid AgencyId => agencyId ?? throw new InvalidOperationException("No agency in context");
+    public Guid? AgencyId => agencyId;
 }
 
 public class FakeDevEnvironment : IHostEnvironment

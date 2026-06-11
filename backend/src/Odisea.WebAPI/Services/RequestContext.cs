@@ -26,6 +26,6 @@ public class RequestContext(IHttpContextAccessor accessor) : IUserContext, IAgen
         IsAuthenticated &&
         Principal?.FindFirstValue("tenantType") == TenantType.Agency.ToString();
 
-    public Guid AgencyId =>
-        Guid.Parse(Principal!.FindFirstValue("tenantId")!);
+    public Guid? AgencyId =>
+        Guid.TryParse(Principal?.FindFirstValue("tenantId"), out var id) ? id : null;
 }
