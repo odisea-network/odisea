@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { OfferDto } from './od-types.js';
 import { BOARD_LABELS, CAT_LABELS } from './od-types.js';
+import { sendOdEvent } from './od-analytics.js';
 
 /**
  * Single offer card. Mirrors the `.odc-card` design spec.
@@ -270,18 +271,67 @@ export class OdOfferCard extends LitElement {
   @property({ attribute: 'card-style', reflect: true })
   cardStyle: 'default' | 'compact' | 'editorial' = 'default';
 
+  /** Publication key for analytics attribution. When empty, no beacon is sent. */
+  @property({ attribute: 'publication-key' }) publicationKey = '';
+
+  /** Analytics channel. */
+  @property({ attribute: 'channel' }) channel = 'WebComponent';
+
   @state() private _loading = false;
   @state() private _error = '';
+
+  private _io?: IntersectionObserver;
+  private _impressionSent = false;
 
   connectedCallback() {
     super.connectedCallback();
     if (!this.offer && this.offerId) this._fetch();
+    this._observeImpression();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._io?.disconnect();
+    this._io = undefined;
   }
 
   updated(changed: Map<PropertyKey, unknown>) {
     if ((changed.has('offerId') || changed.has('apiBase')) && !this.offer && this.offerId) {
       this._fetch();
     }
+  }
+
+  // Fire a single impression the first time the card scrolls into view.
+  private _observeImpression() {
+    if (this._impressionSent || typeof IntersectionObserver === 'undefined') return;
+    this._io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this._emit('Impression', 'od-impression');
+          this._impressionSent = true;
+          this._io?.disconnect();
+          this._io = undefined;
+          break;
+        }
+      }
+    });
+    this._io.observe(this);
+  }
+
+  // Dispatch a DOM event (always) and send an analytics beacon (when attributed).
+  private _emit(eventType: 'Impression' | 'Open', domEvent: 'od-impression' | 'od-offer-open') {
+    const offerId = (this.offer?.id ?? this.offerId) || undefined;
+    this.dispatchEvent(new CustomEvent(domEvent, {
+      detail: { offer: this.offer, offerId, publicationKey: this.publicationKey },
+      bubbles: true,
+      composed: true,
+    }));
+    sendOdEvent({
+      eventType,
+      publicationKey: this.publicationKey,
+      offerId,
+      channel: this.channel,
+    });
   }
 
   private async _fetch() {
@@ -301,6 +351,7 @@ export class OdOfferCard extends LitElement {
 
   private _onCta(e: Event) {
     e.stopPropagation();
+    this._emit('Open', 'od-offer-open');
     this.dispatchEvent(new CustomEvent('od-cta-click', {
       detail: { offer: this.offer },
       bubbles: true,
