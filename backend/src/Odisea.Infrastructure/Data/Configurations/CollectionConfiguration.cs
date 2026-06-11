@@ -15,7 +15,10 @@ public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
 
         b.Property(x => x.Name).HasMaxLength(200).IsRequired();
         b.Property(x => x.Slug).HasMaxLength(200).IsRequired();
-        b.HasIndex(x => x.Slug).IsUnique();
+        // Slugs are unique per agency, not globally: two agencies may both own
+        // "summer-greece". TODO(#18): the migration applying this composite index is
+        // owned by #19 — do not generate it here.
+        b.HasIndex(x => new { x.AgencyId, x.Slug }).IsUnique();
 
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
 
