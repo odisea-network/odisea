@@ -28,9 +28,10 @@ public class Publication : Entity
     public PublicationStatus Status { get; set; } = PublicationStatus.Draft;
 
     /// <summary>
-    /// Empty = allow all origins. Non-empty = Origin header host must match one entry.
+    /// Empty = allow all origins (with a logged warning). Non-empty = the request
+    /// Origin host must match one entry. Enforced by EmbedSecurityMiddleware.
     /// </summary>
-    public string[] AllowedDomains { get; set; } = [];
+    public List<AllowedDomain> AllowedDomains { get; set; } = [];
 
     /// <summary>
     /// Frozen to an integer on Publish. Clients use this for ETag caching.
