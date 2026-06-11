@@ -30,7 +30,7 @@ public record PublicationDto(
     Guid? ExperienceId,
     ExperienceConfig? ExperienceConfig,
     string Status,
-    string[] AllowedDomains,
+    AllowedDomainDto[] AllowedDomains,
     int Version,
     DateTime CreatedAt,
     DateTime UpdatedAt
@@ -57,6 +57,7 @@ public static class PublicationMappings
 {
     public static PublicationDto ToDto(this Publication p) => new(
         p.Id, p.AgencyId, p.Key, p.CollectionId, p.ThemeId, p.ExperienceId,
-        p.ExperienceConfig, p.Status.ToString(), p.AllowedDomains,
+        p.ExperienceConfig, p.Status.ToString(),
+        [.. p.AllowedDomains.Select(d => d.ToDto())],
         p.Version, p.CreatedAt, p.UpdatedAt);
 }
