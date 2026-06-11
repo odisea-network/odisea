@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +8,12 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Odisea.Application;
 using Odisea.Application.Common.Interfaces;
+using Odisea.Domain.Common;
 using Odisea.Domain.Enums;
 using Odisea.Infrastructure;
 using Odisea.Infrastructure.Data;
+using Odisea.WebAPI.Auth;
+using Odisea.WebAPI.Middleware;
 using Odisea.WebAPI.Services;
 using Serilog;
 
@@ -55,11 +59,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 return Task.CompletedTask;
             },
         };
-    });
+    })
+    // Embed/API consumers authenticate with `Authorization: ApiKey od_…`. The
+    // handler returns NoResult for non-ApiKey schemes, so JWT bearer still works.
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationHandler.SchemeName, _ => { });
 
 // Authorization policies — PlatformAdmin satisfies every lower-tier policy.
 builder.Services.AddAuthorization(opts =>
 {
+    // Scope-gated policies for API-key consumers; these resolve only against the
+    // ApiKey scheme so a JWT cannot satisfy an embed scope and vice-versa.
+    opts.AddPolicy("EmbedPublicationsRead", p =>
+    {
+        p.AuthenticationSchemes = [ApiKeyAuthenticationHandler.SchemeName];
+        p.RequireClaim(ApiKeyAuthenticationHandler.ScopeClaimType, ApiKeyScopes.PublicationsRead);
+    });
+
+    opts.AddPolicy("EmbedEventsWrite", p =>
+    {
+        p.AuthenticationSchemes = [ApiKeyAuthenticationHandler.SchemeName];
+        p.RequireClaim(ApiKeyAuthenticationHandler.ScopeClaimType, ApiKeyScopes.EventsWrite);
+    });
+
     opts.AddPolicy("PlatformAdmin", p =>
         p.RequireRole(UserRole.PlatformAdmin.ToString()));
 
@@ -134,8 +156,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-const string DevCors    = "DevCors";
-const string PortalCors = "PortalCors";
+const string PublicEmbedCors = "PublicEmbedCors";
+const string PortalCors      = "PortalCors";
 
 var portalOrigins = builder.Configuration
     .GetSection("Cors:PortalOrigins")
@@ -143,11 +165,14 @@ var portalOrigins = builder.Configuration
 
 builder.Services.AddCors(o =>
 {
-    // DevCors — AllowAnyOrigin for the embed widget and API consumers.
-    // AllowAnyOrigin is incompatible with AllowCredentials, so this policy
-    // is never used for cookie-auth endpoints.
-    o.AddPolicy(DevCors, p =>
-        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    // PublicEmbedCors — read-only, any origin, NO credentials. Applied only to the
+    // public embed endpoints via [EnableCors] so a browser can fetch them cross-origin.
+    // Per-publication origin enforcement is done by EmbedSecurityMiddleware, not CORS
+    // (the allowlist is dynamic, so it can't be expressed as a static CORS policy).
+    o.AddPolicy(PublicEmbedCors, p =>
+        p.AllowAnyOrigin()
+         .AllowAnyHeader()
+         .WithMethods("GET", "HEAD", "OPTIONS"));
 
     // PortalCors — specific origins + credentials, applied only to the
     // /auth/cookie/* endpoints via [EnableCors("PortalCors")].
@@ -166,7 +191,6 @@ app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors(DevCors);
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Odisea API v1"));
 }
@@ -175,6 +199,13 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseRateLimiter();
+
+// CORS middleware applies the per-endpoint [EnableCors] policies (PublicEmbedCors,
+// PortalCors). No default policy — endpoints with no [EnableCors] are same-origin only.
+app.UseCors();
+
+// Enforce per-Publication origin allowlists on the public embed endpoints.
+app.UseMiddleware<EmbedSecurityMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

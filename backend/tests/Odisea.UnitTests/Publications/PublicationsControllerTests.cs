@@ -55,7 +55,7 @@ public class PublicationsControllerTests
             CollectionId = collection.Id,
             Status = PublicationStatus.Published,
             Version = 1,
-            AllowedDomains = allowedDomains,
+            AllowedDomains = allowedDomains.Select(d => new AllowedDomain { Domain = d }).ToList(),
         };
         db.Publications.Add(pub);
         await db.SaveChangesAsync();
