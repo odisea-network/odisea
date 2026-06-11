@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<Agency> Agencies => Set<Agency>();
     public DbSet<Operator> Operators => Set<Operator>();
+    public DbSet<SupplierConnection> SupplierConnections => Set<SupplierConnection>();
     public DbSet<Theme> Themes => Set<Theme>();
     public DbSet<Experience> Experiences => Set<Experience>();
     public DbSet<Publication> Publications => Set<Publication>();
