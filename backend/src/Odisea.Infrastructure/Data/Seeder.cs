@@ -118,6 +118,66 @@ public static class Seeder
         await SeedPublicationsAsync(db, blue.Id, green.Id, summerGreece.Id, lastMinuteEgypt.Id, ct);
 
         await SeedUsersAsync(db, blue.Id, green.Id, sunOps.Id, ct);
+
+        await SeedEventsAsync(db, ct);
+    }
+
+    // Dev convenience: a 30-day spread of analytics events for the seeded
+    // publications so the dashboard has real numbers to render. The funnel
+    // narrows impression -> open -> inquiry-start -> inquiry-submit.
+    private static async Task SeedEventsAsync(AppDbContext db, CancellationToken ct)
+    {
+        try
+        {
+            if (await db.Events.AnyAsync(ct)) return;
+
+            var keys = await db.Publications
+                .Select(p => p.Key)
+                .ToListAsync(ct);
+
+            if (keys.Count == 0) return;
+
+            var rng = new Random(8); // deterministic seed -> stable dev data
+            var now = DateTime.UtcNow;
+            var events = new List<Event>();
+
+            foreach (var key in keys)
+            {
+                for (var dayAgo = 0; dayAgo < 30; dayAgo++)
+                {
+                    var day = now.AddDays(-dayAgo);
+                    var impressions = rng.Next(20, 80);
+                    var opens = (int)(impressions * (0.25 + rng.NextDouble() * 0.15));
+                    var inquiryStarts = (int)(opens * (0.15 + rng.NextDouble() * 0.15));
+                    var inquirySubmits = (int)(inquiryStarts * (0.3 + rng.NextDouble() * 0.3));
+
+                    void Add(EventType type, int count)
+                    {
+                        for (var i = 0; i < count; i++)
+                            events.Add(new Event
+                            {
+                                EventType = type,
+                                PublicationKey = key,
+                                Channel = Channel.WebComponent,
+                                OccurredAt = day.AddSeconds(-rng.Next(0, 86_400)),
+                            });
+                    }
+
+                    Add(EventType.Impression, impressions);
+                    Add(EventType.Open, opens);
+                    Add(EventType.InquiryStart, inquiryStarts);
+                    Add(EventType.InquirySubmit, inquirySubmits);
+                }
+            }
+
+            db.Events.AddRange(events);
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // events table may not exist yet — migration is sequenced at merge (#23).
+            // Will succeed once the migration is applied.
+        }
     }
 
     private static async Task SeedPublicationsAsync(

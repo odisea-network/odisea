@@ -13,3 +13,5 @@ export type { InquiryPayload } from './od-booking-inquiry.js';
 export { OdBookingInquiry } from './od-booking-inquiry.js';
 export { OdDestinationHero } from './od-destination-hero.js';
 export { OdFeaturedCollections } from './od-featured-collections.js';
+export type { OdAnalyticsEvent, OdEventType } from './od-analytics.js';
+export { sendOdEvent } from './od-analytics.js';

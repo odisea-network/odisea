@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { sendOdEvent } from './od-analytics.js';
 
 /** Payload emitted by the `od-inquiry-submit` event. */
 export interface InquiryPayload {
@@ -144,14 +145,38 @@ export class OdBookingInquiry extends LitElement {
   @property({ type: String }) heading = 'Запитване за оферта';
   @property({ attribute: 'submit-label' }) submitLabel = 'Изпрати запитване';
 
+  /** Publication key for analytics attribution. When empty, no beacon is sent. */
+  @property({ attribute: 'publication-key' }) publicationKey = '';
+
+  /** Analytics channel. */
+  @property({ attribute: 'channel' }) channel = 'WebComponent';
+
   @state() private _submitted = false;
   @state() private _submitting = false;
+  private _startSent = false;
 
   // form field state
   @state() private _name = '';
   @state() private _phone = '';
   @state() private _email = '';
   @state() private _message = '';
+
+  // First focus into any field signals intent — fire inquiry-start once.
+  private _onFocusIn() {
+    if (this._startSent) return;
+    this._startSent = true;
+    this.dispatchEvent(new CustomEvent('od-inquiry-start', {
+      detail: { offerId: this.offerId || undefined, publicationKey: this.publicationKey },
+      bubbles: true,
+      composed: true,
+    }));
+    sendOdEvent({
+      eventType: 'InquiryStart',
+      publicationKey: this.publicationKey,
+      offerId: this.offerId || undefined,
+      channel: this.channel,
+    });
+  }
 
   private async _submit(e: Event) {
     e.preventDefault();
@@ -172,6 +197,13 @@ export class OdBookingInquiry extends LitElement {
       bubbles: true,
       composed: true,
     }));
+
+    sendOdEvent({
+      eventType: 'InquirySubmit',
+      publicationKey: this.publicationKey,
+      offerId: this.offerId || undefined,
+      channel: this.channel,
+    });
 
     // Simulate async — backend wiring is Phase 4
     await new Promise(r => setTimeout(r, 400));
@@ -198,7 +230,7 @@ export class OdBookingInquiry extends LitElement {
     }
 
     return html`
-      <form part="form" @submit=${this._submit} novalidate>
+      <form part="form" @submit=${this._submit} @focusin=${this._onFocusIn} novalidate>
         <h4 part="heading">${this.heading}</h4>
         ${this.offerTitle
           ? html`<p class="sub">${this.offerTitle} · отговаряме до 24 часа</p>`
