@@ -22,9 +22,13 @@ public class RequestContext(IHttpContextAccessor accessor) : IUserContext, IAgen
     public UserRole Role =>
         Enum.Parse<UserRole>(Principal!.FindFirstValue(ClaimTypes.Role)!);
 
+    // "Has agency" requires BOTH a tenantType=Agency claim AND a parseable tenantId.
+    // A token with the type but no id (e.g. a bad seed or a half-built fixture)
+    // would otherwise sneak past this gate and blow up in RequireAgency() — see #43.
     public bool HasAgency =>
         IsAuthenticated &&
-        Principal?.FindFirstValue("tenantType") == TenantType.Agency.ToString();
+        Principal?.FindFirstValue("tenantType") == TenantType.Agency.ToString() &&
+        AgencyId is not null;
 
     public Guid? AgencyId =>
         Guid.TryParse(Principal?.FindFirstValue("tenantId"), out var id) ? id : null;

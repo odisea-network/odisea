@@ -344,15 +344,12 @@ public static class Seeder
             db.Users.AddRange(admin, blueUser, greenUser, opsUser);
             await db.SaveChangesAsync(ct);
 
+            // PlatformAdmin owns the whole platform, not a specific tenant — they get
+            // no Membership row at all. The JWT builder + RequestContext both treat the
+            // absence-of-membership as the canonical "platform-admin" state. Earlier
+            // seeds mis-set TenantType=Agency with TenantId=null, which broke
+            // HasAgency-gated controllers — see #43.
             db.Memberships.AddRange(
-                // PlatformAdmin — no tenant
-                new Membership
-                {
-                    UserId = admin.Id,
-                    TenantType = TenantType.Agency,
-                    TenantId = null,
-                    Role = UserRole.PlatformAdmin,
-                },
                 new Membership
                 {
                     UserId = blueUser.Id,

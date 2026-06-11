@@ -54,4 +54,27 @@ public class RequestContextTests
 
         Assert.Equal(agencyId, ctx.RequireAgency());
     }
+
+    [Fact]
+    public void HasAgency_TenantTypeAgencyButNoTenantId_IsFalse()
+    {
+        // Regression for #43: a token with tenantType=Agency but no tenantId (e.g.
+        // a misseeded PlatformAdmin) must NOT sneak past HasAgency — that gate fed
+        // straight into RequireAgency() and produced a 500 in ApiKeysController.
+        var ctx = WithClaims(new Claim("tenantType", "Agency"));
+
+        Assert.Null(ctx.AgencyId);
+        Assert.False(ctx.HasAgency);
+    }
+
+    [Fact]
+    public void HasAgency_TenantTypeAgencyAndValidTenantId_IsTrue()
+    {
+        // Sanity sentinel for the happy path: both claims present, both parseable.
+        var ctx = WithClaims(
+            new Claim("tenantType", "Agency"),
+            new Claim("tenantId", Guid.NewGuid().ToString()));
+
+        Assert.True(ctx.HasAgency);
+    }
 }
