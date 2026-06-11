@@ -25,7 +25,12 @@ public class OffersController(IAppDbContext db) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var o = await db.Offers.FirstOrDefaultAsync(x => x.Id == id, ct);
+        // Detail endpoint pulls the full pricing matrix; list stays light and only
+        // exposes the "from" price (Offer.Price) — the components that read it
+        // (od-offer-card / -grid) don't render the matrix anyway.
+        var o = await db.Offers
+            .Include(x => x.PriceVariants)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (o is null) return NotFound();
         var supplierNames = await SupplierNamesFor([o], ct);
         return Ok(o.ToDto(supplierNames));

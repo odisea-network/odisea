@@ -20,8 +20,13 @@ public class Offer : Entity
     public string Country { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
 
+    // "From" price — the lowest PriceVariant.Price (or a hand-set value when an
+    // offer has no variants). The filter engine and grids query this; the full
+    // matrix lives in `PriceVariants` for detail screens and price tables.
     public decimal Price { get; set; }
     public string Currency { get; set; } = "EUR";
+
+    public List<PriceVariant> PriceVariants { get; set; } = [];
 
     public BoardBasis BoardBasis { get; set; }
     public Transport Transport { get; set; }

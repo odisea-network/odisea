@@ -8,6 +8,7 @@ namespace Odisea.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
 {
     public DbSet<Offer> Offers => Set<Offer>();
+    public DbSet<PriceVariant> PriceVariants => Set<PriceVariant>();
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<Agency> Agencies => Set<Agency>();
     public DbSet<Operator> Operators => Set<Operator>();
@@ -17,10 +18,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Publication> Publications => Set<Publication>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Membership> Memberships => Set<Membership>();
-
-    // TODO: Events (#8) and ApiKeys + AllowedDomains (#27) have no migration yet —
-    // both PRs intentionally deferred so #23 (Experience) could own a clean migration
-    // this round. Fold these three tables into a consolidation migration on master.
     public DbSet<Event> Events => Set<Event>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<AllowedDomain> AllowedDomains => Set<AllowedDomain>();

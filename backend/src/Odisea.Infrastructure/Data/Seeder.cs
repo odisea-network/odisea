@@ -77,6 +77,46 @@ public static class Seeder
 
         db.Offers.AddRange(offers);
 
+        // Give every seeded offer a tiny pricing matrix so dev clients see realistic
+        // PriceVariantDto shapes on the detail endpoint. Three rows per offer:
+        // the headline price (the offer's own Price), a cheaper room-only variant,
+        // and a pricier two-week variant — enough to exercise board, duration and
+        // departure dimensions without bloating the seed.
+        foreach (var offer in offers)
+        {
+            db.PriceVariants.AddRange(
+                new PriceVariant
+                {
+                    OfferId = offer.Id,
+                    DepartureDate = offer.StartDate,
+                    DurationNights = offer.DurationNights,
+                    BoardBasis = offer.BoardBasis,
+                    Occupancy = 2,
+                    Price = offer.Price,
+                    Currency = offer.Currency,
+                },
+                new PriceVariant
+                {
+                    OfferId = offer.Id,
+                    DepartureDate = offer.StartDate?.AddDays(14),
+                    DurationNights = offer.DurationNights,
+                    BoardBasis = BoardBasis.RoomOnly,
+                    Occupancy = 2,
+                    Price = Math.Round(offer.Price * 0.8m, 2),
+                    Currency = offer.Currency,
+                },
+                new PriceVariant
+                {
+                    OfferId = offer.Id,
+                    DepartureDate = offer.StartDate?.AddDays(28),
+                    DurationNights = offer.DurationNights + 7,
+                    BoardBasis = offer.BoardBasis,
+                    Occupancy = 2,
+                    Price = Math.Round(offer.Price * 1.6m, 2),
+                    Currency = offer.Currency,
+                });
+        }
+
         // Capture collection variables so IDs are available for Publication seeding.
         var summerGreece = new Collection
         {
