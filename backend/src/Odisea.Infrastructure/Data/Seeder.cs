@@ -27,35 +27,46 @@ public static class Seeder
         db.Agencies.AddRange(blue, green);
         db.Operators.Add(sunOps);
 
+        // The seeded operator's offers arrive through a single manual connection.
+        var sunConn = new SupplierConnection
+        {
+            OperatorId = sunOps.Id,
+            Kind = SupplierConnectionKind.Manual,
+            Name = "Sun Operators (seeded)",
+            Status = SupplierConnectionStatus.Active,
+            LastSyncedAt = DateTime.UtcNow,
+        };
+        db.SupplierConnections.Add(sunConn);
+
         var img = (string seed) => $"https://picsum.photos/seed/{seed}/640/360";
 
         var offers = new List<Offer>
         {
             // Operator-shared (PlatformShared)
             Make("Crete Sun Escape", "Greece", "GR", "Heraklion", 720, BoardBasis.HalfBoard, Transport.Plane, 7,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"beach","family"}, image: img("crete")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"beach","family"}, image: img("crete")),
             Make("Santorini Caldera Boutique", "Greece", "GR", "Santorini", 1290, BoardBasis.BedAndBreakfast, Transport.Plane, 5,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"romance","views"}, image: img("santorini")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"romance","views"}, image: img("santorini")),
             Make("Rhodes All-Inclusive", "Greece", "GR", "Rhodes", 890, BoardBasis.AllInclusive, Transport.Plane, 7,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"beach","all-inclusive"}, image: img("rhodes")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"beach","all-inclusive"}, image: img("rhodes")),
             Make("Halkidiki Coach Holiday", "Greece", "GR", "Halkidiki", 410, BoardBasis.FullBoard, Transport.Bus, 6,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"budget","bus"}, image: img("halkidiki")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"budget","bus"}, image: img("halkidiki")),
             Make("Antalya Family AI", "Turkey", "TR", "Antalya", 690, BoardBasis.AllInclusive, Transport.Plane, 7,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"family","all-inclusive"}, image: img("antalya")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"family","all-inclusive"}, image: img("antalya")),
             Make("Bodrum Boutique Stay", "Turkey", "TR", "Bodrum", 980, BoardBasis.HalfBoard, Transport.Plane, 5,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"boutique"}, image: img("bodrum")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"boutique"}, image: img("bodrum")),
             Make("Istanbul Weekend Break", "Turkey", "TR", "Istanbul", 350, BoardBasis.BedAndBreakfast, Transport.Plane, 3,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"city-break"}, image: img("istanbul")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"city-break"}, image: img("istanbul")),
             Make("Hurghada Red Sea AI", "Egypt", "EG", "Hurghada", 640, BoardBasis.AllInclusive, Transport.Plane, 7,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"diving","all-inclusive"}, image: img("hurghada")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"diving","all-inclusive"}, image: img("hurghada")),
             Make("Sharm El Sheikh Diver", "Egypt", "EG", "Sharm El Sheikh", 690, BoardBasis.AllInclusive, Transport.Plane, 7,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"diving"}, image: img("sharm")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"diving"}, image: img("sharm")),
             Make("Cairo & Nile Cruise", "Egypt", "EG", "Cairo", 1450, BoardBasis.FullBoard, Transport.Plane, 8,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"culture","cruise"}, image: img("cairo")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"culture","cruise"}, image: img("cairo")),
             Make("Sofia Mountain Retreat", "Bulgaria", "BG", "Sofia", 280, BoardBasis.HalfBoard, Transport.Own, 4,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"mountains","local"}, image: img("sofia")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"mountains","local"}, image: img("sofia")),
             Make("Sunny Beach Weekender", "Bulgaria", "BG", "Sunny Beach", 220, BoardBasis.AllInclusive, Transport.Bus, 3,
-                Visibility.PlatformShared, OwnerType.Operator, supplier: sunOps.Id, tags: new(){"beach","budget"}, image: img("sunnybeach")),
+                Visibility.PlatformShared, OwnerType.Operator, connection: sunConn.Id, tags: new(){"beach","budget"}, image: img("sunnybeach")),
 
             // Agency-private offers
             Make("Blue Horizon's Mykonos VIP", "Greece", "GR", "Mykonos", 1890, BoardBasis.BedAndBreakfast, Transport.Plane, 5,
@@ -224,7 +235,7 @@ public static class Seeder
         string title, string country, string countryCode, string city, decimal price,
         BoardBasis board, Transport transport, int nights,
         Visibility visibility, OwnerType ownerType,
-        Guid? owningAgency = null, Guid? supplier = null,
+        Guid? owningAgency = null, Guid? connection = null,
         List<string>? tags = null, string image = "")
     => new()
     {
@@ -240,13 +251,31 @@ public static class Seeder
         Visibility = visibility,
         OwnerType = ownerType,
         OwningAgencyId = owningAgency,
-        SupplierId = supplier,
+        // Offers from the operator carry source lineage; the ExternalId is a
+        // deterministic slug of the title (stands in for the supplier's own ID).
+        Source = connection is { } connId
+            ? new OfferSource
+            {
+                SupplierConnectionId = connId,
+                ExternalId = Slugify(title),
+                ImportState = ImportState.Imported,
+                LastImportedAt = DateTime.UtcNow,
+            }
+            : null,
         Tags = tags ?? new(),
         ImageUrl = image,
         Status = OfferStatus.Published,
         StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14)),
         EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14 + nights)),
     };
+
+    private static string Slugify(string value)
+    {
+        var chars = value.ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : '-')
+            .ToArray();
+        return string.Join('-', new string(chars).Split('-', StringSplitOptions.RemoveEmptyEntries));
+    }
 
     private static FilterSpec Spec(params (string field, string op, object value)[] conds)
     {
