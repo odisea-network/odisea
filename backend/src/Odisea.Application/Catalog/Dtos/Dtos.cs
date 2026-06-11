@@ -20,7 +20,8 @@ public record OfferDto(
     string ImageUrl,
     string Visibility,
     string OwnerType,
-    OfferSourceDto? Source
+    OfferSourceDto? Source,
+    IReadOnlyList<PriceVariantDto> PriceVariants
 );
 
 public record OfferSourceDto(
@@ -28,6 +29,18 @@ public record OfferSourceDto(
     string ExternalId,
     DateTime? LastImportedAt,
     string State
+);
+
+// One row of the supplier's pricing matrix. Any dimension may be null when
+// the supplier hasn't broken pricing down on that axis.
+public record PriceVariantDto(
+    Guid Id,
+    DateOnly? DepartureDate,
+    int? DurationNights,
+    string? BoardBasis,
+    int? Occupancy,
+    decimal Price,
+    string Currency
 );
 
 public record CollectionDto(
@@ -61,7 +74,12 @@ public static class Mappings
         o.BoardBasis.ToString(), o.Transport.ToString(), o.DurationNights,
         o.StartDate, o.EndDate, o.Tags, o.ImageUrl,
         o.Visibility.ToString(), o.OwnerType.ToString(),
-        o.Source.ToDto(supplierNames));
+        o.Source.ToDto(supplierNames),
+        o.PriceVariants.Select(v => v.ToDto()).ToList());
+
+    public static PriceVariantDto ToDto(this PriceVariant v) => new(
+        v.Id, v.DepartureDate, v.DurationNights, v.BoardBasis?.ToString(),
+        v.Occupancy, v.Price, v.Currency);
 
     private static OfferSourceDto? ToDto(this OfferSource? s, IReadOnlyDictionary<Guid, string>? supplierNames)
     {

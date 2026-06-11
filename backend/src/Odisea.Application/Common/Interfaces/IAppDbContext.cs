@@ -6,6 +6,7 @@ namespace Odisea.Application.Common.Interfaces;
 public interface IAppDbContext
 {
     DbSet<Offer> Offers { get; }
+    DbSet<PriceVariant> PriceVariants { get; }
     DbSet<Collection> Collections { get; }
     DbSet<Agency> Agencies { get; }
     DbSet<Operator> Operators { get; }
@@ -16,10 +17,6 @@ public interface IAppDbContext
     DbSet<User> Users { get; }
     DbSet<Membership> Memberships { get; }
     DbSet<Event> Events { get; }
-
-    // Embed security (issue #27). NOTE: these entities are NOT yet in a migration —
-    // #23 owns the next migration this round and must consolidate ApiKey +
-    // AllowedDomain (and the Publication.AllowedDomains → AllowedDomain relation).
     DbSet<ApiKey> ApiKeys { get; }
     DbSet<AllowedDomain> AllowedDomains { get; }
 
