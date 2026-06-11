@@ -16,6 +16,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users => Set<User>();
     public DbSet<Membership> Memberships => Set<Membership>();
 
+    // TODO(#8/#23): The `events` table has no migration yet. #23 (Experience model)
+    // owns the consolidated migration this round — fold the Events table into it there.
+    public DbSet<Event> Events => Set<Event>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OfferConfiguration).Assembly);

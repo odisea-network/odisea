@@ -13,6 +13,7 @@ public interface IAppDbContext
     DbSet<Publication> Publications { get; }
     DbSet<User> Users { get; }
     DbSet<Membership> Memberships { get; }
+    DbSet<Event> Events { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
