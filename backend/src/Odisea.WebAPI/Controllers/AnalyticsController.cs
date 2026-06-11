@@ -31,7 +31,7 @@ public class AnalyticsController(IAppDbContext db, IAgencyContext agencyCtx) : C
 
         if (pub is null) return NotFound();
 
-        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && pub.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         var stats = await AnalyticsQuery.GetStatsAsync(key, parsed, db, ct);

@@ -17,8 +17,8 @@ public class ExperiencesController(IAppDbContext db, IAgencyContext agencyCtx) :
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var q = db.Experiences.AsQueryable();
-        if (agencyCtx.HasAgency)
-            q = q.Where(e => e.AgencyId == agencyCtx.AgencyId);
+        if (agencyCtx.AgencyId is Guid agencyId)
+            q = q.Where(e => e.AgencyId == agencyId);
 
         var list = await q.OrderBy(e => e.Name).ToListAsync(ct);
         return Ok(list.Select(ExperienceMappings.ToDto));
@@ -31,7 +31,7 @@ public class ExperiencesController(IAppDbContext db, IAgencyContext agencyCtx) :
         var experience = await db.Experiences.FirstOrDefaultAsync(e => e.Id == id, ct);
         if (experience is null) return NotFound();
 
-        if (agencyCtx.HasAgency && experience.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && experience.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Experience does not belong to your agency.", statusCode: 403);
 
         return Ok(experience.ToDto());
@@ -44,9 +44,14 @@ public class ExperiencesController(IAppDbContext db, IAgencyContext agencyCtx) :
         if (string.IsNullOrWhiteSpace(req.Name))
             return Problem(title: "Validation", detail: "Name is required", statusCode: 400);
 
+        if (agencyCtx.AgencyId is not Guid agencyId)
+            return Problem(title: "Validation",
+                detail: "Platform admins must specify an agency; this endpoint requires an agency-scoped caller.",
+                statusCode: 400);
+
         var experience = new Experience
         {
-            AgencyId = agencyCtx.AgencyId,
+            AgencyId = agencyId,
             Name     = req.Name,
             Status   = ExperienceStatus.Draft,
             Version  = 1,
@@ -65,7 +70,7 @@ public class ExperiencesController(IAppDbContext db, IAgencyContext agencyCtx) :
         var experience = await db.Experiences.FirstOrDefaultAsync(e => e.Id == id, ct);
         if (experience is null) return NotFound();
 
-        if (agencyCtx.HasAgency && experience.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && experience.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Experience does not belong to your agency.", statusCode: 403);
 
         if (experience.Status == ExperienceStatus.Published)
@@ -89,7 +94,7 @@ public class ExperiencesController(IAppDbContext db, IAgencyContext agencyCtx) :
         var experience = await db.Experiences.FirstOrDefaultAsync(e => e.Id == id, ct);
         if (experience is null) return NotFound();
 
-        if (agencyCtx.HasAgency && experience.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && experience.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Experience does not belong to your agency.", statusCode: 403);
 
         if (experience.Status == ExperienceStatus.Published)

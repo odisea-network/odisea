@@ -68,7 +68,7 @@ public class AllowedDomainsController(IAppDbContext db, IAgencyContext agencyCtx
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
     private bool Forbidden(Publication pub) =>
-        agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId;
+        agencyCtx.AgencyId is Guid agencyId && pub.AgencyId != agencyId;
 
     private IActionResult ForbiddenResult() =>
         Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
