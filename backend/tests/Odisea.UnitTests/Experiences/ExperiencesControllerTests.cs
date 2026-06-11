@@ -104,6 +104,38 @@ public class ExperiencesControllerTests
     }
 
     [Fact]
+    public async Task List_PlatformAdmin_ReturnsAllAcrossTenants()
+    {
+        await using var db = CreateDb();
+        db.Experiences.Add(new Experience { AgencyId = Guid.NewGuid(), Name = "Agency A" });
+        db.Experiences.Add(new Experience { AgencyId = Guid.NewGuid(), Name = "Agency B" });
+        await db.SaveChangesAsync();
+
+        // No agencyId → PlatformAdmin (no tenantId claim); sees every tenant's experiences.
+        var controller = CreateController(db);
+        var ok = Assert.IsType<OkObjectResult>(await controller.List(default));
+        var list = Assert.IsAssignableFrom<IEnumerable<ExperienceDto>>(ok.Value);
+
+        Assert.Equal(2, list.Count());
+    }
+
+    [Fact]
+    public async Task Create_PlatformAdmin_Returns400()
+    {
+        await using var db = CreateDb();
+        var controller = CreateController(db);
+
+        // The request carries an AgencyId, but a platform admin has no agency context
+        // to own the new row — the endpoint must reject rather than guess an owner.
+        var result = await controller.Create(new CreateExperienceRequest(Guid.NewGuid(), "Orphan", null), default);
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(400, obj.StatusCode);
+        var problem = Assert.IsType<ProblemDetails>(obj.Value);
+        Assert.Contains("agency", problem.Detail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Publish_FlipsStatusAndIncrementsVersion()
     {
         await using var db = CreateDb();

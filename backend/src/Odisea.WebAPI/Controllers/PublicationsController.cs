@@ -62,8 +62,8 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var q = db.Publications.Include(p => p.AllowedDomains).AsQueryable();
-        if (agencyCtx.HasAgency)
-            q = q.Where(p => p.AgencyId == agencyCtx.AgencyId);
+        if (agencyCtx.AgencyId is Guid agencyId)
+            q = q.Where(p => p.AgencyId == agencyId);
 
         var list = await q.OrderByDescending(p => p.CreatedAt).ToListAsync(ct);
         return Ok(list.Select(p => p.ToDto()));
@@ -78,7 +78,7 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
             .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
 
-        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && pub.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         return Ok(pub.ToDto());
@@ -95,9 +95,14 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
         if (!collectionExists)
             return Problem(title: "Validation", detail: $"Collection {req.CollectionId} not found.", statusCode: 400);
 
+        if (agencyCtx.AgencyId is not Guid agencyId)
+            return Problem(title: "Validation",
+                detail: "Platform admins must specify an agency; this endpoint requires an agency-scoped caller.",
+                statusCode: 400);
+
         var pub = new Publication
         {
-            AgencyId = agencyCtx.AgencyId,
+            AgencyId = agencyId,
             CollectionId = req.CollectionId,
             ThemeId = req.ThemeId,
             ExperienceId = req.ExperienceId,
@@ -123,7 +128,7 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
             .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
 
-        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && pub.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         if (req.CollectionId.HasValue)
@@ -164,7 +169,7 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
             .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
 
-        if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && pub.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         if (pub.Status == PublicationStatus.Published)

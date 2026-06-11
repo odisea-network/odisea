@@ -19,8 +19,9 @@ public class ApiKeysController(IAppDbContext db, IAgencyContext agencyCtx) : Con
         if (!agencyCtx.HasAgency)
             return AgencyRequired();
 
+        var agencyId = agencyCtx.RequireAgency();
         var keys = await db.ApiKeys
-            .Where(k => k.AgencyId == agencyCtx.AgencyId)
+            .Where(k => k.AgencyId == agencyId)
             .OrderByDescending(k => k.CreatedAt)
             .ToListAsync(ct);
 
@@ -48,7 +49,7 @@ public class ApiKeysController(IAppDbContext db, IAgencyContext agencyCtx) : Con
             return Problem(title: "Validation", detail: "ExpiresAt must be in the future.", statusCode: 400);
 
         var (rawKey, entity) = ApiKey.Generate(
-            agencyCtx.AgencyId, req.Name.Trim(), req.Scopes, req.ExpiresAt);
+            agencyCtx.RequireAgency(), req.Name.Trim(), req.Scopes, req.ExpiresAt);
 
         db.ApiKeys.Add(entity);
         await db.SaveChangesAsync(ct);
@@ -63,7 +64,7 @@ public class ApiKeysController(IAppDbContext db, IAgencyContext agencyCtx) : Con
         var key = await db.ApiKeys.FirstOrDefaultAsync(k => k.Id == id, ct);
         if (key is null) return NotFound();
 
-        if (agencyCtx.HasAgency && key.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && key.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "API key does not belong to your agency.", statusCode: 403);
 
         if (key.RevokedAt is null)

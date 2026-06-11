@@ -54,6 +54,11 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
         if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.Slug))
             return Problem(title: "Validation", detail: "Name and Slug are required", statusCode: 400);
 
+        if (agencyCtx.AgencyId is not Guid agencyId)
+            return Problem(title: "Validation",
+                detail: "Platform admins must specify an agency; this endpoint requires an agency-scoped caller.",
+                statusCode: 400);
+
         try { FilterResolver.Apply(db.Offers.AsQueryable(), req.Filter); }
         catch (FilterValidationException ex)
         {
@@ -62,7 +67,7 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
 
         var entity = new Collection
         {
-            AgencyId = agencyCtx.AgencyId,
+            AgencyId = agencyId,
             Name = req.Name,
             Slug = req.Slug,
             Status = CollectionStatus.Draft,

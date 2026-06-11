@@ -38,9 +38,14 @@ public class ThemesController(IAppDbContext db, IAgencyContext agencyCtx) : Cont
         if (string.IsNullOrWhiteSpace(req.Name))
             return Problem(title: "Validation", detail: "Name is required", statusCode: 400);
 
+        if (agencyCtx.AgencyId is not Guid agencyId)
+            return Problem(title: "Validation",
+                detail: "Platform admins must specify an agency; this endpoint requires an agency-scoped caller.",
+                statusCode: 400);
+
         var theme = new Theme
         {
-            AgencyId = agencyCtx.AgencyId,
+            AgencyId = agencyId,
             Name     = req.Name,
             Status   = ThemeStatus.Draft,
             Version  = 1,
@@ -59,7 +64,7 @@ public class ThemesController(IAppDbContext db, IAgencyContext agencyCtx) : Cont
         var theme = await db.Themes.FirstOrDefaultAsync(t => t.Id == id, ct);
         if (theme is null) return NotFound();
 
-        if (agencyCtx.HasAgency && theme.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && theme.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Theme does not belong to your agency.", statusCode: 403);
 
         if (theme.Status == ThemeStatus.Published)
@@ -83,7 +88,7 @@ public class ThemesController(IAppDbContext db, IAgencyContext agencyCtx) : Cont
         var theme = await db.Themes.FirstOrDefaultAsync(t => t.Id == id, ct);
         if (theme is null) return NotFound();
 
-        if (agencyCtx.HasAgency && theme.AgencyId != agencyCtx.AgencyId)
+        if (agencyCtx.AgencyId is Guid agencyId && theme.AgencyId != agencyId)
             return Problem(title: "Forbidden", detail: "Theme does not belong to your agency.", statusCode: 403);
 
         if (theme.Status == ThemeStatus.Published)
