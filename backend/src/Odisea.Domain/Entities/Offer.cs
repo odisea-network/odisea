@@ -1,5 +1,6 @@
 ﻿using Odisea.Domain.Common;
 using Odisea.Domain.Enums;
+using Odisea.Domain.ValueObjects;
 
 namespace Odisea.Domain.Entities;
 
@@ -12,7 +13,9 @@ public class Offer : Entity
     public Visibility Visibility { get; set; }
 
     public Guid? OwningAgencyId { get; set; }
-    public Guid? SupplierId { get; set; }
+
+    // Supply-side lineage. Null for agency-private or hand-seeded offers.
+    public OfferSource? Source { get; set; }
 
     public string Country { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;

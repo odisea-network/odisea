@@ -9,6 +9,7 @@ public interface IAppDbContext
     DbSet<Collection> Collections { get; }
     DbSet<Agency> Agencies { get; }
     DbSet<Operator> Operators { get; }
+    DbSet<SupplierConnection> SupplierConnections { get; }
     DbSet<Theme> Themes { get; }
     DbSet<Experience> Experiences { get; }
     DbSet<Publication> Publications { get; }

@@ -39,7 +39,7 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
         try
         {
             var offers = await CollectionResolver.ResolveAsync(c, db.Offers.AsQueryable(), ct);
-            return Ok(offers.Select(Mappings.ToDto));
+            return Ok(offers.Select(o => o.ToDto()));
         }
         catch (FilterValidationException ex)
         {

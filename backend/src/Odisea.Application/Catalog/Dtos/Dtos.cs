@@ -19,7 +19,15 @@ public record OfferDto(
     IReadOnlyList<string> Tags,
     string ImageUrl,
     string Visibility,
-    string OwnerType
+    string OwnerType,
+    OfferSourceDto? Source
+);
+
+public record OfferSourceDto(
+    string Supplier,
+    string ExternalId,
+    DateTime? LastImportedAt,
+    string State
 );
 
 public record CollectionDto(
@@ -46,11 +54,23 @@ public record CreateCollectionRequest(
 
 public static class Mappings
 {
-    public static OfferDto ToDto(this Offer o) => new(
+    // supplierNames maps a SupplierConnectionId to its display name; pass the lookup
+    // built for the result set so source.supplier resolves without a per-offer query.
+    public static OfferDto ToDto(this Offer o, IReadOnlyDictionary<Guid, string>? supplierNames = null) => new(
         o.Id, o.Title, o.Description, o.Country, o.City, o.Price, o.Currency,
         o.BoardBasis.ToString(), o.Transport.ToString(), o.DurationNights,
         o.StartDate, o.EndDate, o.Tags, o.ImageUrl,
-        o.Visibility.ToString(), o.OwnerType.ToString());
+        o.Visibility.ToString(), o.OwnerType.ToString(),
+        o.Source.ToDto(supplierNames));
+
+    private static OfferSourceDto? ToDto(this OfferSource? s, IReadOnlyDictionary<Guid, string>? supplierNames)
+    {
+        if (s is null) return null;
+        var supplier = supplierNames is not null && supplierNames.TryGetValue(s.SupplierConnectionId, out var name)
+            ? name
+            : string.Empty;
+        return new OfferSourceDto(supplier, s.ExternalId, s.LastImportedAt, s.ImportState.ToString());
+    }
 
     public static CollectionDto ToDto(this Collection c) => new(
         c.Id, c.AgencyId, c.Name, c.Slug, c.Status.ToString(),

@@ -24,3 +24,11 @@ public enum TenantType { Agency, Operator }
 
 // Hierarchical: PlatformAdmin > OperatorAdmin > AgencyAdmin > AgencyEditor
 public enum UserRole { PlatformAdmin, OperatorAdmin, AgencyAdmin, AgencyEditor }
+
+// How a supplier's offers reach our import pipeline.
+public enum SupplierConnectionKind { Manual, Xml, JsonApi, CsvSftp }
+
+public enum SupplierConnectionStatus { Active, Paused, Failed }
+
+// Lifecycle of a single offer as seen from its source connection.
+public enum ImportState { Pending, Imported, Stale, Failed }

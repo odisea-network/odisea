@@ -35,6 +35,18 @@ public class OfferConfiguration : IEntityTypeConfiguration<Offer>
                 v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
             .Metadata.SetValueComparer(JsonValueComparers.StringList);
 
+        // Supply-side lineage flattened inline into source_* columns. Optional:
+        // an all-null row means the offer has no upstream source.
+        b.OwnsOne(x => x.Source, s =>
+        {
+            s.Property(p => p.SupplierConnectionId).HasColumnName("source_supplier_connection_id");
+            s.Property(p => p.ExternalId).HasColumnName("source_external_id").HasMaxLength(200);
+            s.Property(p => p.LastImportedAt).HasColumnName("source_last_imported_at");
+            s.Property(p => p.ImportState).HasColumnName("source_import_state")
+                .HasConversion<string>().HasMaxLength(32);
+        });
+        b.Navigation(x => x.Source).IsRequired(false);
+
         b.HasIndex(x => x.Country);
         b.HasIndex(x => x.Status);
         b.HasIndex(x => x.Visibility);
