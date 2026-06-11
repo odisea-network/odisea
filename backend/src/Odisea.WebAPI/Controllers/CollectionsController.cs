@@ -60,6 +60,15 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
             return Problem(title: "Invalid filter", detail: ex.Message, statusCode: 400);
         }
 
+        // Slugs are unique per agency (#18): a clash is only a conflict within the
+        // caller's own agency. Another agency owning the same slug is fine.
+        var slugTaken = await db.Collections
+            .AnyAsync(c => c.AgencyId == agencyCtx.AgencyId && c.Slug == req.Slug, ct);
+        if (slugTaken)
+            return Problem(title: "Slug already in use",
+                detail: $"Your agency already has a collection with slug '{req.Slug}'.",
+                statusCode: 409);
+
         var entity = new Collection
         {
             AgencyId = agencyCtx.AgencyId,
@@ -76,8 +85,20 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
         return CreatedAtAction(nameof(Get), new { idOrSlug = entity.Id.ToString() }, entity.ToDto());
     }
 
-    private Task<Collection?> FindAsync(string idOrSlug, CancellationToken ct) =>
-        Guid.TryParse(idOrSlug, out var id)
-            ? db.Collections.FirstOrDefaultAsync(c => c.Id == id, ct)
-            : db.Collections.FirstOrDefaultAsync(c => c.Slug == idOrSlug, ct);
+    private Task<Collection?> FindAsync(string idOrSlug, CancellationToken ct)
+    {
+        // Ids are global; resolve them directly.
+        if (Guid.TryParse(idOrSlug, out var id))
+            return db.Collections.FirstOrDefaultAsync(c => c.Id == id, ct);
+
+        // A slug is unique only within an agency (#18), so resolving one requires
+        // agency context. The public embed resolves offers by collection id (see
+        // PublicationResolver), so anonymous slug lookups are intentionally unsupported.
+        if (!agencyCtx.HasAgency)
+            return Task.FromResult<Collection?>(null);
+
+        var agencyId = agencyCtx.AgencyId;
+        return db.Collections.FirstOrDefaultAsync(
+            c => c.Slug == idOrSlug && c.AgencyId == agencyId, ct);
+    }
 }
