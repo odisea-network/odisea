@@ -18,13 +18,34 @@ public class OffersController(IAppDbContext db) : ControllerBase
         if (!string.IsNullOrWhiteSpace(city)) q = q.Where(o => o.City == city);
         if (maxPrice is { } mp) q = q.Where(o => o.Price <= mp);
         var list = await q.OrderBy(o => o.Price).ToListAsync(ct);
-        return Ok(list.Select(Mappings.ToDto));
+        var supplierNames = await SupplierNamesFor(list, ct);
+        return Ok(list.Select(o => o.ToDto(supplierNames)));
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
         var o = await db.Offers.FirstOrDefaultAsync(x => x.Id == id, ct);
-        return o is null ? NotFound() : Ok(o.ToDto());
+        if (o is null) return NotFound();
+        var supplierNames = await SupplierNamesFor([o], ct);
+        return Ok(o.ToDto(supplierNames));
+    }
+
+    // Resolve connection display names for the offers that carry source lineage,
+    // so OfferDto.Source.Supplier is populated without a per-offer query.
+    private async Task<IReadOnlyDictionary<Guid, string>> SupplierNamesFor(
+        IReadOnlyCollection<Domain.Entities.Offer> offers, CancellationToken ct)
+    {
+        var ids = offers
+            .Where(o => o.Source is not null)
+            .Select(o => o.Source!.SupplierConnectionId)
+            .Distinct()
+            .ToList();
+
+        if (ids.Count == 0) return new Dictionary<Guid, string>();
+
+        return await db.SupplierConnections
+            .Where(c => ids.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, c => c.Name, ct);
     }
 }
