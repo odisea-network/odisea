@@ -20,14 +20,10 @@ public class PublicationConfiguration : IEntityTypeConfiguration<Publication>
 
         b.Property(x => x.Version).HasDefaultValue(0);
 
-        var json = new JsonSerializerOptions();
+        // AllowedDomains is a child table (allowed_domains) configured in
+        // AllowedDomainConfiguration — see issue #27.
 
-        b.Property(x => x.AllowedDomains)
-            .HasColumnType("jsonb")
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, json),
-                v => JsonSerializer.Deserialize<string[]>(v, json) ?? Array.Empty<string>())
-            .Metadata.SetValueComparer(JsonValueComparers.StringArray);
+        var json = new JsonSerializerOptions();
 
         b.Property(x => x.ExperienceConfig)
             .HasColumnType("jsonb")

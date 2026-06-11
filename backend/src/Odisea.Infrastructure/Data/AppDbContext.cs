@@ -17,9 +17,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users => Set<User>();
     public DbSet<Membership> Memberships => Set<Membership>();
 
-    // TODO(#8/#23): The `events` table has no migration yet. #23 (Experience model)
-    // owns the consolidated migration this round — fold the Events table into it there.
+    // TODO: Events (#8) and ApiKeys + AllowedDomains (#27) have no migration yet —
+    // both PRs intentionally deferred so #23 (Experience) could own a clean migration
+    // this round. Fold these three tables into a consolidation migration on master.
     public DbSet<Event> Events => Set<Event>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<AllowedDomain> AllowedDomains => Set<AllowedDomain>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

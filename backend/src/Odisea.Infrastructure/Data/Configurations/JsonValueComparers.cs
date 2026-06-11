@@ -44,15 +44,6 @@ internal static class JsonValueComparers
                     JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     (JsonSerializerOptions?)null) ?? new List<ParameterDef>());
 
-    public static readonly ValueComparer<string[]> StringArray =
-        new(
-            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null)
-                   == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
-            v => v == null ? 0 : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
-            v => JsonSerializer.Deserialize<string[]>(
-                    JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    (JsonSerializerOptions?)null) ?? Array.Empty<string>());
-
     // SortSpec is an immutable record — a no-op snapshot is fine.
     public static readonly ValueComparer<SortSpec> Sort =
         new(

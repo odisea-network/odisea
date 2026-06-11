@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Common.Interfaces;
@@ -19,6 +20,7 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
     /// Returns the cacheable manifest for an embed key.
     /// Checks the Origin header against AllowedDomains when the list is non-empty.
     /// </summary>
+    [EnableCors("PublicEmbedCors")]
     [HttpGet("{key}")]
     public async Task<IActionResult> GetManifest(string key, CancellationToken ct)
     {
@@ -33,8 +35,7 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
 
         if (pub is null) return NotFound();
 
-        if (!CheckOrigin(pub))
-            return StatusCode(403, new { error = "Origin not permitted for this publication." });
+        // Origin allowlisting is enforced upstream by EmbedSecurityMiddleware.
 
         PublicationManifestDto manifest;
         try
@@ -60,7 +61,7 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var q = db.Publications.AsQueryable();
+        var q = db.Publications.Include(p => p.AllowedDomains).AsQueryable();
         if (agencyCtx.HasAgency)
             q = q.Where(p => p.AgencyId == agencyCtx.AgencyId);
 
@@ -72,7 +73,9 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var pub = await db.Publications.FirstOrDefaultAsync(p => p.Id == id, ct);
+        var pub = await db.Publications
+            .Include(p => p.AllowedDomains)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
 
         if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
@@ -99,7 +102,8 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
             ThemeId = req.ThemeId,
             ExperienceId = req.ExperienceId,
             ExperienceConfig = req.ExperienceConfig,
-            AllowedDomains = req.AllowedDomains ?? [],
+            AllowedDomains = [.. (req.AllowedDomains ?? [])
+                .Select(d => new AllowedDomain { Domain = d })],
             Status = PublicationStatus.Draft,
             Version = 0,
         };
@@ -114,7 +118,9 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, UpdatePublicationRequest req, CancellationToken ct)
     {
-        var pub = await db.Publications.FirstOrDefaultAsync(p => p.Id == id, ct);
+        var pub = await db.Publications
+            .Include(p => p.AllowedDomains)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
 
         if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
@@ -131,7 +137,17 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
         if (req.ThemeId.HasValue) pub.ThemeId = req.ThemeId;
         if (req.ExperienceId.HasValue) pub.ExperienceId = req.ExperienceId;
         if (req.ExperienceConfig is not null) pub.ExperienceConfig = req.ExperienceConfig;
-        if (req.AllowedDomains is not null) pub.AllowedDomains = req.AllowedDomains;
+
+        if (req.AllowedDomains is not null)
+        {
+            foreach (var existing in pub.AllowedDomains.ToList())
+            {
+                pub.AllowedDomains.Remove(existing);
+                db.AllowedDomains.Remove(existing);
+            }
+            foreach (var domain in req.AllowedDomains)
+                db.AllowedDomains.Add(new AllowedDomain { PublicationId = pub.Id, Domain = domain });
+        }
 
         pub.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
@@ -143,7 +159,9 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
     [HttpPost("{id:guid}/publish")]
     public async Task<IActionResult> Publish(Guid id, CancellationToken ct)
     {
-        var pub = await db.Publications.FirstOrDefaultAsync(p => p.Id == id, ct);
+        var pub = await db.Publications
+            .Include(p => p.AllowedDomains)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (pub is null) return NotFound();
 
         if (agencyCtx.HasAgency && pub.AgencyId != agencyCtx.AgencyId)
@@ -158,19 +176,5 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
         await db.SaveChangesAsync(ct);
 
         return Ok(pub.ToDto());
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
-    private bool CheckOrigin(Publication pub)
-    {
-        if (pub.AllowedDomains.Length == 0) return true;
-
-        var origin = Request.Headers.Origin.ToString();
-        if (string.IsNullOrEmpty(origin)) return true;
-
-        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
-
-        return pub.AllowedDomains.Contains(uri.Host, StringComparer.OrdinalIgnoreCase);
     }
 }

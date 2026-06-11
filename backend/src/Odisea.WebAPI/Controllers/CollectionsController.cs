@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Catalog.Collections;
@@ -29,6 +30,7 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
         return c is null ? NotFound() : Ok(c.ToDto());
     }
 
+    [EnableCors("PublicEmbedCors")]
     [HttpGet("{idOrSlug}/offers")]
     public async Task<IActionResult> Resolve(string idOrSlug, CancellationToken ct)
     {
