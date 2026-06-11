@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Odisea.Application.Common.Interfaces;
+using Odisea.Application.Suppliers.Connectors;
 using Odisea.Infrastructure.Data;
 using Odisea.Infrastructure.Services;
+using Odisea.Infrastructure.Suppliers.Connectors;
 
 namespace Odisea.Infrastructure;
 
@@ -22,6 +24,12 @@ public static class DependencyInjection
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddSingleton<IPasswordHasherService, PasswordHasherService>();
+
+        // Connector platform. Each adapter registers under IConnector so the
+        // registry can fan them out by SupplierConnectionKind at run time.
+        // New adapters (XML, JSON API, CSV/SFTP) ship in follow-up PRs.
+        services.AddSingleton<IConnector, ManualConnector>();
+        services.AddSingleton<IConnectorRegistry, ConnectorRegistry>();
 
         // JWT secret is validated here at startup; the token validation middleware is
         // wired in Program.cs because JwtBearerDefaults lives in the Web SDK.
