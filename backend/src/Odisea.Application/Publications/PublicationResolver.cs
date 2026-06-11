@@ -22,7 +22,9 @@ public static class PublicationResolver
             ?? throw new InvalidOperationException(
                 $"Publication {pub.Key} references missing collection {pub.CollectionId}.");
 
-        var offersUrl = $"/api/v1/collections/{collection.Slug}/offers";
+        // Resolve offers by collection id: slugs are unique only per agency (#18), so
+        // a slug-keyed public URL would be ambiguous across tenants. The id is global.
+        var offersUrl = $"/api/v1/collections/{collection.Id}/offers";
         var etag = $"\"{pub.Version}-{pub.CollectionId}\"";
 
         // A referenced Experience entity is the source of truth for the manifest's

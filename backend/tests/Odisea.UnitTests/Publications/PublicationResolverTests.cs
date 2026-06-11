@@ -50,7 +50,7 @@ public class PublicationResolverTests
         Assert.Equal(collection.Id, manifest.CollectionId);
         Assert.Equal("summer-greece", manifest.CollectionSlug);
         Assert.Equal("Summer in Greece", manifest.CollectionName);
-        Assert.Equal("/api/v1/collections/summer-greece/offers", manifest.OffersUrl);
+        Assert.Equal($"/api/v1/collections/{collection.Id}/offers", manifest.OffersUrl);
         Assert.Null(manifest.ThemeId);
         Assert.Null(manifest.Experience);
     }
@@ -214,7 +214,7 @@ public class PublicationResolverTests
     }
 
     [Fact]
-    public async Task ResolveManifest_OffersUrlUsesCollectionSlug()
+    public async Task ResolveManifest_OffersUrlUsesCollectionId()
     {
         await using var db = CreateDb();
 
@@ -238,6 +238,8 @@ public class PublicationResolverTests
 
         var manifest = await PublicationResolver.ResolveManifestAsync(pub, db);
 
-        Assert.Equal("/api/v1/collections/last-minute-egypt/offers", manifest.OffersUrl);
+        // Slug is unique only per agency (#18); the public offers URL keys on the
+        // global collection id so it is unambiguous across tenants.
+        Assert.Equal($"/api/v1/collections/{collection.Id}/offers", manifest.OffersUrl);
     }
 }

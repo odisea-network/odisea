@@ -79,7 +79,8 @@ public class PublicationsControllerTests
         Assert.Equal("testkey001", manifest.Key);
         Assert.Equal(1, manifest.Version);
         Assert.Equal("Published", manifest.Status);
-        Assert.Equal("/api/v1/collections/test-col/offers", manifest.OffersUrl);
+        // Offers are keyed by global collection id, not the per-agency slug (#18).
+        Assert.Equal($"/api/v1/collections/{manifest.CollectionId}/offers", manifest.OffersUrl);
         Assert.Equal("\"1-", manifest.ETag[..3]);
     }
 
