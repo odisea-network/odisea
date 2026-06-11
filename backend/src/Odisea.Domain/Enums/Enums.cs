@@ -14,6 +14,8 @@ public enum CollectionStatus { Draft, Published }
 
 public enum ThemeStatus { Draft, Published }
 
+public enum ExperienceStatus { Draft, Published }
+
 public enum PublicationStatus { Draft, Published }
 
 public enum UserStatus { Active, Suspended }

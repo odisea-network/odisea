@@ -151,6 +151,52 @@ public class PublicationResolverTests
     }
 
     [Fact]
+    public async Task ResolveManifest_AttachedExperience_FlowsIntoManifest()
+    {
+        await using var db = CreateDb();
+
+        var collection = new Collection
+        {
+            AgencyId = Guid.NewGuid(),
+            Name = "Linked Experience",
+            Slug = "linked-exp",
+            Status = CollectionStatus.Published,
+        };
+        db.Collections.Add(collection);
+
+        var experience = new Experience
+        {
+            AgencyId = collection.AgencyId,
+            Name = "Carousel",
+            Status = ExperienceStatus.Published,
+            Config = new ExperienceConfig(Type: "carousel", Columns: 4, CardStyle: "editorial",
+                ShowPrice: false, Inquiry: false, OpenNewTab: true),
+        };
+        db.Experiences.Add(experience);
+
+        // Inline config is intentionally different to prove the entity takes precedence.
+        var pub = new Publication
+        {
+            Key = "linkedexp001",
+            AgencyId = collection.AgencyId,
+            CollectionId = collection.Id,
+            ExperienceId = experience.Id,
+            ExperienceConfig = new ExperienceConfig(Type: "grid"),
+        };
+        db.Publications.Add(pub);
+        await db.SaveChangesAsync();
+
+        var manifest = await PublicationResolver.ResolveManifestAsync(pub, db);
+
+        Assert.NotNull(manifest.Experience);
+        Assert.Equal("carousel", manifest.Experience.Type);
+        Assert.Equal(4, manifest.Experience.Columns);
+        Assert.Equal("editorial", manifest.Experience.CardStyle);
+        Assert.False(manifest.Experience.ShowPrice);
+        Assert.True(manifest.Experience.OpenNewTab);
+    }
+
+    [Fact]
     public async Task ResolveManifest_ThrowsWhenCollectionMissing()
     {
         await using var db = CreateDb();

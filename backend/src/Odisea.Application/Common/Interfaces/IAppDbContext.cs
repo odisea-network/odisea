@@ -10,6 +10,7 @@ public interface IAppDbContext
     DbSet<Agency> Agencies { get; }
     DbSet<Operator> Operators { get; }
     DbSet<Theme> Themes { get; }
+    DbSet<Experience> Experiences { get; }
     DbSet<Publication> Publications { get; }
     DbSet<User> Users { get; }
     DbSet<Membership> Memberships { get; }

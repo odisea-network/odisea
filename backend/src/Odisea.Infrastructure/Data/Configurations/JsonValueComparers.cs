@@ -68,4 +68,13 @@ internal static class JsonValueComparers
             v => JsonSerializer.Deserialize<ThemeTokens>(
                     JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     (JsonSerializerOptions?)null) ?? new ThemeTokens());
+
+    public static readonly ValueComparer<ExperienceConfig> ExperienceConfig =
+        new(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null)
+                   == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => v == null ? 0 : JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(),
+            v => JsonSerializer.Deserialize<ExperienceConfig>(
+                    JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    (JsonSerializerOptions?)null) ?? new ExperienceConfig());
 }
