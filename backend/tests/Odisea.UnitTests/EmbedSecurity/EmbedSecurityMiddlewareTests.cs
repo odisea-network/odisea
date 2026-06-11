@@ -152,10 +152,13 @@ public class EmbedSecurityMiddlewareTests
         await db.SaveChangesAsync();
         await using var _ = db;
 
-        var (_, allowed) = await RunAsync(db, "/api/v1/collections/summer/offers", "https://agency-blue.bg");
+        // Offers are resolved by collection id, not slug (#18).
+        var offersPath = $"/api/v1/collections/{collection.Id}/offers";
+
+        var (_, allowed) = await RunAsync(db, offersPath, "https://agency-blue.bg");
         Assert.True(allowed);
 
-        var (status, blocked) = await RunAsync(db, "/api/v1/collections/summer/offers", "https://evil.com");
+        var (status, blocked) = await RunAsync(db, offersPath, "https://evil.com");
         Assert.Equal(StatusCodes.Status403Forbidden, status);
         Assert.False(blocked);
     }

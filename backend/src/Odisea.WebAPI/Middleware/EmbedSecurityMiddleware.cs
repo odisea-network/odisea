@@ -79,18 +79,19 @@ public class EmbedSecurityMiddleware(RequestDelegate next, ILogger<EmbedSecurity
             return pub?.AllowedDomains;
         }
 
-        // GET /api/v1/collections/{slug}/offers — union the domains of every
+        // GET /api/v1/collections/{id}/offers — union the domains of every
         // publication backing that collection. Any one that lists the origin lets
-        // the request through; if none list any, the collection is open.
+        // the request through; if none list any, the collection is open. The route
+        // carries the collection id (a global GUID), not the slug, because slugs are
+        // unique only per agency (#18) and would be ambiguous on this anonymous path.
         if (path.StartsWithSegments(CollectionsPrefix.TrimEnd('/'), out var collRest) &&
-            TryCollectionOffers(collRest, out var slug))
+            TryCollectionOffers(collRest, out var idSegment) &&
+            Guid.TryParse(idSegment, out var collectionId))
         {
-            var collectionId = await db.Collections.AsNoTracking()
-                .Where(c => c.Slug == slug)
-                .Select(c => (Guid?)c.Id)
-                .FirstOrDefaultAsync(context.RequestAborted);
+            var exists = await db.Collections.AsNoTracking()
+                .AnyAsync(c => c.Id == collectionId, context.RequestAborted);
 
-            if (collectionId is null)
+            if (!exists)
                 return null;
 
             return await db.AllowedDomains.AsNoTracking()
@@ -108,13 +109,13 @@ public class EmbedSecurityMiddleware(RequestDelegate next, ILogger<EmbedSecurity
         return segment.Length > 0 && !segment.Contains('/');
     }
 
-    private static bool TryCollectionOffers(PathString rest, out string slug)
+    private static bool TryCollectionOffers(PathString rest, out string idSegment)
     {
-        slug = string.Empty;
+        idSegment = string.Empty;
         var parts = rest.Value?.Trim('/').Split('/') ?? [];
         if (parts.Length != 2 || parts[1] != "offers") return false;
-        slug = parts[0];
-        return slug.Length > 0;
+        idSegment = parts[0];
+        return idSegment.Length > 0;
     }
 
     private static string RequestHost(HttpRequest request)
