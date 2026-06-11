@@ -55,7 +55,7 @@ public class PublicationsControllerTests
             CollectionId = collection.Id,
             Status = PublicationStatus.Published,
             Version = 1,
-            AllowedDomains = allowedDomains.Select(d => new AllowedDomain { Domain = d }).ToList(),
+            AllowedDomains = [.. allowedDomains.Select(d => new AllowedDomain { Domain = d })],
         };
         db.Publications.Add(pub);
         await db.SaveChangesAsync();
@@ -107,57 +107,15 @@ public class PublicationsControllerTests
     }
 
     [Fact]
-    public async Task GetManifest_AllowedDomainsEmpty_AnyOriginAllowed()
+    public async Task GetManifest_ServesRegardlessOfOrigin_OriginEnforcedInMiddleware()
     {
-        var (db, _) = await SeedPublishedPublication("openkey001", []);
+        // The controller no longer checks Origin — EmbedSecurityMiddleware owns that
+        // (see EmbedSecurityMiddlewareTests). The action serves any reachable request.
+        var (db, _) = await SeedPublishedPublication("openkey001", ["agency-blue.bg"]);
         await using var _ = db;
 
         var controller = CreateController(db, origin: "https://some-random-site.bg");
         var result = await controller.GetManifest("openkey001", default);
-
-        Assert.IsType<OkObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task GetManifest_OriginNotInAllowedDomains_Returns403()
-    {
-        var (db, _) = await SeedPublishedPublication(
-            "restricted001",
-            ["allowed-agency.bg"]);
-        await using var _ = db;
-
-        var controller = CreateController(db, origin: "https://evil-site.com");
-        var result = await controller.GetManifest("restricted001", default);
-
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(403, statusResult.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetManifest_OriginInAllowedDomains_Returns200()
-    {
-        var (db, _) = await SeedPublishedPublication(
-            "allowed001",
-            ["agency-blue.bg", "agency-blue.com"]);
-        await using var _ = db;
-
-        var controller = CreateController(db, origin: "https://agency-blue.bg");
-        var result = await controller.GetManifest("allowed001", default);
-
-        Assert.IsType<OkObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task GetManifest_NoOriginHeader_AllowedWhenDomainsRestricted()
-    {
-        // No Origin = not a cross-origin request — allow it (e.g. server-side fetch).
-        var (db, _) = await SeedPublishedPublication(
-            "serverside001",
-            ["agency.bg"]);
-        await using var _ = db;
-
-        var controller = CreateController(db, origin: null);
-        var result = await controller.GetManifest("serverside001", default);
 
         Assert.IsType<OkObjectResult>(result);
     }
