@@ -25,6 +25,19 @@ public static class PublicationResolver
         var offersUrl = $"/api/v1/collections/{collection.Slug}/offers";
         var etag = $"\"{pub.Version}-{pub.CollectionId}\"";
 
+        // A referenced Experience entity is the source of truth for the manifest's
+        // experience config; the inline ExperienceConfig is the legacy fallback for
+        // publications created before the Experience entity existed.
+        var experience = pub.ExperienceConfig;
+        if (pub.ExperienceId is Guid experienceId)
+        {
+            var experienceEntity = await db.Experiences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == experienceId, ct);
+            if (experienceEntity is not null)
+                experience = experienceEntity.Config;
+        }
+
         return new PublicationManifestDto(
             Key: pub.Key,
             Version: pub.Version,
@@ -34,7 +47,7 @@ public static class PublicationResolver
             CollectionName: collection.Name,
             OffersUrl: offersUrl,
             ThemeId: pub.ThemeId,
-            Experience: pub.ExperienceConfig,
+            Experience: experience,
             ETag: etag);
     }
 }
