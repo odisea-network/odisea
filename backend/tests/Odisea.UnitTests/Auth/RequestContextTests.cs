@@ -50,7 +50,11 @@ public class RequestContextTests
     public void RequireAgency_AgencyUser_ReturnsId()
     {
         var agencyId = Guid.NewGuid();
-        IAgencyContext ctx = WithClaims(new Claim("tenantId", agencyId.ToString()));
+        // A real agency token carries both claims; AgencyId is now tenantType-gated
+        // so an operator's tenantId can't be misread as an agency id.
+        IAgencyContext ctx = WithClaims(
+            new Claim("tenantType", "Agency"),
+            new Claim("tenantId", agencyId.ToString()));
 
         Assert.Equal(agencyId, ctx.RequireAgency());
     }
@@ -76,5 +80,31 @@ public class RequestContextTests
             new Claim("tenantId", Guid.NewGuid().ToString()));
 
         Assert.True(ctx.HasAgency);
+    }
+
+    [Fact]
+    public void OperatorId_OperatorUser_ParsesTenantClaim()
+    {
+        var operatorId = Guid.NewGuid();
+        var ctx = WithClaims(
+            new Claim("tenantType", "Operator"),
+            new Claim("tenantId", operatorId.ToString()));
+
+        Assert.Equal(operatorId, ctx.OperatorId);
+        Assert.True(ctx.HasOperator);
+        // An operator token must NOT read as an agency one.
+        Assert.Null(ctx.AgencyId);
+        Assert.False(ctx.HasAgency);
+    }
+
+    [Fact]
+    public void AgencyId_AgencyUser_DoesNotReadAsOperator()
+    {
+        var ctx = WithClaims(
+            new Claim("tenantType", "Agency"),
+            new Claim("tenantId", Guid.NewGuid().ToString()));
+
+        Assert.Null(ctx.OperatorId);
+        Assert.False(ctx.HasOperator);
     }
 }

@@ -31,6 +31,40 @@ public record OfferSourceDto(
     string State
 );
 
+// Operator manual-entry payload. Ownership (operator id), OwnerType, Visibility
+// and Status are set server-side from the caller's context — not the request.
+public record CreateOfferRequest(
+    string Title,
+    string Description,
+    string Country,
+    string City,
+    decimal Price,
+    string Currency,
+    string BoardBasis,
+    string Transport,
+    int DurationNights,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    List<string>? Tags,
+    string? ImageUrl
+);
+
+public record UpdateOfferRequest(
+    string Title,
+    string Description,
+    string Country,
+    string City,
+    decimal Price,
+    string Currency,
+    string BoardBasis,
+    string Transport,
+    int DurationNights,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    List<string>? Tags,
+    string? ImageUrl
+);
+
 // One row of the supplier's pricing matrix. Any dimension may be null when
 // the supplier hasn't broken pricing down on that axis.
 public record PriceVariantDto(

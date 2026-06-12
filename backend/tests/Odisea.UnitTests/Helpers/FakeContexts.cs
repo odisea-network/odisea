@@ -13,6 +13,14 @@ public class FakeAgencyContext(Guid? agencyId = null) : IAgencyContext
     public Guid? AgencyId => agencyId;
 }
 
+// Simulates an operator-scoped user when constructed with an operatorId,
+// or a non-operator caller (agency / PlatformAdmin) when constructed without one.
+public class FakeOperatorContext(Guid? operatorId = null) : IOperatorContext
+{
+    public bool HasOperator => operatorId.HasValue;
+    public Guid? OperatorId => operatorId;
+}
+
 public class FakeDevEnvironment : IHostEnvironment
 {
     public string EnvironmentName { get; set; } = Environments.Development;
