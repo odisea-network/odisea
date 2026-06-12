@@ -105,10 +105,11 @@ builder.Services.AddAuthorization(opts =>
 // IHttpContextAccessor is needed by RequestContext to read claims.
 builder.Services.AddHttpContextAccessor();
 
-// Single scoped service fulfils both context interfaces.
+// Single scoped service fulfils all three context interfaces.
 builder.Services.AddScoped<RequestContext>();
 builder.Services.AddScoped<IUserContext>(sp => sp.GetRequiredService<RequestContext>());
 builder.Services.AddScoped<IAgencyContext>(sp => sp.GetRequiredService<RequestContext>());
+builder.Services.AddScoped<IOperatorContext>(sp => sp.GetRequiredService<RequestContext>());
 
 // Rate limiting — the anonymous analytics ingest endpoint ([EnableRateLimiting("events")])
 // is throttled per client IP. Tighter API-key-based limits arrive with #27.

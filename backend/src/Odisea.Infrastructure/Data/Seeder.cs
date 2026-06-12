@@ -75,6 +75,11 @@ public static class Seeder
                 Visibility.AgencyPrivate, OwnerType.Agency, owningAgency: green.Id, tags: new(){"eco","culture"}, image: img("plovdiv")),
         };
 
+        // Operator-shared offers all belong to the one seeded operator — set the
+        // ownership link the operator portal scopes its CRUD on.
+        foreach (var offer in offers.Where(o => o.OwnerType == OwnerType.Operator))
+            offer.OwningOperatorId = sunOps.Id;
+
         db.Offers.AddRange(offers);
 
         // Give every seeded offer a tiny pricing matrix so dev clients see realistic

@@ -6,7 +6,7 @@ namespace Odisea.WebAPI.Services;
 
 // Scoped per-request implementation of both IUserContext and IAgencyContext.
 // Reads parsed JWT claims populated by the JwtBearer middleware.
-public class RequestContext(IHttpContextAccessor accessor) : IUserContext, IAgencyContext
+public class RequestContext(IHttpContextAccessor accessor) : IUserContext, IAgencyContext, IOperatorContext
 {
     private ClaimsPrincipal? Principal => accessor.HttpContext?.User;
 
@@ -31,5 +31,21 @@ public class RequestContext(IHttpContextAccessor accessor) : IUserContext, IAgen
         AgencyId is not null;
 
     public Guid? AgencyId =>
-        Guid.TryParse(Principal?.FindFirstValue("tenantId"), out var id) ? id : null;
+        Principal?.FindFirstValue("tenantType") == TenantType.Agency.ToString()
+        && Guid.TryParse(Principal?.FindFirstValue("tenantId"), out var id)
+            ? id
+            : null;
+
+    // Symmetric with HasAgency: the tenantId claim is shared, so the tenantType
+    // claim is what distinguishes an operator caller from an agency one.
+    public bool HasOperator =>
+        IsAuthenticated &&
+        Principal?.FindFirstValue("tenantType") == TenantType.Operator.ToString() &&
+        OperatorId is not null;
+
+    public Guid? OperatorId =>
+        Principal?.FindFirstValue("tenantType") == TenantType.Operator.ToString()
+        && Guid.TryParse(Principal?.FindFirstValue("tenantId"), out var id)
+            ? id
+            : null;
 }

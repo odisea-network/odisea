@@ -14,6 +14,11 @@ public class Offer : Entity
 
     public Guid? OwningAgencyId { get; set; }
 
+    // Set for operator-owned offers (OwnerType.Operator), symmetric with
+    // OwningAgencyId. Lets the operator portal scope CRUD to its own catalog
+    // without joining through SupplierConnection.
+    public Guid? OwningOperatorId { get; set; }
+
     // Supply-side lineage. Null for agency-private or hand-seeded offers.
     public OfferSource? Source { get; set; }
 
