@@ -32,3 +32,6 @@ public enum SupplierConnectionStatus { Active, Paused, Failed }
 
 // Lifecycle of a single offer as seen from its source connection.
 public enum ImportState { Pending, Imported, Stale, Failed }
+
+// Lifecycle of a single connector run.
+public enum ImportJobStatus { Running, Succeeded, Failed }

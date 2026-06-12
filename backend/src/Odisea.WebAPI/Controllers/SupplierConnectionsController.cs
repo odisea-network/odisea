@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Common.Interfaces;
 using Odisea.Application.Suppliers.Connectors;
 using Odisea.Application.Suppliers.Dtos;
+using Odisea.Domain.Enums;
 
 namespace Odisea.WebAPI.Controllers;
 
@@ -12,8 +13,11 @@ namespace Odisea.WebAPI.Controllers;
 [Authorize(Policy = "OperatorAdmin")]
 public class SupplierConnectionsController(
     IAppDbContext db,
-    IConnectorRegistry connectors) : ControllerBase
+    IImportRunner importRunner) : ControllerBase
 {
+    // Last N runs surfaced per connection on the health rollup.
+    private const int RecentRunWindow = 20;
+
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -30,25 +34,74 @@ public class SupplierConnectionsController(
         return c is null ? NotFound() : Ok(c.ToDto());
     }
 
-    // Triggers the connector for this connection: fetch → parse → validate →
-    // normalize → upsert → deactivate. The Manual adapter is a no-op stub;
-    // XML/JSON/CSV adapters land in follow-up PRs.
+    // Triggers the connector for this connection and records an ImportJob.
     [HttpPost("{id:guid}/run")]
     public async Task<IActionResult> Run(Guid id, CancellationToken ct)
     {
         var connection = await db.SupplierConnections.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (connection is null) return NotFound();
 
-        var connector = connectors.For(connection.Kind);
-        var result = await connector.RunAsync(connection, ct);
+        var job = await importRunner.RunAsync(connection, ct);
+        return Ok(job.ToDto());
+    }
 
-        if (result.Succeeded)
+    // Run history for one connection, newest first — the dead-letter view reads
+    // failed jobs' Errors from here.
+    [HttpGet("{id:guid}/jobs")]
+    public async Task<IActionResult> Jobs(Guid id, CancellationToken ct)
+    {
+        if (!await db.SupplierConnections.AnyAsync(c => c.Id == id, ct))
+            return NotFound();
+
+        var jobs = await db.ImportJobs
+            .Where(j => j.SupplierConnectionId == id)
+            .OrderByDescending(j => j.StartedAt)
+            .Take(RecentRunWindow)
+            .ToListAsync(ct);
+
+        return Ok(jobs.Select(j => j.ToDto()));
+    }
+
+    // Supplier-health dashboard rollup: one row per connection with freshness and
+    // a recent error trend.
+    [HttpGet("health")]
+    public async Task<IActionResult> Health(CancellationToken ct)
+    {
+        var connections = await db.SupplierConnections
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct);
+
+        var ids = connections.Select(c => c.Id).ToList();
+
+        // Pull the recent jobs for all connections in one query, then roll up
+        // in memory — avoids an N+1 across connections.
+        var recentJobs = await db.ImportJobs
+            .Where(j => ids.Contains(j.SupplierConnectionId))
+            .OrderByDescending(j => j.StartedAt)
+            .Take(ids.Count * RecentRunWindow)
+            .ToListAsync(ct);
+
+        var byConnection = recentJobs
+            .GroupBy(j => j.SupplierConnectionId)
+            .ToDictionary(g => g.Key, g => g.Take(RecentRunWindow).ToList());
+
+        var health = connections.Select(c =>
         {
-            connection.LastSyncedAt = result.RanAt;
-            connection.UpdatedAt = result.RanAt;
-            await db.SaveChangesAsync(ct);
-        }
+            byConnection.TryGetValue(c.Id, out var jobs);
+            jobs ??= [];
 
-        return Ok(result.ToDto());
+            var lastRun = jobs.FirstOrDefault();
+            var lastSuccess = jobs.FirstOrDefault(j => j.Status == ImportJobStatus.Succeeded);
+
+            return new ConnectionHealthDto(
+                c.Id, c.Name, c.Kind.ToString(), c.Status.ToString(),
+                c.LastSyncedAt,
+                lastSuccess?.CompletedAt,
+                lastRun?.Status.ToString(),
+                jobs.Count,
+                jobs.Count(j => j.Status == ImportJobStatus.Failed));
+        });
+
+        return Ok(health);
     }
 }

@@ -23,6 +23,31 @@ public record ConnectorRunResultDto(
     DateTime RanAt
 );
 
+public record ImportJobDto(
+    Guid Id,
+    Guid SupplierConnectionId,
+    string Status,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    int OffersFetched,
+    int OffersImported,
+    int OffersDeactivated,
+    IReadOnlyList<string> Errors
+);
+
+// Per-connection rollup for the supplier-health dashboard.
+public record ConnectionHealthDto(
+    Guid SupplierConnectionId,
+    string Name,
+    string Kind,
+    string Status,
+    DateTime? LastSyncedAt,
+    DateTime? LastSuccessfulRunAt,
+    string? LastRunStatus,
+    int RecentRuns,
+    int RecentFailures
+);
+
 public static class SupplierConnectionMappings
 {
     public static SupplierConnectionDto ToDto(this SupplierConnection c) => new(
@@ -32,4 +57,15 @@ public static class SupplierConnectionMappings
     public static ConnectorRunResultDto ToDto(this ConnectorRunResult r) => new(
         r.Succeeded, r.OffersFetched, r.OffersImported, r.OffersDeactivated,
         r.Errors, r.RanAt);
+
+    public static ImportJobDto ToDto(this ImportJob j) => new(
+        j.Id, j.SupplierConnectionId, j.Status.ToString(),
+        j.StartedAt, j.CompletedAt, j.OffersFetched, j.OffersImported,
+        j.OffersDeactivated, SplitErrors(j.Errors));
+
+    // Errors persist as a newline-joined string; split back to a list for the DTO.
+    private static IReadOnlyList<string> SplitErrors(string errors) =>
+        string.IsNullOrEmpty(errors)
+            ? []
+            : errors.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 }
