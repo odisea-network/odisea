@@ -11,6 +11,8 @@ public interface IAppDbContext
     DbSet<Agency> Agencies { get; }
     DbSet<Operator> Operators { get; }
     DbSet<SupplierConnection> SupplierConnections { get; }
+    DbSet<ImportJob> ImportJobs { get; }
+    DbSet<SourceOffer> SourceOffers { get; }
     DbSet<Theme> Themes { get; }
     DbSet<Experience> Experiences { get; }
     DbSet<Publication> Publications { get; }
