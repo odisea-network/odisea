@@ -38,3 +38,9 @@ public enum ImportJobStatus { Running, Succeeded, Failed }
 
 // Commercial relationship between an operator and an agency.
 public enum EntitlementStatus { Active, Suspended }
+
+// A general expression of interest vs. a structured request against a specific offer.
+public enum LeadKind { Inquiry, BookingRequest }
+
+// Inbox pipeline for a lead.
+public enum LeadStatus { New, Contacted, Converted, Closed }
