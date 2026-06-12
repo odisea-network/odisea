@@ -19,4 +19,9 @@ public class SupplierConnection : Entity
 
     public DateTime? LastSyncedAt { get; set; }
     public SupplierConnectionStatus Status { get; set; } = SupplierConnectionStatus.Active;
+
+    // Soft-expire window: a SourceOffer not seen for this many hours is marked Stale
+    // by the freshness sweep. Defaults to 24h; suppliers that publish less often get
+    // a longer TTL so their offers don't flap to stale between syncs.
+    public int FreshnessTtlHours { get; set; } = 24;
 }

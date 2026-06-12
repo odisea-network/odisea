@@ -35,3 +35,6 @@ public enum ImportState { Pending, Imported, Stale, Failed }
 
 // Lifecycle of a single connector run.
 public enum ImportJobStatus { Running, Succeeded, Failed }
+
+// Commercial relationship between an operator and an agency.
+public enum EntitlementStatus { Active, Suspended }

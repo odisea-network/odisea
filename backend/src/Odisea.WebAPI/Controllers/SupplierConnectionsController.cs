@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Common.Interfaces;
 using Odisea.Application.Suppliers.Connectors;
 using Odisea.Application.Suppliers.Dtos;
+using Odisea.Application.Suppliers.Freshness;
 using Odisea.Domain.Enums;
 
 namespace Odisea.WebAPI.Controllers;
@@ -13,7 +14,8 @@ namespace Odisea.WebAPI.Controllers;
 [Authorize(Policy = "OperatorAdmin")]
 public class SupplierConnectionsController(
     IAppDbContext db,
-    IImportRunner importRunner) : ControllerBase
+    IImportRunner importRunner,
+    IFreshnessService freshness) : ControllerBase
 {
     // Last N runs surfaced per connection on the health rollup.
     private const int RecentRunWindow = 20;
@@ -43,6 +45,20 @@ public class SupplierConnectionsController(
 
         var job = await importRunner.RunAsync(connection, ct);
         return Ok(job.ToDto());
+    }
+
+    // Soft-expire stale offers on this connection (LastSeenAt older than the
+    // connection's freshness TTL). Returns how many source records and offers
+    // were marked Stale. Idempotent — a second sweep with nothing newly stale
+    // returns zeroes.
+    [HttpPost("{id:guid}/sweep")]
+    public async Task<IActionResult> Sweep(Guid id, CancellationToken ct)
+    {
+        if (!await db.SupplierConnections.AnyAsync(c => c.Id == id, ct))
+            return NotFound();
+
+        var result = await freshness.SweepAsync(id, ct);
+        return Ok(result);
     }
 
     // Run history for one connection, newest first — the dead-letter view reads
