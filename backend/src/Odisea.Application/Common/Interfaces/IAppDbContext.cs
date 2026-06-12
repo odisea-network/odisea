@@ -14,6 +14,7 @@ public interface IAppDbContext
     DbSet<ImportJob> ImportJobs { get; }
     DbSet<SourceOffer> SourceOffers { get; }
     DbSet<OperatorAgencyEntitlement> Entitlements { get; }
+    DbSet<Lead> Leads { get; }
     DbSet<Theme> Themes { get; }
     DbSet<Experience> Experiences { get; }
     DbSet<Publication> Publications { get; }
