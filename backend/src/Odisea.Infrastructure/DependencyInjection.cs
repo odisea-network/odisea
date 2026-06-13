@@ -36,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<SourceOfferImporter>();
         services.AddHttpClient<JsonApiConnector>(c => c.Timeout = TimeSpan.FromSeconds(15));
         services.AddScoped<IConnector>(sp => sp.GetRequiredService<JsonApiConnector>());
+        services.AddHttpClient<XmlConnector>(c => c.Timeout = TimeSpan.FromSeconds(15));
+        services.AddScoped<IConnector>(sp => sp.GetRequiredService<XmlConnector>());
         services.AddScoped<IConnectorRegistry, ConnectorRegistry>();
 
         // Background scheduler: periodically syncs stale connections + sweeps
