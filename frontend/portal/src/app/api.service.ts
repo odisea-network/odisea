@@ -203,6 +203,32 @@ export interface FreshnessSweepResult {
   offersMarkedStale: number;
 }
 
+export interface SupplierConnectionDto {
+  id: string;
+  operatorId: string;
+  kind: string;
+  name: string;
+  status: string;
+  configJson: string;
+  freshnessTtlHours: number;
+  lastSyncedAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateConnectionRequest {
+  kind: string;
+  name: string;
+  configJson?: string;
+  freshnessTtlHours?: number;
+}
+
+export interface UpdateConnectionRequest {
+  name?: string;
+  configJson?: string;
+  status?: string;
+  freshnessTtlHours?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -242,6 +268,22 @@ export class ApiService {
 
   supplierHealth(): Observable<ConnectionHealthDto[]> {
     return this.http.get<ConnectionHealthDto[]>(`${this.base}/supplier-connections/health`);
+  }
+
+  getConnection(id: string): Observable<SupplierConnectionDto> {
+    return this.http.get<SupplierConnectionDto>(`${this.base}/supplier-connections/${id}`);
+  }
+
+  createConnection(req: CreateConnectionRequest): Observable<SupplierConnectionDto> {
+    return this.http.post<SupplierConnectionDto>(`${this.base}/supplier-connections`, req);
+  }
+
+  updateConnection(id: string, req: UpdateConnectionRequest): Observable<SupplierConnectionDto> {
+    return this.http.put<SupplierConnectionDto>(`${this.base}/supplier-connections/${id}`, req);
+  }
+
+  deleteConnection(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/supplier-connections/${id}`);
   }
 
   runConnection(id: string): Observable<ImportJobDto> {
