@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Odisea.Application.Catalog.Access;
 using Odisea.Application.Catalog.Collections;
 using Odisea.Application.Catalog.Dtos;
 using Odisea.Application.Catalog.Filtering;
@@ -14,7 +15,10 @@ namespace Odisea.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/collections")]
-public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) : ControllerBase
+public class CollectionsController(
+    IAppDbContext db,
+    IAgencyContext agencyCtx,
+    IOfferAccessPolicy offerAccess) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -38,7 +42,11 @@ public class CollectionsController(IAppDbContext db, IAgencyContext agencyCtx) :
         if (c is null) return NotFound();
         try
         {
-            var offers = await CollectionResolver.ResolveAsync(c, db.Offers.AsQueryable(), ct);
+            // Gate the offer set to what the collection's agency may distribute
+            // (own private offers + operators it's actively entitled to) before the
+            // FilterSpec runs — entitlements decide visibility, not just commission.
+            var distributable = await offerAccess.DistributableForAgencyAsync(c.AgencyId, ct);
+            var offers = await CollectionResolver.ResolveAsync(c, distributable, ct);
             return Ok(offers.Select(o => o.ToDto()));
         }
         catch (FilterValidationException ex)

@@ -21,6 +21,15 @@ public class FakeOperatorContext(Guid? operatorId = null) : IOperatorContext
     public Guid? OperatorId => operatorId;
 }
 
+// Passthrough policy for tests that don't exercise entitlement gating: returns
+// the full offer set. Tests that DO exercise the gate use the real OfferAccessPolicy.
+public class FakeOfferAccessPolicy(Odisea.Application.Common.Interfaces.IAppDbContext db)
+    : Odisea.Application.Catalog.Access.IOfferAccessPolicy
+{
+    public Task<IQueryable<Odisea.Domain.Entities.Offer>> DistributableForAgencyAsync(Guid agencyId, CancellationToken ct) =>
+        Task.FromResult(db.Offers.AsQueryable());
+}
+
 public class FakeDevEnvironment : IHostEnvironment
 {
     public string EnvironmentName { get; set; } = Environments.Development;

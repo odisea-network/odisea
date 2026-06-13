@@ -166,6 +166,14 @@ public static class Seeder
 
         db.Collections.AddRange(summerGreece, lastMinuteEgypt, blueVip, greekIslandsPremium);
 
+        // Both agencies are entitled to distribute the seeded operator's offers.
+        // Without this, offer-access enforcement would strip operator offers out of
+        // the seeded collections (summer-greece etc.) and the demo would resolve to
+        // just each agency's own private offers.
+        db.Entitlements.AddRange(
+            new OperatorAgencyEntitlement { OperatorId = sunOps.Id, AgencyId = blue.Id, Status = EntitlementStatus.Active, CommissionPercent = 12m },
+            new OperatorAgencyEntitlement { OperatorId = sunOps.Id, AgencyId = green.Id, Status = EntitlementStatus.Active, CommissionPercent = 10m });
+
         await db.SaveChangesAsync(ct);
 
         // Publications are seeded after collections are persisted.

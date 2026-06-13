@@ -16,7 +16,7 @@ public class CollectionsControllerTests
             .Options);
 
     private static CollectionsController CreateController(AppDbContext db, Guid agencyId) =>
-        new(db, new FakeAgencyContext(agencyId));
+        new(db, new FakeAgencyContext(agencyId), new FakeOfferAccessPolicy(db));
 
     private static CreateCollectionRequest Request(Guid agencyId, string slug) =>
         new(agencyId, $"Collection {slug}", slug, new FilterSpec(), null, null, null);
