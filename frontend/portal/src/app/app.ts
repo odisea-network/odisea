@@ -16,6 +16,9 @@ import { AuthService } from './auth/auth.service';
         @if (auth.isOperator()) {
           <a routerLink="/operator/offers" routerLinkActive="active">My offers</a>
         }
+        @if (auth.isAgency()) {
+          <a routerLink="/leads" routerLinkActive="active">Leads</a>
+        }
       </nav>
       <div class="account">
         @if (auth.isAuthenticated()) {
