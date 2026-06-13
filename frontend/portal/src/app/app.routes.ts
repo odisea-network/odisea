@@ -27,6 +27,13 @@ export const routes: Routes = [
       import('./leads.page').then(m => m.LeadsPage),
   },
   {
+    path: 'marketplace',
+    title: 'Theme marketplace — Odisea',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./theme-marketplace.page').then(m => m.ThemeMarketplacePage),
+  },
+  {
     path: 'builder',
     title: 'Publication composer — Odisea',
     canActivate: [authGuard],

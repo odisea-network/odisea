@@ -115,6 +115,7 @@ export interface ThemeDto {
   status:   string;
   version:  number;
   tokens:   ThemeTokens;
+  isPreset?: boolean;
 }
 
 export interface CreateThemeRequest {
@@ -219,6 +220,14 @@ export class ApiService {
 
   getTheme(id: string): Observable<ThemeDto> {
     return this.http.get<ThemeDto>(`${this.base}/themes/${id}`);
+  }
+
+  listPresets(): Observable<ThemeDto[]> {
+    return this.http.get<ThemeDto[]>(`${this.base}/themes/presets`);
+  }
+
+  cloneFromPreset(presetId: string, name?: string): Observable<ThemeDto> {
+    return this.http.post<ThemeDto>(`${this.base}/themes/from-preset/${presetId}`, { name: name ?? null });
   }
 
   createTheme(req: CreateThemeRequest): Observable<ThemeDto> {

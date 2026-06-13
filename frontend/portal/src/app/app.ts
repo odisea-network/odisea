@@ -18,6 +18,7 @@ import { AuthService } from './auth/auth.service';
         }
         @if (auth.isAgency()) {
           <a routerLink="/leads" routerLinkActive="active">Leads</a>
+          <a routerLink="/marketplace" routerLinkActive="active">Marketplace</a>
         }
       </nav>
       <div class="account">
