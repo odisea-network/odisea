@@ -118,4 +118,42 @@ public class OffersControllerCrudTests
         await controller.Unpublish(offer.Id, default);
         Assert.Equal(OfferStatus.Draft, (await db.Offers.FirstAsync()).Status);
     }
+
+    [Fact]
+    public async Task BulkCreate_CreatesValidRows_AndReportsInvalidByIndex()
+    {
+        await using var db = NewDb();
+        var operatorId = Guid.NewGuid();
+        var controller = ControllerFor(db, operatorId);
+
+        var good = ValidCreate();
+        var badBoard = good with { Title = "Bad", BoardBasis = "Caviar" };
+        var badCountry = good with { Title = "NoCountry", Country = "" };
+
+        var result = await controller.BulkCreate(
+            new BulkCreateOffersRequest([good, badBoard, good, badCountry]), default);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var dto = Assert.IsType<BulkCreateResultDto>(ok.Value);
+        Assert.Equal(2, dto.Created);
+        Assert.Equal(2, dto.Errors.Count);
+        Assert.Equal(1, dto.Errors[0].Index);   // badBoard at index 1
+        Assert.Equal(3, dto.Errors[1].Index);   // badCountry at index 3
+
+        var saved = await db.Offers.ToListAsync();
+        Assert.Equal(2, saved.Count);
+        Assert.All(saved, o => Assert.Equal(operatorId, o.OwningOperatorId));
+        Assert.All(saved, o => Assert.Equal(OfferStatus.Draft, o.Status));
+    }
+
+    [Fact]
+    public async Task BulkCreate_EmptyList_Returns400()
+    {
+        await using var db = NewDb();
+        var result = await ControllerFor(db, Guid.NewGuid())
+            .BulkCreate(new BulkCreateOffersRequest([]), default);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(400, problem.StatusCode);
+    }
 }
