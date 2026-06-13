@@ -25,7 +25,7 @@ public class PublicationsControllerTests
         string? origin = null,
         Guid? agencyId = null)
     {
-        var controller = new PublicationsController(db, new FakeAgencyContext(agencyId));
+        var controller = new PublicationsController(db, new FakeAgencyContext(agencyId), new FakeWebhookDispatcher());
         var httpContext = new DefaultHttpContext();
         if (origin is not null)
             httpContext.Request.Headers.Origin = origin;
@@ -190,5 +190,49 @@ public class PublicationsControllerTests
         var dto = Assert.IsType<PublicationDto>(ok.Value);
         Assert.Equal("Published", dto.Status);
         Assert.Equal(1, dto.Version);
+    }
+
+    [Fact]
+    public async Task Publish_DispatchesPublicationPublishedWebhook()
+    {
+        await using var db = CreateDb();
+        var collection = new Collection { AgencyId = Guid.NewGuid(), Name = "Col", Slug = "col-wh", Status = CollectionStatus.Published };
+        db.Collections.Add(collection);
+        var pub = new Publication
+        {
+            Key = "publishme02", AgencyId = collection.AgencyId, CollectionId = collection.Id,
+            Status = PublicationStatus.Draft, Version = 0,
+        };
+        db.Publications.Add(pub);
+        await db.SaveChangesAsync();
+
+        var webhooks = new FakeWebhookDispatcher();
+        var controller = new PublicationsController(db, new FakeAgencyContext(collection.AgencyId), webhooks)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
+
+        await controller.Publish(pub.Id, default);
+
+        var dispatched = Assert.Single(webhooks.Dispatched);
+        Assert.Equal("publication.published", dispatched.EventType);
+        Assert.Equal(collection.AgencyId, dispatched.AgencyId);
+    }
+
+    [Fact]
+    public async Task Publish_AlreadyPublished_DoesNotRedispatch()
+    {
+        var (db, pub) = await SeedPublishedPublication("alreadypub1", []);
+        await using var _ = db;
+
+        var webhooks = new FakeWebhookDispatcher();
+        var controller = new PublicationsController(db, new FakeAgencyContext(pub.AgencyId), webhooks)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
+
+        await controller.Publish(pub.Id, default);
+
+        Assert.Empty(webhooks.Dispatched);
     }
 }

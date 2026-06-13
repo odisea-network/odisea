@@ -17,7 +17,6 @@ public class LeadsController(
     IAgencyContext agencyCtx,
     IWebhookDispatcher webhooks) : ControllerBase
 {
-    public const string LeadCreatedEvent = "lead.created";
 
     // ── Public ingest (from the embedded od-booking-inquiry surface) ────────────
 
@@ -69,7 +68,7 @@ public class LeadsController(
 
         // Fan out to the agency's webhook subscribers (CRM integrations). Best-effort:
         // a failed delivery never affects the traveler's submission.
-        await webhooks.DispatchAsync(lead.AgencyId, LeadCreatedEvent, lead.ToDto(), ct);
+        await webhooks.DispatchAsync(lead.AgencyId, WebhookEvents.LeadCreated, lead.ToDto(), ct);
 
         // 202: the traveler's form succeeded; the agency works it from the inbox.
         return Accepted(new { lead.Id });
