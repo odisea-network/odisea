@@ -29,9 +29,13 @@ public static class DependencyInjection
 
         // Connector platform. Each adapter registers under IConnector so the
         // registry can fan them out by SupplierConnectionKind at run time.
-        // New adapters (XML, JSON API, CSV/SFTP) ship in follow-up PRs.
+        // Manual is stateless (singleton); JsonApi needs a scoped DbContext + a
+        // typed HttpClient, so the registry is scoped to compose them per request.
+        // New adapters (XML, CSV/SFTP) ship in follow-up PRs.
         services.AddSingleton<IConnector, ManualConnector>();
-        services.AddSingleton<IConnectorRegistry, ConnectorRegistry>();
+        services.AddHttpClient<JsonApiConnector>(c => c.Timeout = TimeSpan.FromSeconds(15));
+        services.AddScoped<IConnector>(sp => sp.GetRequiredService<JsonApiConnector>());
+        services.AddScoped<IConnectorRegistry, ConnectorRegistry>();
 
         // Background scheduler: periodically syncs stale connections + sweeps
         // freshness. Off unless enabled in config, so test hosts stay quiet.
