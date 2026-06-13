@@ -40,6 +40,88 @@ public class SupplierConnectionsController(
         return c is null ? NotFound() : Ok(c.ToDto());
     }
 
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateSupplierConnectionRequest req, CancellationToken ct)
+    {
+        var operatorId = operatorCtx.RequireOperator();
+
+        if (string.IsNullOrWhiteSpace(req.Name))
+            return Problem(title: "Validation", detail: "Name is required.", statusCode: 400);
+
+        if (!Enum.TryParse<SupplierConnectionKind>(req.Kind, ignoreCase: true, out var kind))
+            return Problem(title: "Validation", detail: $"Invalid kind: {req.Kind}.", statusCode: 400);
+
+        if (!IsValidJson(req.ConfigJson, out var configJson))
+            return Problem(title: "Validation", detail: "ConfigJson must be a valid JSON object.", statusCode: 400);
+
+        if (req.FreshnessTtlHours is <= 0)
+            return Problem(title: "Validation", detail: "FreshnessTtlHours must be positive.", statusCode: 400);
+
+        var connection = new SupplierConnection
+        {
+            OperatorId = operatorId,
+            Kind = kind,
+            Name = req.Name.Trim(),
+            ConfigJson = configJson,
+            Status = SupplierConnectionStatus.Active,
+            FreshnessTtlHours = req.FreshnessTtlHours ?? 24,
+        };
+        db.SupplierConnections.Add(connection);
+        await db.SaveChangesAsync(ct);
+
+        return CreatedAtAction(nameof(Get), new { id = connection.Id }, connection.ToDto());
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, UpdateSupplierConnectionRequest req, CancellationToken ct)
+    {
+        var connection = await FindOwned(id, ct);
+        if (connection is null) return NotFound();
+
+        if (req.Name is not null)
+        {
+            if (string.IsNullOrWhiteSpace(req.Name))
+                return Problem(title: "Validation", detail: "Name cannot be blank.", statusCode: 400);
+            connection.Name = req.Name.Trim();
+        }
+
+        if (req.ConfigJson is not null)
+        {
+            if (!IsValidJson(req.ConfigJson, out var configJson))
+                return Problem(title: "Validation", detail: "ConfigJson must be a valid JSON object.", statusCode: 400);
+            connection.ConfigJson = configJson;
+        }
+
+        if (req.Status is not null)
+        {
+            if (!Enum.TryParse<SupplierConnectionStatus>(req.Status, ignoreCase: true, out var status))
+                return Problem(title: "Validation", detail: $"Invalid status: {req.Status}.", statusCode: 400);
+            connection.Status = status;
+        }
+
+        if (req.FreshnessTtlHours is { } ttl)
+        {
+            if (ttl <= 0)
+                return Problem(title: "Validation", detail: "FreshnessTtlHours must be positive.", statusCode: 400);
+            connection.FreshnessTtlHours = ttl;
+        }
+
+        connection.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(connection.ToDto());
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var connection = await FindOwned(id, ct);
+        if (connection is null) return NotFound();
+
+        db.SupplierConnections.Remove(connection);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     // Triggers the connector for this connection and records an ImportJob.
     [HttpPost("{id:guid}/run")]
     public async Task<IActionResult> Run(Guid id, CancellationToken ct)
@@ -132,5 +214,28 @@ public class SupplierConnectionsController(
         var operatorId = operatorCtx.RequireOperator();
         var connection = await db.SupplierConnections.FirstOrDefaultAsync(c => c.Id == id, ct);
         return connection is not null && connection.OperatorId == operatorId ? connection : null;
+    }
+
+    // Validates an optional config blob, defaulting null/blank to an empty object.
+    // The blob must be a JSON object so connectors can read settings off it.
+    private static bool IsValidJson(string? input, out string normalized)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            normalized = "{}";
+            return true;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(input);
+            normalized = input;
+            return doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            normalized = "{}";
+            return false;
+        }
     }
 }

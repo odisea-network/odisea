@@ -9,8 +9,27 @@ public record SupplierConnectionDto(
     string Kind,
     string Name,
     string Status,
+    string ConfigJson,
+    int FreshnessTtlHours,
     DateTime? LastSyncedAt,
     DateTime CreatedAt
+);
+
+// Operator creates a connection; OperatorId comes from the caller, not the body.
+// ConfigJson is the connector-specific settings blob (e.g. {"url":...,"fieldMap":...}).
+public record CreateSupplierConnectionRequest(
+    string Kind,
+    string Name,
+    string? ConfigJson,
+    int? FreshnessTtlHours
+);
+
+// All fields optional — only the supplied ones are applied.
+public record UpdateSupplierConnectionRequest(
+    string? Name,
+    string? ConfigJson,
+    string? Status,
+    int? FreshnessTtlHours
 );
 
 // Returned by POST /api/v1/supplier-connections/{id}/run.
@@ -52,7 +71,8 @@ public static class SupplierConnectionMappings
 {
     public static SupplierConnectionDto ToDto(this SupplierConnection c) => new(
         c.Id, c.OperatorId, c.Kind.ToString(), c.Name,
-        c.Status.ToString(), c.LastSyncedAt, c.CreatedAt);
+        c.Status.ToString(), c.ConfigJson, c.FreshnessTtlHours,
+        c.LastSyncedAt, c.CreatedAt);
 
     public static ConnectorRunResultDto ToDto(this ConnectorRunResult r) => new(
         r.Succeeded, r.OffersFetched, r.OffersImported, r.OffersDeactivated,

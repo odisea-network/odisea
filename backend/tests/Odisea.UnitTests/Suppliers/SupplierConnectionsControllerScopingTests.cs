@@ -134,4 +134,99 @@ public class SupplierConnectionsControllerScopingTests
         Assert.IsType<OkObjectResult>(result);
         Assert.Equal(1, await db.ImportJobs.CountAsync());
     }
+
+    [Fact]
+    public async Task Create_setsOperatorOwnershipAndDefaults()
+    {
+        await using var db = NewDb();
+        var mine = Guid.NewGuid();
+
+        var req = new CreateSupplierConnectionRequest(
+            Kind: "JsonApi", Name: "Nightly", ConfigJson: """{"url":"https://x"}""", FreshnessTtlHours: null);
+        var result = await ControllerFor(db, mine).Create(req, default);
+
+        var created = Assert.IsType<CreatedAtActionResult>(result);
+        var dto = Assert.IsType<SupplierConnectionDto>(created.Value);
+        Assert.Equal("Nightly", dto.Name);
+        Assert.Equal("JsonApi", dto.Kind);
+        Assert.Equal(24, dto.FreshnessTtlHours);
+
+        var saved = await db.SupplierConnections.SingleAsync();
+        Assert.Equal(mine, saved.OperatorId);
+        Assert.Equal(SupplierConnectionStatus.Active, saved.Status);
+    }
+
+    [Fact]
+    public async Task Create_invalidKind_returns400()
+    {
+        await using var db = NewDb();
+        var result = await ControllerFor(db, Guid.NewGuid())
+            .Create(new CreateSupplierConnectionRequest("Telepathy", "X", null, null), default);
+
+        Assert.Equal(400, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_invalidConfigJson_returns400()
+    {
+        await using var db = NewDb();
+        var result = await ControllerFor(db, Guid.NewGuid())
+            .Create(new CreateSupplierConnectionRequest("Manual", "X", "not json", null), default);
+
+        Assert.Equal(400, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_anotherOperatorsConnection_returns404()
+    {
+        await using var db = NewDb();
+        var theirs = await SeedConnection(db, Guid.NewGuid(), "Theirs");
+
+        var result = await ControllerFor(db, Guid.NewGuid())
+            .Update(theirs.Id, new UpdateSupplierConnectionRequest("Renamed", null, null, null), default);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Update_ownConnection_appliesSuppliedFields()
+    {
+        await using var db = NewDb();
+        var mine = Guid.NewGuid();
+        var conn = await SeedConnection(db, mine, "Old");
+
+        var result = await ControllerFor(db, mine).Update(
+            conn.Id, new UpdateSupplierConnectionRequest("New", """{"url":"u"}""", "Paused", 48), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var saved = await db.SupplierConnections.SingleAsync();
+        Assert.Equal("New", saved.Name);
+        Assert.Equal(SupplierConnectionStatus.Paused, saved.Status);
+        Assert.Equal(48, saved.FreshnessTtlHours);
+    }
+
+    [Fact]
+    public async Task Delete_anotherOperatorsConnection_returns404_andKeepsIt()
+    {
+        await using var db = NewDb();
+        var theirs = await SeedConnection(db, Guid.NewGuid(), "Theirs");
+
+        var result = await ControllerFor(db, Guid.NewGuid()).Delete(theirs.Id, default);
+
+        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal(1, await db.SupplierConnections.CountAsync());
+    }
+
+    [Fact]
+    public async Task Delete_ownConnection_returns204()
+    {
+        await using var db = NewDb();
+        var mine = Guid.NewGuid();
+        var conn = await SeedConnection(db, mine, "Mine");
+
+        var result = await ControllerFor(db, mine).Delete(conn.Id, default);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(0, await db.SupplierConnections.CountAsync());
+    }
 }
