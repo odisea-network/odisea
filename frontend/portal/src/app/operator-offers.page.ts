@@ -1,7 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { ApiService, CreateOfferRequest, OfferDto } from './api.service';
+import { ApiService, BulkCreateResult, CreateOfferRequest, OfferDto } from './api.service';
+import { parseOffersCsv } from './csv-offers';
+
+const CSV_PLACEHOLDER =
+  'title,country,city,price,nights,board,transport\n' +
+  'Antalya Family,TR,Antalya,690,7,AllInclusive,Plane\n' +
+  'Crete Escape,GR,Heraklion,540,7,HalfBoard,Plane';
 
 const BOARD_OPTIONS = ['RoomOnly', 'BedAndBreakfast', 'HalfBoard', 'FullBoard', 'AllInclusive'];
 const TRANSPORT_OPTIONS = ['Plane', 'Bus', 'Own'];
@@ -50,6 +56,42 @@ function emptyForm(): CreateOfferRequest {
         </button>
         @if (editingId()) { <button type="button" class="ghost" (click)="cancelEdit()">Cancel</button> }
       </div>
+    </section>
+
+    <section class="form-card">
+      <h3>
+        <button type="button" class="link" (click)="showImport.set(!showImport())">
+          {{ showImport() ? '▾' : '▸' }} Bulk import from CSV
+        </button>
+      </h3>
+      @if (showImport()) {
+        <p class="muted small">
+          First row is the header. Columns (any order): title, country, city, price,
+          nights, board, transport, currency, description, image, tags (semicolon-separated).
+          Rows import as drafts; invalid rows are reported below.
+        </p>
+        <textarea name="csv" rows="6" class="csv" [(ngModel)]="csvText"
+                  [placeholder]="csvPlaceholder"></textarea>
+        <div class="actions">
+          <button type="button" (click)="importCsv()" [disabled]="importing() || !csvText.trim()">
+            {{ importing() ? 'Importing…' : 'Import rows' }}
+          </button>
+          <button type="button" class="ghost" (click)="csvText = ''; importResult.set(null)">Clear</button>
+        </div>
+        @if (importResult(); as r) {
+          <p class="import-summary">
+            Imported <strong>{{ r.created }}</strong> offer(s).
+            @if (r.errors.length) { <span class="error"> {{ r.errors.length }} row(s) skipped.</span> }
+          </p>
+          @if (r.errors.length) {
+            <ul class="import-errors">
+              @for (e of r.errors; track e.index) {
+                <li>Row {{ e.index + 1 }}: {{ e.error }}</li>
+              }
+            </ul>
+          }
+        }
+      }
     </section>
 
     @if (loading()) {
@@ -102,7 +144,12 @@ function emptyForm(): CreateOfferRequest {
     .status { font-size: 0.8rem; color: #a36; }
     .status.published { color: #186; }
     .muted { color: #888; }
+    .muted.small { font-size: 0.8rem; margin: 0 0 8px; }
     .error { color: #c00; }
+    .link { background: transparent; color: #0a2540; padding: 0; font: inherit; font-weight: 600; }
+    .csv { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+    .import-summary { margin: 10px 0 4px; font-size: 0.9rem; }
+    .import-errors { margin: 0; padding-left: 18px; color: #c00; font-size: 0.85rem; }
   `],
 })
 export class OperatorOffersPage {
@@ -118,8 +165,32 @@ export class OperatorOffersPage {
   editingId = signal<string | null>(null);
   form: CreateOfferRequest = emptyForm();
 
+  showImport = signal(false);
+  importing = signal(false);
+  importResult = signal<BulkCreateResult | null>(null);
+  csvText = '';
+  csvPlaceholder = CSV_PLACEHOLDER;
+
   constructor() {
     this.reload();
+  }
+
+  importCsv(): void {
+    const rows = parseOffersCsv(this.csvText);
+    if (rows.length === 0) {
+      this.error.set('No data rows found — include a header line plus at least one row.');
+      return;
+    }
+    this.importing.set(true);
+    this.error.set(null);
+    this.api.bulkCreateOffers(rows).subscribe({
+      next: (r) => {
+        this.importResult.set(r);
+        this.importing.set(false);
+        if (r.created > 0) this.reload();
+      },
+      error: (e) => { this.error.set(e?.error?.detail ?? 'Import failed'); this.importing.set(false); },
+    });
   }
 
   private reload(): void {

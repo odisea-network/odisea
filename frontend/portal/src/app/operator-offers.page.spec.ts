@@ -18,6 +18,7 @@ function makeApi(overrides: Partial<Record<keyof ApiService, unknown>> = {}) {
     updateOffer: vi.fn().mockReturnValue(of(offer('1', 'Draft'))),
     publishOffer: vi.fn().mockReturnValue(of(offer('1', 'Published'))),
     unpublishOffer: vi.fn().mockReturnValue(of(offer('2', 'Draft'))),
+    bulkCreateOffers: vi.fn().mockReturnValue(of({ created: 2, errors: [] })),
     ...overrides,
   } as unknown as ApiService;
 }
@@ -81,5 +82,30 @@ describe('OperatorOffersPage', () => {
 
     expect(page.editingId()).toBeNull();
     expect(page.form.title).toBe('');
+  });
+
+  it('importCsv parses rows, posts them, and reloads on success', () => {
+    const api = makeApi();
+    const page = make(api);
+    page.csvText = 'title,country\nA,GR\nB,TR';
+
+    page.importCsv();
+
+    expect(api.bulkCreateOffers).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ title: 'A', country: 'GR' })]),
+    );
+    expect(page.importResult()?.created).toBe(2);
+    expect(api.listMyOffers).toHaveBeenCalledTimes(2); // initial + reload
+  });
+
+  it('importCsv with no data rows sets an error and does not call the API', () => {
+    const api = makeApi();
+    const page = make(api);
+    page.csvText = 'title,country'; // header only
+
+    page.importCsv();
+
+    expect(api.bulkCreateOffers).not.toHaveBeenCalled();
+    expect(page.error()).toBeTruthy();
   });
 });

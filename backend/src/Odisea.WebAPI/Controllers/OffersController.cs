@@ -91,6 +91,64 @@ public class OffersController(IAppDbContext db, IOperatorContext operatorCtx) : 
         return CreatedAtAction(nameof(Get), new { id = offer.Id }, offer.ToDto());
     }
 
+    // Bulk create from a CSV paste (parsed client-side into rows). Partial success:
+    // valid rows are created as drafts, invalid rows reported by index — so one bad
+    // row doesn't sink an otherwise-good import.
+    [Authorize(Policy = "OperatorAdmin")]
+    [HttpPost("bulk")]
+    public async Task<IActionResult> BulkCreate(BulkCreateOffersRequest req, CancellationToken ct)
+    {
+        var operatorId = operatorCtx.RequireOperator();
+
+        if (req.Offers is null || req.Offers.Count == 0)
+            return Problem(title: "Validation", detail: "No offers supplied.", statusCode: 400);
+
+        var errors = new List<BulkRowError>();
+        var toAdd = new List<Offer>();
+
+        for (var i = 0; i < req.Offers.Count; i++)
+        {
+            var row = req.Offers[i];
+            if (!TryBuildOffer(row.Title, row.Description, row.Country, row.City, row.Price,
+                    row.Currency, row.BoardBasis, row.Transport, row.DurationNights,
+                    row.StartDate, row.EndDate, row.Tags, row.ImageUrl,
+                    out var board, out var transport, out var error))
+            {
+                errors.Add(new BulkRowError(i, error!));
+                continue;
+            }
+
+            toAdd.Add(new Offer
+            {
+                Title = row.Title,
+                Description = row.Description,
+                OwnerType = OwnerType.Operator,
+                Visibility = Visibility.PlatformShared,
+                OwningOperatorId = operatorId,
+                Country = row.Country,
+                City = row.City,
+                Price = row.Price,
+                Currency = string.IsNullOrWhiteSpace(row.Currency) ? "EUR" : row.Currency,
+                BoardBasis = board,
+                Transport = transport,
+                DurationNights = row.DurationNights,
+                StartDate = row.StartDate,
+                EndDate = row.EndDate,
+                Tags = row.Tags ?? [],
+                ImageUrl = row.ImageUrl ?? string.Empty,
+                Status = OfferStatus.Draft,
+            });
+        }
+
+        if (toAdd.Count > 0)
+        {
+            db.Offers.AddRange(toAdd);
+            await db.SaveChangesAsync(ct);
+        }
+
+        return Ok(new BulkCreateResultDto(toAdd.Count, errors));
+    }
+
     [Authorize(Policy = "OperatorAdmin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, UpdateOfferRequest req, CancellationToken ct)

@@ -66,6 +66,14 @@ public record UpdateOfferRequest(
     string? ImageUrl
 );
 
+// Bulk operator entry (CSV paste in the portal). Partial success: valid rows are
+// created, invalid rows are reported by their position in the submitted list.
+public record BulkCreateOffersRequest(List<CreateOfferRequest> Offers);
+
+public record BulkRowError(int Index, string Error);
+
+public record BulkCreateResultDto(int Created, IReadOnlyList<BulkRowError> Errors);
+
 // One row of the supplier's pricing matrix. Any dimension may be null when
 // the supplier hasn't broken pricing down on that axis.
 public record PriceVariantDto(

@@ -21,6 +21,16 @@ export interface OfferDto {
   tags: string[];
 }
 
+export interface BulkRowError {
+  index: number;
+  error: string;
+}
+
+export interface BulkCreateResult {
+  created: number;
+  errors: BulkRowError[];
+}
+
 export interface CreateOfferRequest {
   title: string;
   description: string;
@@ -181,6 +191,10 @@ export class ApiService {
 
   createOffer(req: CreateOfferRequest): Observable<OfferDto> {
     return this.http.post<OfferDto>(`${this.base}/offers`, req);
+  }
+
+  bulkCreateOffers(offers: CreateOfferRequest[]): Observable<BulkCreateResult> {
+    return this.http.post<BulkCreateResult>(`${this.base}/offers/bulk`, { offers });
   }
 
   updateOffer(id: string, req: CreateOfferRequest): Observable<OfferDto> {
