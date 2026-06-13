@@ -35,7 +35,7 @@ public class LeadsControllerTests
     {
         var (db, agencyId, pubKey) = await SeedPublication();
         await using var _ = db;
-        var controller = new LeadsController(db, new FakeAgencyContext());
+        var controller = new LeadsController(db, new FakeAgencyContext(), new FakeWebhookDispatcher());
 
         var req = new CreateLeadRequest(pubKey, "Ivan Petrov", "ivan@example.bg", null, "Interested!", null, null, null, null, null);
         var result = await controller.Submit(req, default);
@@ -53,7 +53,7 @@ public class LeadsControllerTests
     {
         var (db, _, pubKey) = await SeedPublication();
         await using var _ = db;
-        var controller = new LeadsController(db, new FakeAgencyContext());
+        var controller = new LeadsController(db, new FakeAgencyContext(), new FakeWebhookDispatcher());
 
         var req = new CreateLeadRequest(pubKey, "Maria", "maria@example.bg", "+359...", null,
             OfferId: Guid.NewGuid(), PartySize: 2, PreferredDepartureDate: new DateOnly(2026, 8, 1), Nights: 7, Channel: "WebComponent");
@@ -69,7 +69,7 @@ public class LeadsControllerTests
     {
         var (db, _, _) = await SeedPublication();
         await using var _ = db;
-        var controller = new LeadsController(db, new FakeAgencyContext());
+        var controller = new LeadsController(db, new FakeAgencyContext(), new FakeWebhookDispatcher());
 
         var req = new CreateLeadRequest("does-not-exist", "X", "x@example.bg", null, null, null, null, null, null, null);
         var result = await controller.Submit(req, default);
@@ -83,7 +83,7 @@ public class LeadsControllerTests
     {
         var (db, _, pubKey) = await SeedPublication();
         await using var _ = db;
-        var controller = new LeadsController(db, new FakeAgencyContext());
+        var controller = new LeadsController(db, new FakeAgencyContext(), new FakeWebhookDispatcher());
 
         var req = new CreateLeadRequest(pubKey, "", "", null, null, null, null, null, null, null);
         var result = await controller.Submit(req, default);
@@ -102,7 +102,7 @@ public class LeadsControllerTests
             new Lead { AgencyId = Guid.NewGuid(), PublicationKey = "other", ContactName = "Theirs", ContactEmail = "c@d.bg" });
         await db.SaveChangesAsync();
 
-        var controller = new LeadsController(db, new FakeAgencyContext(agencyId));
+        var controller = new LeadsController(db, new FakeAgencyContext(agencyId), new FakeWebhookDispatcher());
         var result = await controller.List(status: null, default);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -120,7 +120,7 @@ public class LeadsControllerTests
         db.Leads.Add(lead);
         await db.SaveChangesAsync();
 
-        var controller = new LeadsController(db, new FakeAgencyContext(agencyId));
+        var controller = new LeadsController(db, new FakeAgencyContext(agencyId), new FakeWebhookDispatcher());
         var result = await controller.SetStatus(lead.Id, new UpdateLeadStatusRequest("Contacted"), default);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -137,7 +137,7 @@ public class LeadsControllerTests
         db.Leads.Add(lead);
         await db.SaveChangesAsync();
 
-        var controller = new LeadsController(db, new FakeAgencyContext(Guid.NewGuid()));
+        var controller = new LeadsController(db, new FakeAgencyContext(Guid.NewGuid()), new FakeWebhookDispatcher());
         var result = await controller.SetStatus(lead.Id, new UpdateLeadStatusRequest("Contacted"), default);
 
         Assert.IsType<NotFoundResult>(result);

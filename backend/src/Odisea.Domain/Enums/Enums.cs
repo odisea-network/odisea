@@ -44,3 +44,5 @@ public enum LeadKind { Inquiry, BookingRequest }
 
 // Inbox pipeline for a lead.
 public enum LeadStatus { New, Contacted, Converted, Closed }
+
+public enum WebhookStatus { Active, Disabled }

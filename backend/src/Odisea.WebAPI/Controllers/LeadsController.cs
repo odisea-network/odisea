@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Common.Interfaces;
 using Odisea.Application.Leads.Dtos;
+using Odisea.Application.Webhooks;
 using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
 
@@ -11,8 +12,13 @@ namespace Odisea.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/leads")]
-public class LeadsController(IAppDbContext db, IAgencyContext agencyCtx) : ControllerBase
+public class LeadsController(
+    IAppDbContext db,
+    IAgencyContext agencyCtx,
+    IWebhookDispatcher webhooks) : ControllerBase
 {
+    public const string LeadCreatedEvent = "lead.created";
+
     // ── Public ingest (from the embedded od-booking-inquiry surface) ────────────
 
     // Anonymous + IP rate-limited (reuses the analytics "events" policy). The
@@ -60,6 +66,10 @@ public class LeadsController(IAppDbContext db, IAgencyContext agencyCtx) : Contr
         };
         db.Leads.Add(lead);
         await db.SaveChangesAsync(ct);
+
+        // Fan out to the agency's webhook subscribers (CRM integrations). Best-effort:
+        // a failed delivery never affects the traveler's submission.
+        await webhooks.DispatchAsync(lead.AgencyId, LeadCreatedEvent, lead.ToDto(), ct);
 
         // 202: the traveler's form succeeded; the agency works it from the inbox.
         return Accepted(new { lead.Id });

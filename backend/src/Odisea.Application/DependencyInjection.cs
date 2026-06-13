@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Odisea.Application.Catalog.Access;
 using Odisea.Application.Suppliers.Connectors;
 using Odisea.Application.Suppliers.Freshness;
+using Odisea.Application.Webhooks;
 
 namespace Odisea.Application;
 
@@ -13,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<IImportRunner, ImportRunner>();
         services.AddScoped<IFreshnessService, FreshnessService>();
         services.AddScoped<IOfferAccessPolicy, OfferAccessPolicy>();
+        services.AddScoped<IWebhookDispatcher, WebhookDispatcher>();
 
         return services;
     }
