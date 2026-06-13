@@ -25,6 +25,21 @@ public class ThemePublishFlowTests
         new(db, new FakeAgencyContext(agencyId));
 
     [Fact]
+    public async Task List_scopedAgency_seesOnlyItsOwnThemes()
+    {
+        await using var db = BuildDb(nameof(List_scopedAgency_seesOnlyItsOwnThemes));
+        var mine = Guid.NewGuid();
+        db.Themes.Add(new Theme { Name = "Mine", AgencyId = mine, Tokens = ThemeTokens.Default() });
+        db.Themes.Add(new Theme { Name = "Theirs", AgencyId = Guid.NewGuid(), Tokens = ThemeTokens.Default() });
+        await db.SaveChangesAsync();
+
+        var ok = Assert.IsType<OkObjectResult>(await BuildCtrl(db, mine).List(null, default));
+        var list = Assert.IsAssignableFrom<IEnumerable<ThemeDto>>(ok.Value);
+        Assert.Single(list);
+        Assert.Equal("Mine", list.First().Name);
+    }
+
+    [Fact]
     public async Task Publish_sets_status_to_Published_and_increments_version()
     {
         await using var db = BuildDb(nameof(Publish_sets_status_to_Published_and_increments_version));

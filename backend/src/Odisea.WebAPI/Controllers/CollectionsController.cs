@@ -20,18 +20,34 @@ public class CollectionsController(
     IAgencyContext agencyCtx,
     IOfferAccessPolicy offerAccess) : ControllerBase
 {
+    // Agency merchandising config, not public catalog: an agency sees only its own
+    // collections; a platform admin (no agency tenant) sees all. The public embed
+    // reads offers through Resolve below, never this list.
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var list = await db.Collections.OrderBy(c => c.Name).ToListAsync(ct);
+        var q = db.Collections.AsQueryable();
+        if (agencyCtx.AgencyId is Guid agencyId)
+            q = q.Where(c => c.AgencyId == agencyId);
+
+        var list = await q.OrderBy(c => c.Name).ToListAsync(ct);
         return Ok(list.Select(Mappings.ToDto));
     }
 
+    [Authorize]
     [HttpGet("{idOrSlug}")]
     public async Task<IActionResult> Get(string idOrSlug, CancellationToken ct)
     {
         var c = await FindAsync(idOrSlug, ct);
-        return c is null ? NotFound() : Ok(c.ToDto());
+        if (c is null) return NotFound();
+
+        // Ids are global, so an id lookup can land on another agency's collection;
+        // slug lookups are already agency-scoped in FindAsync.
+        if (agencyCtx.AgencyId is Guid agencyId && c.AgencyId != agencyId)
+            return Problem(title: "Forbidden", detail: "Collection does not belong to your agency.", statusCode: 403);
+
+        return Ok(c.ToDto());
     }
 
     [EnableCors("PublicEmbedCors")]

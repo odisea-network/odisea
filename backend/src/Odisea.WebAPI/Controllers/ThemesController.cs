@@ -13,13 +13,19 @@ namespace Odisea.WebAPI.Controllers;
 [Route("api/v1/themes")]
 public class ThemesController(IAppDbContext db, IAgencyContext agencyCtx) : ControllerBase
 {
+    // An agency's working themes are tenant data: a scoped caller sees only its own;
+    // a platform admin may filter by the optional agencyId. Presets (public catalog)
+    // and single-theme Get/Export stay anonymous for embed rendering.
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] Guid? agencyId, CancellationToken ct)
     {
         // Presets are platform templates with their own endpoint — keep them out of
         // an agency's working theme list.
         var q = db.Themes.Where(t => !t.IsPreset);
-        if (agencyId.HasValue)
+        if (agencyCtx.AgencyId is Guid scoped)
+            q = q.Where(t => t.AgencyId == scoped);
+        else if (agencyId.HasValue)
             q = q.Where(t => t.AgencyId == agencyId.Value);
 
         var list = await q.OrderBy(t => t.Name).ToListAsync(ct);

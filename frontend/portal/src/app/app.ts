@@ -11,13 +11,13 @@ import { AuthService } from './auth/auth.service';
       <div class="brand">Odisea Network</div>
       <nav>
         <a routerLink="/offers" routerLinkActive="active">Offers</a>
-        <a routerLink="/collections" routerLinkActive="active">Collections</a>
-        <a routerLink="/builder" routerLinkActive="active">Builder</a>
         @if (auth.isOperator()) {
           <a routerLink="/operator/offers" routerLinkActive="active">My offers</a>
           <a routerLink="/operator/connections" routerLinkActive="active">Connections</a>
         }
         @if (auth.isAgency()) {
+          <a routerLink="/collections" routerLinkActive="active">Collections</a>
+          <a routerLink="/builder" routerLinkActive="active">Builder</a>
           <a routerLink="/leads" routerLinkActive="active">Leads</a>
           <a routerLink="/marketplace" routerLinkActive="active">Marketplace</a>
           <a routerLink="/webhooks" routerLinkActive="active">Webhooks</a>
