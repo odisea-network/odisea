@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { OfferDto } from './od-types.js';
+import { hasOfferSource, resolveOffersUrl } from './od-fetch.js';
 import './od-offer-card.js';
 
 /**
@@ -9,9 +10,12 @@ import './od-offer-card.js';
  *
  * @element od-offer-grid
  *
- * @attr {string} collection   - Collection slug; URL: `{api-base}/api/v1/collections/{slug}/offers`.
- * @attr {string} publication  - Publication ID (alias for `collection`).
- * @attr {string} endpoint     - Full fetch URL (overrides `collection` / `publication`).
+ * @attr {string} publication  - Publication key (preferred). Fetches the manifest at
+ *   `{api-base}/api/v1/publications/{key}` then its id-based `offersUrl` — the
+ *   anonymous-safe embed path.
+ * @attr {string} collection   - Collection slug (deprecated; agency-scoped only).
+ *   Anonymous embeds 404 since slugs are tenant-scoped (#18) — use `publication`.
+ * @attr {string} endpoint     - Full fetch URL (overrides `publication` / `collection`).
  * @attr {string} [api-base=""] - Origin/prefix for API calls.
  * @attr {number} columns      - Fixed column count (omit for responsive auto-fill ≥260 px).
  * @attr {string} [card-style="default"] - Visual style forwarded to each card:
@@ -108,16 +112,13 @@ export class OdOfferGrid extends LitElement {
   @state() private _loading = false;
   @state() private _error = '';
 
-  private get _url(): string {
-    if (this.endpoint) return this.endpoint;
-    const slug = this.publication ?? this.collection;
-    if (slug) return `${this.apiBase}/api/v1/collections/${slug}/offers`;
-    return '';
+  private get _hasSource(): boolean {
+    return hasOfferSource({ endpoint: this.endpoint, publication: this.publication, collection: this.collection });
   }
 
   connectedCallback() {
     super.connectedCallback();
-    if (!this.offers && this._url) this._load();
+    if (!this.offers && this._hasSource) this._load();
   }
 
   updated(changed: Map<PropertyKey, unknown>) {
@@ -128,11 +129,18 @@ export class OdOfferGrid extends LitElement {
   }
 
   private async _load() {
-    const url = this._url;
-    if (!url) return;
+    if (!this._hasSource) return;
     this._loading = true;
     this._error = '';
     try {
+      // A publication key resolves through the manifest to an id-based offers URL;
+      // collection/endpoint resolve directly. See od-fetch.ts.
+      const url = await resolveOffersUrl(this.apiBase, {
+        endpoint: this.endpoint,
+        publication: this.publication,
+        collection: this.collection,
+      });
+      if (!url) return;
       const r = await fetch(url);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       this._fetched = await r.json();
