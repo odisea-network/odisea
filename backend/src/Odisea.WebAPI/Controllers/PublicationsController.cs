@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Odisea.Application.Common.Interfaces;
 using Odisea.Application.Publications;
 using Odisea.Application.Publications.Dtos;
+using Odisea.Application.Webhooks;
 using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
 
@@ -12,7 +13,10 @@ namespace Odisea.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/publications")]
-public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) : ControllerBase
+public class PublicationsController(
+    IAppDbContext db,
+    IAgencyContext agencyCtx,
+    IWebhookDispatcher webhooks) : ControllerBase
 {
     // ── Public manifest ────────────────────────────────────────────────────────
 
@@ -180,6 +184,12 @@ public class PublicationsController(IAppDbContext db, IAgencyContext agencyCtx) 
         pub.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        return Ok(pub.ToDto());
+        var dto = pub.ToDto();
+
+        // Notify the agency's webhook subscribers (CRM/automation). Best-effort —
+        // a failed delivery never affects the publish response.
+        await webhooks.DispatchAsync(pub.AgencyId, WebhookEvents.PublicationPublished, dto, ct);
+
+        return Ok(dto);
     }
 }
