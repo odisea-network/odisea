@@ -1,0 +1,182 @@
+@let tt = t();
+
+<ng-template #brand let-light="light">
+  <span class="au-wordmark">
+    <svg width="22" height="26" viewBox="0 0 32 38" fill="none" aria-hidden="true">
+      <path d="M16 37V12" stroke="var(--od-gold-500)" stroke-width="1.6" stroke-linecap="round" />
+      <path d="M16 13c-1.8-3.2-5.6-4.4-9.2-3.8 0 3.8 2.6 7 6.4 7.6 1.4.2 2.2 0 2.8-.4" fill="var(--od-gold-500)" opacity="0.95" />
+      <path d="M16 13c1.8-3.2 5.6-4.4 9.2-3.8 0 3.8-2.6 7-6.4 7.6-1.4.2-2.2 0-2.8-.4" fill="var(--od-gold-500)" opacity="0.95" />
+      <path d="M16 22c-1.6-2.8-4.8-3.8-8-3.3 0 3.3 2.3 6 5.6 6.6 1.2.2 1.9 0 2.4-.3" fill="var(--od-gold-500)" opacity="0.78" />
+      <path d="M16 22c1.6-2.8 4.8-3.8 8-3.3 0 3.3-2.3 6-5.6 6.6-1.2.2-1.9 0-2.4-.3" fill="var(--od-gold-500)" opacity="0.78" />
+      <path d="M16 4.5c-1.7 1.8-1.7 4.7 0 6.8 1.7-2.1 1.7-5 0-6.8Z" fill="var(--od-gold-500)" />
+    </svg>
+    <span class="au-wordmark__text" [class.light]="light">odisea</span>
+  </span>
+</ng-template>
+
+<div class="au-root">
+  <!-- Form side -->
+  <div class="au-form-side">
+    <div class="au-topbar">
+      <a routerLink="/" class="au-brand"><ng-container [ngTemplateOutlet]="brand" /></a>
+      <button type="button" class="au-lang" (click)="toggleLang()"><span class="ic" [innerHTML]="svg('globe', 15)"></span>{{ tt.langName }}</button>
+    </div>
+
+    <div class="au-form-wrap">
+      <div class="au-form">
+        @if (error()) { <p class="au-error">{{ error() }}</p> }
+
+        @switch (view()) {
+          @case ('signin') {
+            <form (ngSubmit)="submitSignin()">
+              <div class="au-head">
+                <h1 class="au-display au-title">{{ tt.signin.title }}</h1>
+                <p class="au-sub">{{ tt.signin.sub }}</p>
+              </div>
+              <button type="button" class="au-google"><span class="ic" [innerHTML]="googleSvg"></span>{{ tt.signin.google }}</button>
+              <div class="au-divider"><span></span><em>{{ tt.signin.or }}</em><span></span></div>
+
+              <label class="au-fieldset">
+                <span class="au-label">{{ tt.signin.email }}</span>
+                <span class="au-field"><span class="ic" [innerHTML]="svg('mail')"></span>
+                  <input name="email" type="email" [(ngModel)]="email" placeholder="maria@slantsevtur.bg" autocomplete="email" />
+                </span>
+              </label>
+              <label class="au-fieldset">
+                <span class="au-label">{{ tt.signin.pass }}</span>
+                <span class="au-field"><span class="ic" [innerHTML]="svg('lock')"></span>
+                  <input name="password" [type]="showPass() ? 'text' : 'password'" [(ngModel)]="password" placeholder="••••••••" autocomplete="current-password" />
+                  <button type="button" class="au-eye" aria-label="toggle" (click)="showPass.set(!showPass())" [innerHTML]="svg(showPass() ? 'eyeOff' : 'eye')"></button>
+                </span>
+              </label>
+
+              <div class="au-row">
+                <label class="au-check"><input type="checkbox" [(ngModel)]="remember" name="remember" /><span>{{ tt.signin.remember }}</span></label>
+                <button type="button" class="au-link" (click)="go('forgot')">{{ tt.signin.forgot }}</button>
+              </div>
+              <button type="submit" class="btn btn--primary btn--lg btn--full" [disabled]="loading() || !email || !password">
+                {{ loading() ? '…' : tt.signin.submit }}<span class="ic" [innerHTML]="svg('arrowR')"></span>
+              </button>
+              <p class="au-switch">{{ tt.signin.noAcc }} <button type="button" class="au-link au-link--bold" (click)="go('signup')">{{ tt.signin.signup }}</button></p>
+            </form>
+          }
+
+          @case ('signup') {
+            <form (ngSubmit)="submitSignup()">
+              <div class="au-head">
+                <h1 class="au-display au-title">{{ tt.signup.title }}</h1>
+                <p class="au-sub">{{ tt.signup.sub }}</p>
+              </div>
+              <button type="button" class="au-google"><span class="ic" [innerHTML]="googleSvg"></span>{{ tt.signup.google }}</button>
+              <div class="au-divider"><span></span><em>{{ tt.signin.or }}</em><span></span></div>
+
+              <div class="au-grid2">
+                <label class="au-fieldset">
+                  <span class="au-label">{{ tt.signup.name }}</span>
+                  <span class="au-field"><span class="ic" [innerHTML]="svg('user')"></span>
+                    <input name="name" [(ngModel)]="name" placeholder="Мария Добрева" autocomplete="name" />
+                  </span>
+                </label>
+                <label class="au-fieldset">
+                  <span class="au-label">{{ tt.signup.agency }}</span>
+                  <span class="au-field"><span class="ic" [innerHTML]="svg('building')"></span>
+                    <input name="agency" [(ngModel)]="agency" placeholder="Слънчев Тур" />
+                  </span>
+                </label>
+              </div>
+              <label class="au-fieldset">
+                <span class="au-label">{{ tt.signup.email }}</span>
+                <span class="au-field"><span class="ic" [innerHTML]="svg('mail')"></span>
+                  <input name="email" type="email" [(ngModel)]="email" placeholder="maria@slantsevtur.bg" autocomplete="email" />
+                </span>
+              </label>
+              <label class="au-fieldset">
+                <span class="au-label">{{ tt.signup.pass }}</span>
+                <span class="au-field"><span class="ic" [innerHTML]="svg('lock')"></span>
+                  <input name="password" [type]="showPass() ? 'text' : 'password'" [(ngModel)]="password" placeholder="••••••••" autocomplete="new-password" />
+                  <button type="button" class="au-eye" aria-label="toggle" (click)="showPass.set(!showPass())" [innerHTML]="svg(showPass() ? 'eyeOff' : 'eye')"></button>
+                </span>
+                <span class="au-hint">{{ tt.signup.passHint }}</span>
+              </label>
+
+              <div>
+                <span class="au-label">{{ tt.signup.role }}</span>
+                <div class="au-roles">
+                  @for (r of tt.signup.roles; track r[0]) {
+                    <button type="button" class="au-role" [class.on]="role() === r[0]" (click)="role.set(r[0])">
+                      <span class="ic" [innerHTML]="svg(roleIcons[r[0]], 19)"></span><span>{{ r[1] }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <label class="au-check au-check--terms"><input type="checkbox" [checked]="agree()" (change)="agree.set($any($event.target).checked)" /><span>{{ tt.signup.terms }}</span></label>
+              <button type="submit" class="btn btn--primary btn--lg btn--full" [disabled]="loading() || !agree() || !name || !email || !password">
+                {{ loading() ? '…' : tt.signup.submit }}<span class="ic" [innerHTML]="svg('arrowR')"></span>
+              </button>
+              <p class="au-switch">{{ tt.signup.hasAcc }} <button type="button" class="au-link au-link--bold" (click)="go('signin')">{{ tt.signup.signin }}</button></p>
+            </form>
+          }
+
+          @case ('forgot') {
+            @if (sent()) {
+              <div class="au-sent">
+                <div class="au-sent__icon"><span class="ic" [innerHTML]="svg('mail', 26)"></span></div>
+                <div class="au-head au-head--center">
+                  <h1 class="au-display au-title">{{ tt.forgot.sentTitle }}</h1>
+                  <p class="au-sub">{{ tt.forgot.sentSub }} {{ forgotEmail || tt.forgot.email }}.</p>
+                </div>
+                <button type="button" class="btn btn--secondary btn--lg" (click)="go('signin')"><span class="ic" [innerHTML]="svg('chevL')"></span>{{ tt.forgot.back }}</button>
+              </div>
+            } @else {
+              <form (ngSubmit)="submitForgot()">
+                <div class="au-head">
+                  <h1 class="au-display au-title">{{ tt.forgot.title }}</h1>
+                  <p class="au-sub">{{ tt.forgot.sub }}</p>
+                </div>
+                <label class="au-fieldset">
+                  <span class="au-label">{{ tt.forgot.email }}</span>
+                  <span class="au-field"><span class="ic" [innerHTML]="svg('mail')"></span>
+                    <input name="forgotEmail" type="email" [(ngModel)]="forgotEmail" placeholder="maria@slantsevtur.bg" autocomplete="email" />
+                  </span>
+                </label>
+                <button type="submit" class="btn btn--primary btn--lg btn--full">{{ tt.forgot.submit }}<span class="ic" [innerHTML]="svg('arrowR')"></span></button>
+                <button type="button" class="au-link au-back" (click)="go('signin')"><span class="ic" [innerHTML]="svg('chevL', 15)"></span>{{ tt.forgot.back }}</button>
+              </form>
+            }
+          }
+        }
+
+        <div class="au-legal"><span class="ic" [innerHTML]="svg('shield', 14)"></span>{{ tt.legal }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Showcase side -->
+  <aside class="au-showcase">
+    <img [src]="showcaseImg" alt="" />
+    <div class="au-showcase__scrim"></div>
+    <div class="au-showcase__in">
+      <ng-container [ngTemplateOutlet]="brand" [ngTemplateOutletContext]="{ light: true }" />
+      <div class="au-showcase__mid">
+        <div class="au-showcase__eyebrow">{{ tt.showcase.eyebrow }}</div>
+        <p class="au-display au-showcase__quote">"{{ tt.showcase.quote }}"</p>
+        <div class="au-showcase__author">
+          <div class="au-showcase__avatar">{{ tt.showcase.author[0] }}</div>
+          <div>
+            <div class="au-showcase__name">{{ tt.showcase.author }}</div>
+            <div class="au-showcase__role">{{ tt.showcase.role }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="au-showcase__stats">
+        @for (s of tt.showcase.stats; track s[1]) {
+          <div>
+            <div class="au-display au-showcase__statv">{{ s[0] }}</div>
+            <div class="au-showcase__statl">{{ s[1] }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </aside>
+</div>

@@ -68,7 +68,8 @@ export class App {
   auth = inject(AuthService);
   private router = inject(Router);
 
-  // The public landing page renders full-bleed without the portal chrome.
+  // Public surfaces (landing + auth) render full-bleed without the portal chrome.
+  private static readonly BARE_ROUTES = ['/', '', '/login', '/register'];
   showChrome = signal(this.isPortalRoute(this.router.url));
 
   constructor() {
@@ -79,7 +80,7 @@ export class App {
 
   private isPortalRoute(url: string): boolean {
     const path = url.split(/[?#]/)[0];
-    return path !== '/' && path !== '';
+    return !App.BARE_ROUTES.includes(path);
   }
 
   logout(): void {

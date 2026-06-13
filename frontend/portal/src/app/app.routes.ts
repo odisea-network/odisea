@@ -12,7 +12,14 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    title: 'Sign in — Odisea',
+    title: 'Вход — Odisea',
+    data: { view: 'signin' },
+    loadComponent: () => import('./auth/login.page').then(m => m.LoginPage),
+  },
+  {
+    path: 'register',
+    title: 'Регистрация — Odisea',
+    data: { view: 'signup' },
     loadComponent: () => import('./auth/login.page').then(m => m.LoginPage),
   },
   { path: 'offers', component: OffersPage, title: 'Offers — Odisea' },

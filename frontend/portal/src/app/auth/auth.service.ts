@@ -8,6 +8,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  displayName: string;
+  // Self-serve signup: name a new tenant and pick a role ("agency" | "operator" | "both").
+  tenantName?: string;
+  tenantRole?: string;
+}
+
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
@@ -48,6 +57,14 @@ export class AuthService {
   /** Logs in, then resolves the current user (the interceptor attaches the fresh token to /auth/me). */
   login(req: LoginRequest): Observable<CurrentUser> {
     return this.http.post<TokenResponse>(`${this.base}/auth/login`, req).pipe(
+      tap((res) => this.setToken(res.accessToken)),
+      switchMap(() => this.fetchMe()),
+    );
+  }
+
+  /** Self-serve registration, then resolves the current user (same flow as login). */
+  register(req: RegisterRequest): Observable<CurrentUser> {
+    return this.http.post<TokenResponse>(`${this.base}/auth/register`, req).pipe(
       tap((res) => this.setToken(res.accessToken)),
       switchMap(() => this.fetchMe()),
     );
