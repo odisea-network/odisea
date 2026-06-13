@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Odisea.Application.Suppliers.Connectors;
 using Odisea.Domain.Entities;
@@ -6,7 +7,8 @@ using Odisea.Domain.Enums;
 namespace Odisea.Infrastructure.Suppliers.Connectors;
 
 // Pulls offers from a supplier's JSON HTTP endpoint. The endpoint must return a
-// JSON array of objects in the canonical offer shape (see SupplierOfferPayload).
+// JSON array of objects; each object's fields are read by their canonical name,
+// or by the supplier's name when the connection config supplies a fieldMap.
 // Parsing is all this adapter owns; validation + upsert live in SourceOfferImporter.
 public sealed class JsonApiConnector(HttpClient http, SourceOfferImporter importer) : IConnector
 {
@@ -19,7 +21,7 @@ public sealed class JsonApiConnector(HttpClient http, SourceOfferImporter import
 
     public async Task<ConnectorRunResult> RunAsync(SupplierConnection connection, CancellationToken ct)
     {
-        var config = ReadConfig(connection.ConfigJson);
+        var config = ConnectorConfig.Parse(connection.ConfigJson);
         if (config is null || string.IsNullOrWhiteSpace(config.Url))
             return ConnectorRunResult.Empty("Connection config is missing a 'url'.");
 
@@ -36,48 +38,77 @@ public sealed class JsonApiConnector(HttpClient http, SourceOfferImporter import
             return ConnectorRunResult.Empty($"Fetch failed: {ex.Message}");
         }
 
-        var raws = items.Select(ToRawOffer).ToList();
+        var raws = items.Select(e => ToRawOffer(e, config)).ToList();
         return await importer.ImportAsync(connection, raws, DateTime.UtcNow, ct);
     }
 
-    // Maps one JSON element to a RawOffer, preserving its exact text as the payload.
-    // A shape mismatch yields an empty-keyed RawOffer so it still counts as fetched
-    // and is skipped by the importer's validation.
-    private static RawOffer ToRawOffer(JsonElement element)
+    // Reads one JSON object into a RawOffer using the field map, preserving its
+    // exact text as the payload. A non-object element yields an empty-keyed
+    // RawOffer so it still counts as fetched and is skipped by the importer.
+    private static RawOffer ToRawOffer(JsonElement element, ConnectorConfig config)
     {
         var raw = element.GetRawText();
-        SupplierOfferPayload? p;
-        try { p = element.Deserialize<SupplierOfferPayload>(JsonOptions); }
-        catch (JsonException) { p = null; }
-
-        if (p is null)
+        if (element.ValueKind != JsonValueKind.Object)
             return new RawOffer("", "", null, "", null, 0, null, null, null, 0, null, null, raw);
 
         return new RawOffer(
-            p.ExternalId ?? "", p.Title ?? "", p.Description, p.Country ?? "", p.City,
-            p.Price, p.Currency, p.Board, p.Transport, p.Nights, p.ImageUrl, p.Tags, raw);
+            Str(element, config.Field("externalId")) ?? "",
+            Str(element, config.Field("title")) ?? "",
+            Str(element, config.Field("description")),
+            Str(element, config.Field("country")) ?? "",
+            Str(element, config.Field("city")),
+            Dec(element, config.Field("price")),
+            Str(element, config.Field("currency")),
+            Str(element, config.Field("board")),
+            Str(element, config.Field("transport")),
+            Int(element, config.Field("nights")),
+            Str(element, config.Field("imageUrl")),
+            Tags(element, config.Field("tags")),
+            raw);
     }
 
-    private static SupplierConnectionConfig? ReadConfig(string configJson)
+    private static JsonElement? Prop(JsonElement obj, string name)
     {
-        try { return JsonSerializer.Deserialize<SupplierConnectionConfig>(configJson, JsonOptions); }
-        catch (JsonException) { return null; }
+        foreach (var p in obj.EnumerateObject())
+            if (string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
+                return p.Value;
+        return null;
     }
 
-    private sealed record SupplierConnectionConfig(string? Url);
+    private static string? Str(JsonElement obj, string name) =>
+        Prop(obj, name) is { } v
+            ? v.ValueKind switch
+            {
+                JsonValueKind.String => v.GetString(),
+                JsonValueKind.Number => v.GetRawText(),
+                _ => null,
+            }
+            : null;
 
-    // Canonical supplier offer shape (integration contract v1).
-    private sealed record SupplierOfferPayload(
-        string? ExternalId,
-        string? Title,
-        string? Description,
-        string? Country,
-        string? City,
-        decimal Price,
-        string? Currency,
-        string? Board,
-        string? Transport,
-        int Nights,
-        string? ImageUrl,
-        List<string>? Tags);
+    private static decimal Dec(JsonElement obj, string name)
+    {
+        if (Prop(obj, name) is not { } v) return 0m;
+        if (v.ValueKind == JsonValueKind.Number && v.TryGetDecimal(out var d)) return d;
+        if (v.ValueKind == JsonValueKind.String &&
+            decimal.TryParse(v.GetString(), NumberStyles.Number, CultureInfo.InvariantCulture, out var ds)) return ds;
+        return 0m;
+    }
+
+    private static int Int(JsonElement obj, string name)
+    {
+        if (Prop(obj, name) is not { } v) return 0;
+        if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i)) return i;
+        if (v.ValueKind == JsonValueKind.String &&
+            int.TryParse(v.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var s)) return s;
+        return 0;
+    }
+
+    private static IReadOnlyList<string>? Tags(JsonElement obj, string name)
+    {
+        if (Prop(obj, name) is not { ValueKind: JsonValueKind.Array } v) return null;
+        return v.EnumerateArray()
+            .Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "")
+            .Where(t => t.Length > 0)
+            .ToList();
+    }
 }

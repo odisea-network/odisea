@@ -176,4 +176,43 @@ public class JsonApiConnectorTests
         Assert.NotEmpty(result.Errors);
         Assert.Empty(await db.Offers.ToListAsync());
     }
+
+    [Fact]
+    public async Task FieldMap_readsSupplierNamedFields_ontoCanonicalOffer()
+    {
+        await using var db = NewDb();
+        var conn = new SupplierConnection
+        {
+            OperatorId = Guid.NewGuid(),
+            Kind = SupplierConnectionKind.JsonApi,
+            Name = "Mapped feed",
+            ConfigJson = """
+            {
+              "url": "https://supplier.test/offers",
+              "fieldMap": {
+                "externalId": "id", "title": "name", "price": "cost",
+                "country": "dest", "board": "mealPlan", "transport": "flight", "nights": "numNights"
+              }
+            }
+            """,
+        };
+
+        // Supplier uses its own field names; price arrives as a string.
+        const string body = """
+        [
+          { "id": "x-9", "name": "Rhodes Break", "dest": "GR", "cost": "475.00",
+            "mealPlan": "HalfBoard", "flight": "Plane", "numNights": 5 }
+        ]
+        """;
+        var result = await Connector(body, db).RunAsync(conn, default);
+
+        Assert.Equal(1, result.OffersImported);
+        var offer = await db.Offers.SingleAsync();
+        Assert.Equal("x-9", offer.Source!.ExternalId);
+        Assert.Equal("Rhodes Break", offer.Title);
+        Assert.Equal("GR", offer.Country);
+        Assert.Equal(475.00m, offer.Price);
+        Assert.Equal(BoardBasis.HalfBoard, offer.BoardBasis);
+        Assert.Equal(5, offer.DurationNights);
+    }
 }

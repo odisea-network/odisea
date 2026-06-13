@@ -168,4 +168,45 @@ public class XmlConnectorTests
         Assert.False(result.Succeeded);
         Assert.Empty(await db.Offers.ToListAsync());
     }
+
+    [Fact]
+    public async Task FieldMap_readsSupplierNamedElements_ontoCanonicalOffer()
+    {
+        await using var db = NewDb();
+        var conn = new SupplierConnection
+        {
+            OperatorId = Guid.NewGuid(),
+            Kind = SupplierConnectionKind.Xml,
+            Name = "Mapped XML",
+            ConfigJson = """
+            {
+              "url": "https://supplier.test/feed.xml",
+              "fieldMap": {
+                "offer": "package", "externalId": "ref", "title": "name",
+                "country": "dest", "board": "mealPlan", "transport": "flight", "nights": "los"
+              }
+            }
+            """,
+        };
+
+        // Row element is <package>, fields use supplier names.
+        const string body = """
+        <feed>
+          <package>
+            <ref>p-1</ref><name>Kos Family</name><dest>GR</dest>
+            <price>520</price><mealPlan>AllInclusive</mealPlan><flight>Plane</flight><los>7</los>
+          </package>
+        </feed>
+        """;
+        var result = await Connector(body, db).RunAsync(conn, default);
+
+        Assert.Equal(1, result.OffersImported);
+        var offer = await db.Offers.SingleAsync();
+        Assert.Equal("p-1", offer.Source!.ExternalId);
+        Assert.Equal("Kos Family", offer.Title);
+        Assert.Equal("GR", offer.Country);
+        Assert.Equal(520m, offer.Price);
+        Assert.Equal(BoardBasis.AllInclusive, offer.BoardBasis);
+        Assert.Equal(7, offer.DurationNights);
+    }
 }
