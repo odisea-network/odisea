@@ -129,6 +129,23 @@ export interface UpdateThemeRequest {
   tokens?: ThemeTokens;
 }
 
+export interface WebhookSubscriptionDto {
+  id: string;
+  agencyId: string;
+  url: string;
+  eventTypes: string;
+  status: string;
+  createdAt: string;
+}
+
+// Returned ONCE at creation — carries the signing secret, which is never echoed again.
+export interface CreatedWebhookSubscriptionDto {
+  id: string;
+  url: string;
+  eventTypes: string;
+  secret: string;
+}
+
 export interface LeadDto {
   id: string;
   kind: string;
@@ -211,6 +228,28 @@ export class ApiService {
 
   setLeadStatus(id: string, status: string): Observable<LeadDto> {
     return this.http.post<LeadDto>(`${this.base}/leads/${id}/status`, { status });
+  }
+
+  // ── Webhook subscriptions (AgencyAdmin) ───────────────────────────────────────
+
+  listWebhooks(): Observable<WebhookSubscriptionDto[]> {
+    return this.http.get<WebhookSubscriptionDto[]>(`${this.base}/webhooks`);
+  }
+
+  createWebhook(url: string, eventTypes: string): Observable<CreatedWebhookSubscriptionDto> {
+    return this.http.post<CreatedWebhookSubscriptionDto>(`${this.base}/webhooks`, { url, eventTypes });
+  }
+
+  enableWebhook(id: string): Observable<WebhookSubscriptionDto> {
+    return this.http.post<WebhookSubscriptionDto>(`${this.base}/webhooks/${id}/enable`, {});
+  }
+
+  disableWebhook(id: string): Observable<WebhookSubscriptionDto> {
+    return this.http.post<WebhookSubscriptionDto>(`${this.base}/webhooks/${id}/disable`, {});
+  }
+
+  deleteWebhook(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/webhooks/${id}`);
   }
 
   listThemes(agencyId?: string): Observable<ThemeDto[]> {
