@@ -15,6 +15,7 @@ import { AuthService } from './auth/auth.service';
         <a routerLink="/builder" routerLinkActive="active">Builder</a>
         @if (auth.isOperator()) {
           <a routerLink="/operator/offers" routerLinkActive="active">My offers</a>
+          <a routerLink="/operator/connections" routerLinkActive="active">Connections</a>
         }
         @if (auth.isAgency()) {
           <a routerLink="/leads" routerLinkActive="active">Leads</a>

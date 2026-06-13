@@ -174,6 +174,35 @@ export interface LeadDto {
   createdAt: string;
 }
 
+export interface ImportJobDto {
+  id: string;
+  supplierConnectionId: string;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+  offersFetched: number;
+  offersImported: number;
+  offersDeactivated: number;
+  errors: string[];
+}
+
+export interface ConnectionHealthDto {
+  supplierConnectionId: string;
+  name: string;
+  kind: string;
+  status: string;
+  lastSyncedAt: string | null;
+  lastSuccessfulRunAt: string | null;
+  lastRunStatus: string | null;
+  recentRuns: number;
+  recentFailures: number;
+}
+
+export interface FreshnessSweepResult {
+  sourceOffersMarkedStale: number;
+  offersMarkedStale: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -207,6 +236,24 @@ export class ApiService {
 
   unpublishOffer(id: string): Observable<OfferDto> {
     return this.http.post<OfferDto>(`${this.base}/offers/${id}/unpublish`, {});
+  }
+
+  // ── Supplier connections + import health (OperatorAdmin) ──────────────────────
+
+  supplierHealth(): Observable<ConnectionHealthDto[]> {
+    return this.http.get<ConnectionHealthDto[]>(`${this.base}/supplier-connections/health`);
+  }
+
+  runConnection(id: string): Observable<ImportJobDto> {
+    return this.http.post<ImportJobDto>(`${this.base}/supplier-connections/${id}/run`, {});
+  }
+
+  sweepConnection(id: string): Observable<FreshnessSweepResult> {
+    return this.http.post<FreshnessSweepResult>(`${this.base}/supplier-connections/${id}/sweep`, {});
+  }
+
+  connectionJobs(id: string): Observable<ImportJobDto[]> {
+    return this.http.get<ImportJobDto[]>(`${this.base}/supplier-connections/${id}/jobs`);
   }
 
   listCollections(): Observable<CollectionDto[]> {
