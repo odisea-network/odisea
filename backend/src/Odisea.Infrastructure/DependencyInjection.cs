@@ -33,6 +33,7 @@ public static class DependencyInjection
         // typed HttpClient, so the registry is scoped to compose them per request.
         // New adapters (XML, CSV/SFTP) ship in follow-up PRs.
         services.AddSingleton<IConnector, ManualConnector>();
+        services.AddScoped<SourceOfferImporter>();
         services.AddHttpClient<JsonApiConnector>(c => c.Timeout = TimeSpan.FromSeconds(15));
         services.AddScoped<IConnector>(sp => sp.GetRequiredService<JsonApiConnector>());
         services.AddScoped<IConnectorRegistry, ConnectorRegistry>();
