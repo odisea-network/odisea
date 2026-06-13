@@ -34,6 +34,13 @@ export const routes: Routes = [
       import('./theme-marketplace.page').then(m => m.ThemeMarketplacePage),
   },
   {
+    path: 'webhooks',
+    title: 'Webhooks — Odisea',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./webhooks.page').then(m => m.WebhooksPage),
+  },
+  {
     path: 'builder',
     title: 'Publication composer — Odisea',
     canActivate: [authGuard],
