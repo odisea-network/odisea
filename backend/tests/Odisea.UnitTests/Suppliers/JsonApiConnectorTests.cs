@@ -30,6 +30,9 @@ public class JsonApiConnectorTests
     private static HttpClient ClientReturning(string? body, HttpStatusCode status = HttpStatusCode.OK) =>
         new(new StubHandler(body, status));
 
+    private static JsonApiConnector Connector(string? body, AppDbContext db) =>
+        new(ClientReturning(body), new SourceOfferImporter(db));
+
     private static SupplierConnection Connection(Guid operatorId, string url = "https://supplier.test/offers") =>
         new()
         {
@@ -55,7 +58,7 @@ public class JsonApiConnectorTests
         await using var db = NewDb();
         var operatorId = Guid.NewGuid();
         var conn = Connection(operatorId);
-        var connector = new JsonApiConnector(ClientReturning(TwoValidOffers), db);
+        var connector = Connector(TwoValidOffers, db);
 
         var result = await connector.RunAsync(conn, default);
 
@@ -93,7 +96,7 @@ public class JsonApiConnectorTests
         await using var db = NewDb();
         var conn = Connection(Guid.NewGuid());
 
-        await new JsonApiConnector(ClientReturning(TwoValidOffers), db).RunAsync(conn, default);
+        await Connector(TwoValidOffers, db).RunAsync(conn, default);
 
         const string updated = """
         [
@@ -101,7 +104,7 @@ public class JsonApiConnectorTests
             "price": 499, "board": "AllInclusive", "transport": "Plane", "nights": 7 }
         ]
         """;
-        var result = await new JsonApiConnector(ClientReturning(updated), db).RunAsync(conn, default);
+        var result = await Connector(updated, db).RunAsync(conn, default);
 
         Assert.Equal(1, result.OffersImported);
 
@@ -129,7 +132,7 @@ public class JsonApiConnectorTests
             "board": "Caviar", "transport": "Plane", "nights": 5 }
         ]
         """;
-        var result = await new JsonApiConnector(ClientReturning(mixed), db).RunAsync(conn, default);
+        var result = await Connector(mixed, db).RunAsync(conn, default);
 
         Assert.True(result.Succeeded);          // bad row doesn't fail the whole run
         Assert.Equal(2, result.OffersFetched);
@@ -155,7 +158,7 @@ public class JsonApiConnectorTests
             ConfigJson = "{}",
         };
 
-        var result = await new JsonApiConnector(ClientReturning(TwoValidOffers), db).RunAsync(conn, default);
+        var result = await Connector(TwoValidOffers, db).RunAsync(conn, default);
 
         Assert.False(result.Succeeded);
         Assert.Empty(await db.Offers.ToListAsync());
@@ -167,7 +170,7 @@ public class JsonApiConnectorTests
         await using var db = NewDb();
         var conn = Connection(Guid.NewGuid());
 
-        var result = await new JsonApiConnector(ClientReturning(null), db).RunAsync(conn, default);
+        var result = await Connector(null, db).RunAsync(conn, default);
 
         Assert.False(result.Succeeded);
         Assert.NotEmpty(result.Errors);

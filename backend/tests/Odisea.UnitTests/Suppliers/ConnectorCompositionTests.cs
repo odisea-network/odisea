@@ -41,6 +41,7 @@ public class ConnectorCompositionTests
 
         Assert.Equal(SupplierConnectionKind.Manual, registry.For(SupplierConnectionKind.Manual).Kind);
         Assert.Equal(SupplierConnectionKind.JsonApi, registry.For(SupplierConnectionKind.JsonApi).Kind);
+        Assert.Equal(SupplierConnectionKind.Xml, registry.For(SupplierConnectionKind.Xml).Kind);
     }
 
     [Fact]
