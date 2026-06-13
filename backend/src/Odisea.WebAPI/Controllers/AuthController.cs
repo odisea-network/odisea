@@ -85,6 +85,32 @@ public class AuthController(
             };
             db.Memberships.Add(membership);
         }
+        else if (!string.IsNullOrWhiteSpace(req.TenantName) && !string.IsNullOrWhiteSpace(req.TenantRole))
+        {
+            // Self-serve: provision the named tenant(s) and make the user their admin.
+            var role = req.TenantRole.Trim().ToLowerInvariant();
+            if (role is not ("agency" or "operator" or "both"))
+                return Problem(title: "Validation", detail: $"Invalid role: {req.TenantRole}.", statusCode: 400);
+
+            var name = req.TenantName.Trim();
+
+            if (role is "agency" or "both")
+            {
+                var agency = new Agency { Name = name, Slug = await UniqueSlugAsync(name, slug => db.Agencies.AnyAsync(a => a.Slug == slug, ct)) };
+                db.Agencies.Add(agency);
+                var m = new Membership { UserId = user.Id, TenantType = TenantType.Agency, TenantId = agency.Id, Role = UserRole.AgencyAdmin };
+                db.Memberships.Add(m);
+                membership ??= m; // agency is the primary tenant for "both"
+            }
+            if (role is "operator" or "both")
+            {
+                var op = new Operator { Name = name, Slug = await UniqueSlugAsync(name, slug => db.Operators.AnyAsync(o => o.Slug == slug, ct)) };
+                db.Operators.Add(op);
+                var m = new Membership { UserId = user.Id, TenantType = TenantType.Operator, TenantId = op.Id, Role = UserRole.OperatorAdmin };
+                db.Memberships.Add(m);
+                membership ??= m;
+            }
+        }
 
         await db.SaveChangesAsync(ct);
 
@@ -191,6 +217,41 @@ public class AuthController(
     }
 
     // ── Shared helpers ─────────────────────────────────────────────────────────
+
+    // Bulgarian Cyrillic → Latin so self-serve tenant names yield readable slugs.
+    private static readonly Dictionary<char, string> Translit = new()
+    {
+        ['а'] = "a", ['б'] = "b", ['в'] = "v", ['г'] = "g", ['д'] = "d", ['е'] = "e",
+        ['ж'] = "zh", ['з'] = "z", ['и'] = "i", ['й'] = "y", ['к'] = "k", ['л'] = "l",
+        ['м'] = "m", ['н'] = "n", ['о'] = "o", ['п'] = "p", ['р'] = "r", ['с'] = "s",
+        ['т'] = "t", ['у'] = "u", ['ф'] = "f", ['х'] = "h", ['ц'] = "ts", ['ч'] = "ch",
+        ['ш'] = "sh", ['щ'] = "sht", ['ъ'] = "a", ['ь'] = "y", ['ю'] = "yu", ['я'] = "ya",
+    };
+
+    private static string Slugify(string name)
+    {
+        var sb = new StringBuilder();
+        foreach (var ch in name.Trim().ToLowerInvariant())
+        {
+            if (ch is >= 'a' and <= 'z' or >= '0' and <= '9') sb.Append(ch);
+            else if (Translit.TryGetValue(ch, out var latin)) sb.Append(latin);
+            else if (ch is ' ' or '-' or '_' or '.') sb.Append('-');
+        }
+        var slug = sb.ToString().Trim('-');
+        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        return string.IsNullOrEmpty(slug) ? $"tenant-{Guid.NewGuid():N}"[..13] : slug;
+    }
+
+    // Slugify then append -2, -3, … until the predicate reports the slug is free.
+    private static async Task<string> UniqueSlugAsync(string name, Func<string, Task<bool>> exists)
+    {
+        var baseSlug = Slugify(name);
+        var slug = baseSlug;
+        var n = 1;
+        while (await exists(slug)) slug = $"{baseSlug}-{++n}";
+        return slug;
+    }
+
 
     // Validates email + password. Always runs hash comparison to prevent timing-based
     // email enumeration even when the user record doesn't exist.

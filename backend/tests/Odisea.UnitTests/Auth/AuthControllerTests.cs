@@ -115,6 +115,94 @@ public class AuthControllerTests
         Assert.NotNull(stored);
     }
 
+    [Fact]
+    public async Task Register_SelfServeAgency_CreatesAgencyAndAdminMembership()
+    {
+        var (ctrl, db, _, _) = Build();
+        await using var _ = db;
+
+        var result = await ctrl.Register(
+            new RegisterRequest("owner@slantsevtur.bg", "Password1!", "Мария Добрева", null, null,
+                TenantName: "Слънчев Тур", TenantRole: "agency"),
+            default);
+
+        Assert.IsType<OkObjectResult>(result);
+
+        var agency = await db.Agencies.SingleAsync();
+        Assert.Equal("Слънчев Тур", agency.Name);
+        Assert.Equal("slanchev-tur", agency.Slug); // Cyrillic transliterated
+
+        var membership = await db.Memberships.SingleAsync();
+        Assert.Equal(TenantType.Agency, membership.TenantType);
+        Assert.Equal(agency.Id, membership.TenantId);
+        Assert.Equal(UserRole.AgencyAdmin, membership.Role);
+    }
+
+    [Fact]
+    public async Task Register_SelfServeOperator_CreatesOperatorAndAdminMembership()
+    {
+        var (ctrl, db, _, _) = Build();
+        await using var _ = db;
+
+        await ctrl.Register(
+            new RegisterRequest("ops@profi.com", "Password1!", "Ops", null, null,
+                TenantName: "Profi Tours", TenantRole: "operator"),
+            default);
+
+        var op = await db.Operators.SingleAsync();
+        Assert.Equal("profi-tours", op.Slug);
+        var membership = await db.Memberships.SingleAsync();
+        Assert.Equal(TenantType.Operator, membership.TenantType);
+        Assert.Equal(UserRole.OperatorAdmin, membership.Role);
+    }
+
+    [Fact]
+    public async Task Register_SelfServeBoth_CreatesAgencyAndOperator()
+    {
+        var (ctrl, db, _, _) = Build();
+        await using var _ = db;
+
+        await ctrl.Register(
+            new RegisterRequest("both@x.com", "Password1!", "Both", null, null,
+                TenantName: "Adriatik", TenantRole: "both"),
+            default);
+
+        Assert.Equal(1, await db.Agencies.CountAsync());
+        Assert.Equal(1, await db.Operators.CountAsync());
+        Assert.Equal(2, await db.Memberships.CountAsync());
+    }
+
+    [Fact]
+    public async Task Register_SelfServe_SlugCollision_GetsSuffixed()
+    {
+        var (ctrl, db, _, _) = Build();
+        await using var _ = db;
+        db.Agencies.Add(new Agency { Name = "Taken", Slug = "adriatik" });
+        await db.SaveChangesAsync();
+
+        await ctrl.Register(
+            new RegisterRequest("a2@x.com", "Password1!", "A2", null, null,
+                TenantName: "Adriatik", TenantRole: "agency"),
+            default);
+
+        var created = await db.Agencies.SingleAsync(a => a.Name == "Adriatik");
+        Assert.Equal("adriatik-2", created.Slug);
+    }
+
+    [Fact]
+    public async Task Register_SelfServe_InvalidRole_Returns400()
+    {
+        var (ctrl, db, _, _) = Build();
+        await using var _ = db;
+
+        var result = await ctrl.Register(
+            new RegisterRequest("bad@x.com", "Password1!", "Bad", null, null,
+                TenantName: "X", TenantRole: "wizard"),
+            default);
+
+        Assert.Equal(400, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
     // ── Login ─────────────────────────────────────────────────────────────────
 
     [Fact]

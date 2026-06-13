@@ -5,7 +5,11 @@ public record RegisterRequest(
     string Password,
     string DisplayName,
     Guid? AgencyId,
-    Guid? OperatorId
+    Guid? OperatorId,
+    // Self-serve signup: instead of joining an existing tenant by id, a new user
+    // can name their own agency/operator. TenantRole is "agency" | "operator" | "both".
+    string? TenantName = null,
+    string? TenantRole = null
 );
 
 public record LoginRequest(
