@@ -4,7 +4,12 @@ import { CollectionsPage } from './collections.page';
 import { authGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'offers' },
+  {
+    path: '',
+    pathMatch: 'full',
+    title: 'Odisea — Дистрибуция на туристически продукти',
+    loadComponent: () => import('./landing.page').then(m => m.LandingPage),
+  },
   {
     path: 'login',
     title: 'Sign in — Odisea',

@@ -1,0 +1,370 @@
+@let tt = t();
+
+<!-- Reusable offer card (themeable embed component) -->
+<ng-template #cardTpl let-o="o">
+  <article class="odc-card">
+    <div class="odc-card__media">
+      <img [src]="o.img" [alt]="o.title" loading="lazy" />
+      <span class="odc-card__tag">{{ cat(o.cat) }}</span>
+      <button class="odc-card__fav" aria-label="Запази" [innerHTML]="svg('heart', 17)"></button>
+    </div>
+    <div class="odc-card__body">
+      <span class="odc-card__loc"><span class="ic" [innerHTML]="svg('pin', 14)"></span>{{ flag(o.country) }} {{ o.region }}, {{ country(o.country) }}</span>
+      <h3 class="odc-card__title">{{ o.title }}</h3>
+      <div class="odc-card__meta">
+        <span class="odc-chip"><span class="ic" [innerHTML]="svg('moon', 13)"></span>{{ o.nights }} нощувки</span>
+        <span class="odc-chip">{{ board(o.board) }}</span>
+        <span class="odc-chip"><span class="ic" [innerHTML]="svg(o.transport === 'plane' ? 'plane' : 'bus', 13)"></span>{{ o.transport === 'plane' ? 'Самолет' : 'Автобус' }}</span>
+      </div>
+      <div class="odc-card__foot">
+        <div class="odc-card__price-wrap">
+          <span class="odc-card__from">от</span>
+          <span class="odc-card__price">€{{ o.price }} <small>/ човек</small></span>
+        </div>
+        <button class="odc-card__cta">Виж офертата<span class="ic" [innerHTML]="svg('arrowR', 15)"></span></button>
+      </div>
+    </div>
+  </article>
+</ng-template>
+
+<div class="lp-root">
+  <!-- NAV -->
+  <header class="lp-nav">
+    <div class="lp-container lp-nav__in">
+      <a href="#top" class="lp-brand"><ng-container [ngTemplateOutlet]="brand" /></a>
+      <nav class="lp-nav__links">
+        <a href="#how">{{ tt.nav.how }}</a>
+        <a href="#channels">{{ tt.nav.channels }}</a>
+        <a href="#operators">{{ tt.nav.operators }}</a>
+        <a href="#pricing">{{ tt.nav.pricing }}</a>
+      </nav>
+      <div class="lp-nav__right">
+        <div class="lp-langtoggle">
+          @for (l of ['bg', 'en']; track l) {
+            <button type="button" [class.on]="lang() === l" (click)="setLang($any(l))">{{ l }}</button>
+          }
+        </div>
+        <a routerLink="/login" class="lp-nav__login">{{ tt.nav.login }}</a>
+        <a href="mailto:info@odisea.travel" class="btn btn--primary">{{ tt.nav.demo }}</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section id="top" class="lp-hero">
+    <div class="lp-container lp-hero__grid">
+      <div>
+        <div class="lp-eyebrow">{{ tt.hero.eyebrow }}</div>
+        <h1 class="lp-display lp-hero__h1">{{ tt.hero.h1a }}<br />{{ tt.hero.h1b }} <span class="lp-accent">{{ tt.hero.h1c }}</span></h1>
+        <p class="lp-hero__sub">{{ tt.hero.sub }}</p>
+        <div class="lp-hero__ctas">
+          <a href="mailto:info@odisea.travel" class="btn btn--primary btn--lg">{{ tt.hero.cta1 }}<span class="ic" [innerHTML]="svg('arrowR', 17)"></span></a>
+          <a href="#demo" class="btn btn--secondary btn--lg"><span class="ic" [innerHTML]="svg('eye', 17)"></span>{{ tt.hero.cta2 }}</a>
+        </div>
+        <div class="lp-hero__trust">
+          <div class="lp-hero__trust-label">{{ tt.hero.trust }}</div>
+          <div class="lp-hero__logos">
+            @for (n of tt.proof.logos.slice(0, 5); track n) { <span class="lp-logo">{{ n }}</span> }
+          </div>
+        </div>
+      </div>
+      <div class="lp-hero__art">
+        <div class="odc-scope odc-theme-paradise">
+          <div class="lp-frame">
+            <div class="lp-frame__bar">
+              <span class="lp-dots"><i style="background:#f0685f"></i><i style="background:#f6bd3b"></i><i style="background:#61c454"></i></span>
+              <div class="lp-frame__url"><span class="ic" [innerHTML]="svg('link', 12)"></span>vashata-agencia.bg</div>
+            </div>
+            <div class="lp-frame__body lp-frame__body--paradise">
+              <div class="lp-hero__cards">
+                @for (o of heroOffers; track o.id) {
+                  <ng-container [ngTemplateOutlet]="cardTpl" [ngTemplateOutletContext]="{ o }" />
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lp-hero__snippet">
+          <span style="color:#7fd1c9">&lt;odisea-collection</span><br />&nbsp;&nbsp;<span style="color:#e9c46a">theme</span>=<span style="color:#f0a07a">"brand"</span> <span style="color:#7fd1c9">/&gt;</span>
+        </div>
+        <div class="lp-hero__swatches">
+          <span class="lp-swatch-label">Тема</span>
+          <span class="lp-swatch" style="background:#1a5a61"></span>
+          <span class="lp-swatch lp-swatch--sel" style="background:#C85727"></span>
+          <span class="lp-swatch" style="background:#1f4ed8"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section class="lp-section">
+    <div class="lp-container">
+      <div class="lp-head lp-head--left">
+        <h2 class="lp-display lp-h2">{{ tt.values.title }}</h2>
+        <p class="lp-lead">{{ tt.values.sub }}</p>
+      </div>
+      <div class="lp-grid-cards">
+        @for (v of tt.values.items; track v.t) {
+          <div class="lp-card">
+            <div class="lp-card__icon"><span class="ic" [innerHTML]="svg(v.i, 22)"></span></div>
+            <h3 class="lp-card__title">{{ v.t }}</h3>
+            <p class="lp-card__text">{{ v.d }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section id="how" class="lp-section lp-section--tint">
+    <div class="lp-container">
+      <div class="lp-head lp-head--center">
+        <div class="lp-eyebrow">{{ tt.how.eyebrow }}</div>
+        <h2 class="lp-display lp-h2">{{ tt.how.title }}</h2>
+      </div>
+      <div class="lp-grid-steps">
+        @for (s of tt.how.steps; track s.n) {
+          <div class="lp-step">
+            <div class="lp-display lp-step__n">{{ s.n }}</div>
+            <h3 class="lp-card__title">{{ s.t }}</h3>
+            <p class="lp-card__text">{{ s.d }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE DEMO -->
+  <section id="demo" class="lp-section">
+    <div class="lp-container">
+      <div class="lp-head lp-head--center">
+        <div class="lp-eyebrow">{{ tt.demo.eyebrow }}</div>
+        <h2 class="lp-display lp-h2">{{ tt.demo.title }}</h2>
+        <p class="lp-lead">{{ tt.demo.sub }}</p>
+      </div>
+      <div class="lp-demo__controls">
+        <div class="lp-control">
+          <span class="lp-control__label">{{ tt.demo.theme }}</span>
+          <div class="lp-seg">
+            <button type="button" [class.on]="theme() === 'odisea'" (click)="theme.set('odisea')">{{ tt.demo.themes.odisea }}</button>
+            <button type="button" [class.on]="theme() === 'paradise'" (click)="theme.set('paradise')">{{ tt.demo.themes.paradise }}</button>
+            <button type="button" [class.on]="theme() === 'azur'" (click)="theme.set('azur')">{{ tt.demo.themes.azur }}</button>
+          </div>
+        </div>
+        <div class="lp-control">
+          <span class="lp-control__label">{{ tt.demo.layout }}</span>
+          <div class="lp-seg">
+            <button type="button" [class.on]="layout() === 'grid'" (click)="layout.set('grid')"><span class="ic" [innerHTML]="svg('grid', 15)"></span>{{ tt.demo.grid }}</button>
+            <button type="button" [class.on]="layout() === 'carousel'" (click)="layout.set('carousel')"><span class="ic" [innerHTML]="svg('arrowR', 15)"></span>{{ tt.demo.carousel }}</button>
+          </div>
+        </div>
+      </div>
+      <div class="lp-demo__frame">
+        <div class="lp-frame">
+          <div class="lp-frame__bar">
+            <span class="lp-dots"><i style="background:#f0685f"></i><i style="background:#f6bd3b"></i><i style="background:#61c454"></i></span>
+            <div class="lp-frame__url"><span class="ic" [innerHTML]="svg('link', 12)"></span>{{ tt.demo.url }}</div>
+          </div>
+          <div class="lp-frame__body" [class.lp-frame__body--paradise]="theme() === 'paradise'">
+            <div class="odc-scope lp-demo__scope" [class]="themeClass()">
+              @if (layout() === 'carousel') {
+                <div class="odc-carousel-wrap">
+                  <div class="odc-list__head">
+                    <h2 class="odc-list__title">{{ tt.demo.carouselTitle }}</h2>
+                    <div style="display:flex; gap:8px">
+                      <button class="odc-carousel-nav" aria-label="Назад" (click)="scrollCarousel(-1)" [innerHTML]="svg('chevL', 18)"></button>
+                      <button class="odc-carousel-nav" aria-label="Напред" (click)="scrollCarousel(1)" [innerHTML]="svg('chevR', 18)"></button>
+                    </div>
+                  </div>
+                  <div class="odc-carousel" #carousel>
+                    @for (o of offers; track o.id) {
+                      <ng-container [ngTemplateOutlet]="cardTpl" [ngTemplateOutletContext]="{ o }" />
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div>
+                  <div class="odc-list__head">
+                    <h2 class="odc-list__title">{{ tt.demo.listTitle }}</h2>
+                    <div style="display:flex; align-items:center; gap:12px">
+                      <span class="odc-list__count">{{ offers.length }} оферти</span>
+                      <select class="odc-sort">
+                        <option>Подреди: Препоръчани</option>
+                        <option>Цена ↑</option>
+                        <option>Цена ↓</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="odc-list odc-list--3">
+                    @for (o of offers; track o.id) {
+                      <ng-container [ngTemplateOutlet]="cardTpl" [ngTemplateOutletContext]="{ o }" />
+                    }
+                  </div>
+                </div>
+              }
+              <div class="odc-credit">{{ tt.demo.credit }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHANNELS -->
+  <section id="channels" class="lp-section lp-section--gray">
+    <div class="lp-container">
+      <div class="lp-head lp-head--left">
+        <div class="lp-eyebrow">{{ tt.channels.eyebrow }}</div>
+        <h2 class="lp-display lp-h2">{{ tt.channels.title }}</h2>
+        <p class="lp-lead">{{ tt.channels.sub }}</p>
+      </div>
+      <div class="lp-grid-channels">
+        @for (c of tt.channels.items; track c.t) {
+          <div class="lp-channel">
+            <div class="lp-channel__icon"><span class="ic" [innerHTML]="svg(c.i, 20)"></span></div>
+            <div class="lp-channel__body">
+              <div class="lp-channel__head">
+                <span class="lp-channel__name">{{ c.t }}</span>
+                @if ($any(c).tag) { <span class="lp-badge lp-badge--gold">{{ $any(c).tag }}</span> }
+                @if ($any(c).soon) { <span class="lp-badge">{{ lang() === 'en' ? 'Soon' : 'Скоро' }}</span> }
+              </div>
+              <div class="lp-channel__desc">{{ c.d }}</div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- OPERATORS -->
+  <section id="operators" class="lp-section lp-band">
+    <div class="lp-container lp-band__grid">
+      <div>
+        <div class="lp-eyebrow lp-eyebrow--light">{{ tt.operators.eyebrow }}</div>
+        <h2 class="lp-display lp-h2 lp-h2--light">{{ tt.operators.title }}</h2>
+        <p class="lp-band__sub">{{ tt.operators.sub }}</p>
+        <div class="lp-adapters">
+          @for (a of tt.operators.adapters; track a) { <span class="lp-adapter">{{ a }}</span> }
+        </div>
+        <div class="lp-bullets">
+          @for (b of tt.operators.bullets; track b) {
+            <div class="lp-bullet"><span class="ic lp-bullet__check" [innerHTML]="svg('check', 17)"></span>{{ b }}</div>
+          }
+        </div>
+        <a href="mailto:info@odisea.travel" class="btn btn--gold btn--lg">{{ tt.operators.cta }}<span class="ic" [innerHTML]="svg('arrowR', 17)"></span></a>
+      </div>
+      <div class="lp-stats">
+        @for (s of tt.operators.stats; track s.l) {
+          <div class="lp-stat">
+            <div class="lp-display lp-stat__v">{{ s.v }}</div>
+            <div class="lp-stat__l">{{ s.l }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF -->
+  <section class="lp-section">
+    <div class="lp-container">
+      <div class="lp-prooflogos">
+        @for (n of tt.proof.logos; track n) { <span class="lp-logo lp-logo--lg">{{ n }}</span> }
+      </div>
+      <blockquote class="lp-quote">
+        <p class="lp-display lp-quote__text">{{ tt.proof.quote }}</p>
+        <footer class="lp-quote__foot">
+          <div class="lp-avatar">{{ tt.proof.author[0] }}</div>
+          <div class="lp-quote__who">
+            <div class="lp-quote__name">{{ tt.proof.author }}</div>
+            <div class="lp-quote__role">{{ tt.proof.role }}</div>
+          </div>
+        </footer>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="lp-section lp-section--gray">
+    <div class="lp-container">
+      <div class="lp-head lp-head--center">
+        <div class="lp-eyebrow">{{ tt.pricing.eyebrow }}</div>
+        <h2 class="lp-display lp-h2">{{ tt.pricing.title }}</h2>
+        <p class="lp-lead">{{ tt.pricing.sub }}</p>
+      </div>
+      <div class="lp-grid-pricing">
+        @for (tier of tt.pricing.tiers; track tier.name) {
+          <div class="lp-tier" [class.lp-tier--pop]="tier.popular">
+            @if (tier.popular) { <div class="lp-tier__pop">{{ tt.pricing.popular }}</div> }
+            <h3 class="lp-tier__name">{{ tier.name }}</h3>
+            <p class="lp-tier__who">{{ tier.who }}</p>
+            <div class="lp-tier__price">
+              <span class="lp-display lp-tier__amount">{{ tier.price }}</span>
+              @if (tier.price.startsWith('€')) { <span class="lp-tier__per">{{ tt.pricing.perMonth }}</span> }
+            </div>
+            <a href="mailto:info@odisea.travel" class="btn btn--full" [class.btn--primary]="tier.popular" [class.btn--secondary]="!tier.popular">{{ tier.cta }}</a>
+            <div class="lp-tier__feats">
+              @for (f of tier.feats; track f) {
+                <div class="lp-tier__feat"><span class="ic lp-tier__check" [innerHTML]="svg('check', 17)"></span>{{ f }}</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="lp-section lp-band lp-band--center">
+    <div class="lp-container">
+      <h2 class="lp-display lp-h2 lp-h2--light">{{ tt.finalCta.title }}</h2>
+      <p class="lp-band__sub lp-band__sub--center">{{ tt.finalCta.sub }}</p>
+      <div class="lp-finalcta">
+        <a href="mailto:info@odisea.travel" class="btn btn--gold btn--lg">{{ tt.finalCta.cta }}<span class="ic" [innerHTML]="svg('arrowR', 17)"></span></a>
+        <a routerLink="/offers" class="btn btn--outline-light btn--lg">{{ tt.finalCta.cta2 }}<span class="ic" [innerHTML]="svg('ext', 16)"></span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="lp-footer">
+    <div class="lp-container lp-footer__grid">
+      <div>
+        <ng-container [ngTemplateOutlet]="brand" [ngTemplateOutletContext]="{ light: true }" />
+        <p class="lp-footer__tag">{{ tt.footer.tagline }}</p>
+        <div class="lp-footer__contact">info&#64;odisea.travel · +359 888 000 000</div>
+      </div>
+      @for (col of tt.footer.cols; track col[0]) {
+        <div>
+          <div class="lp-footer__head">{{ col[0] }}</div>
+          <div class="lp-footer__links">
+            @for (it of col[1]; track it) { <a href="#">{{ it }}</a> }
+          </div>
+        </div>
+      }
+    </div>
+    <div class="lp-container lp-footer__bottom">
+      <span>{{ tt.footer.rights }}</span>
+      <div class="lp-langtoggle lp-langtoggle--dark">
+        @for (l of ['bg', 'en']; track l) {
+          <button type="button" [class.on]="lang() === l" (click)="setLang($any(l))">{{ l }}</button>
+        }
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- Brand wordmark (leaf mark + serif "odisea") -->
+<ng-template #brand let-light="light">
+  <span class="lp-wordmark">
+    <svg width="23" height="27" viewBox="0 0 32 38" fill="none" aria-hidden="true">
+      <path d="M16 37V12" stroke="var(--od-gold-500)" stroke-width="1.6" stroke-linecap="round" />
+      <path d="M16 13c-1.8-3.2-5.6-4.4-9.2-3.8 0 3.8 2.6 7 6.4 7.6 1.4.2 2.2 0 2.8-.4" fill="var(--od-gold-500)" opacity="0.95" />
+      <path d="M16 13c1.8-3.2 5.6-4.4 9.2-3.8 0 3.8-2.6 7-6.4 7.6-1.4.2-2.2 0-2.8-.4" fill="var(--od-gold-500)" opacity="0.95" />
+      <path d="M16 22c-1.6-2.8-4.8-3.8-8-3.3 0 3.3 2.3 6 5.6 6.6 1.2.2 1.9 0 2.4-.3" fill="var(--od-gold-500)" opacity="0.78" />
+      <path d="M16 22c1.6-2.8 4.8-3.8 8-3.3 0 3.3-2.3 6-5.6 6.6-1.2.2-1.9 0-2.4-.3" fill="var(--od-gold-500)" opacity="0.78" />
+      <path d="M16 4.5c-1.7 1.8-1.7 4.7 0 6.8 1.7-2.1 1.7-5 0-6.8Z" fill="var(--od-gold-500)" />
+    </svg>
+    <span class="lp-wordmark__text" [class.lp-wordmark__text--light]="light">odisea</span>
+  </span>
+</ng-template>
