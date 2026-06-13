@@ -20,6 +20,7 @@ public record OfferDto(
     string ImageUrl,
     string Visibility,
     string OwnerType,
+    string Status,
     OfferSourceDto? Source,
     IReadOnlyList<PriceVariantDto> PriceVariants
 );
@@ -107,7 +108,7 @@ public static class Mappings
         o.Id, o.Title, o.Description, o.Country, o.City, o.Price, o.Currency,
         o.BoardBasis.ToString(), o.Transport.ToString(), o.DurationNights,
         o.StartDate, o.EndDate, o.Tags, o.ImageUrl,
-        o.Visibility.ToString(), o.OwnerType.ToString(),
+        o.Visibility.ToString(), o.OwnerType.ToString(), o.Status.ToString(),
         o.Source.ToDto(supplierNames),
         o.PriceVariants.Select(v => v.ToDto()).ToList());
 

@@ -16,7 +16,25 @@ export interface OfferDto {
   durationNights: number;
   imageUrl: string;
   visibility: string;
+  ownerType?: string;
+  status?: string;
   tags: string[];
+}
+
+export interface CreateOfferRequest {
+  title: string;
+  description: string;
+  country: string;
+  city: string;
+  price: number;
+  currency: string;
+  boardBasis: string;
+  transport: string;
+  durationNights: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  tags?: string[];
+  imageUrl?: string | null;
 }
 
 export interface FilterCondition {
@@ -117,6 +135,28 @@ export class ApiService {
 
   listOffers(): Observable<OfferDto[]> {
     return this.http.get<OfferDto[]>(`${this.base}/offers`);
+  }
+
+  // ── Operator-scoped offer management (OperatorAdmin) ──────────────────────────
+
+  listMyOffers(): Observable<OfferDto[]> {
+    return this.http.get<OfferDto[]>(`${this.base}/offers/mine`);
+  }
+
+  createOffer(req: CreateOfferRequest): Observable<OfferDto> {
+    return this.http.post<OfferDto>(`${this.base}/offers`, req);
+  }
+
+  updateOffer(id: string, req: CreateOfferRequest): Observable<OfferDto> {
+    return this.http.put<OfferDto>(`${this.base}/offers/${id}`, req);
+  }
+
+  publishOffer(id: string): Observable<OfferDto> {
+    return this.http.post<OfferDto>(`${this.base}/offers/${id}/publish`, {});
+  }
+
+  unpublishOffer(id: string): Observable<OfferDto> {
+    return this.http.post<OfferDto>(`${this.base}/offers/${id}/unpublish`, {});
   }
 
   listCollections(): Observable<CollectionDto[]> {
