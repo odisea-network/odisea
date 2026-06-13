@@ -30,6 +30,18 @@ public class FakeOfferAccessPolicy(Odisea.Application.Common.Interfaces.IAppDbCo
         Task.FromResult(db.Offers.AsQueryable());
 }
 
+// Records dispatched events so tests can assert on them; never sends anything.
+public class FakeWebhookDispatcher : Odisea.Application.Webhooks.IWebhookDispatcher
+{
+    public List<(Guid AgencyId, string EventType, object Payload)> Dispatched { get; } = [];
+
+    public Task DispatchAsync(Guid agencyId, string eventType, object payload, CancellationToken ct)
+    {
+        Dispatched.Add((agencyId, eventType, payload));
+        return Task.CompletedTask;
+    }
+}
+
 public class FakeDevEnvironment : IHostEnvironment
 {
     public string EnvironmentName { get; set; } = Environments.Development;

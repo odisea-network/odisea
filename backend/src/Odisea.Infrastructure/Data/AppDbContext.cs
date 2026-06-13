@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SourceOffer> SourceOffers => Set<SourceOffer>();
     public DbSet<OperatorAgencyEntitlement> Entitlements => Set<OperatorAgencyEntitlement>();
     public DbSet<Lead> Leads => Set<Lead>();
+    public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<Theme> Themes => Set<Theme>();
     public DbSet<Experience> Experiences => Set<Experience>();
     public DbSet<Publication> Publications => Set<Publication>();

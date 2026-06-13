@@ -3,9 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Odisea.Application.Common.Interfaces;
 using Odisea.Application.Suppliers.Connectors;
+using Odisea.Application.Webhooks;
 using Odisea.Infrastructure.Data;
 using Odisea.Infrastructure.Services;
 using Odisea.Infrastructure.Suppliers.Connectors;
+using Odisea.Infrastructure.Webhooks;
 
 namespace Odisea.Infrastructure;
 
@@ -30,6 +32,11 @@ public static class DependencyInjection
         // New adapters (XML, JSON API, CSV/SFTP) ship in follow-up PRs.
         services.AddSingleton<IConnector, ManualConnector>();
         services.AddSingleton<IConnectorRegistry, ConnectorRegistry>();
+
+        // Outbound webhook delivery — typed HttpClient with a tight timeout so a
+        // slow receiver can't hang the request that triggered the event.
+        services.AddHttpClient<IWebhookSender, HttpWebhookSender>(c =>
+            c.Timeout = TimeSpan.FromSeconds(5));
 
         // JWT secret is validated here at startup; the token validation middleware is
         // wired in Program.cs because JwtBearerDefaults lives in the Web SDK.
