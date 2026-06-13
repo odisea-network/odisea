@@ -11,7 +11,12 @@ export const routes: Routes = [
     loadComponent: () => import('./auth/login.page').then(m => m.LoginPage),
   },
   { path: 'offers', component: OffersPage, title: 'Offers — Odisea' },
-  { path: 'collections', component: CollectionsPage, title: 'Collections — Odisea' },
+  {
+    path: 'collections',
+    component: CollectionsPage,
+    title: 'Collections — Odisea',
+    canActivate: [authGuard],
+  },
   {
     path: 'operator/offers',
     title: 'My offers — Odisea',

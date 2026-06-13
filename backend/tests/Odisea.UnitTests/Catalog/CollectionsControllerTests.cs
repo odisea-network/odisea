@@ -93,4 +93,36 @@ public class CollectionsControllerTests
         Assert.IsType<NotFoundResult>(
             await CreateController(db, green).Get("blue-only", default));
     }
+
+    [Fact]
+    public async Task List_ReturnsOnlyCallingAgencysCollections()
+    {
+        await using var db = CreateDb();
+        var blue = Guid.NewGuid();
+        var green = Guid.NewGuid();
+        await CreateController(db, blue).Create(Request(blue, "blue-1"), default);
+        await CreateController(db, green).Create(Request(green, "green-1"), default);
+
+        var ok = Assert.IsType<OkObjectResult>(await CreateController(db, blue).List(default));
+        var list = Assert.IsAssignableFrom<IEnumerable<CollectionDto>>(ok.Value);
+        Assert.Single(list);
+        Assert.All(list, c => Assert.Equal(blue, c.AgencyId));
+    }
+
+    [Fact]
+    public async Task Get_ById_AnotherAgencysCollection_Returns403()
+    {
+        await using var db = CreateDb();
+        var blue = Guid.NewGuid();
+        var green = Guid.NewGuid();
+
+        var created = Assert.IsType<CreatedAtActionResult>(
+            await CreateController(db, blue).Create(Request(blue, "blue-only"), default));
+        var blueId = Assert.IsType<CollectionDto>(created.Value).Id;
+
+        // Green knows the global id but must be refused.
+        var result = await CreateController(db, green).Get(blueId.ToString(), default);
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, problem.StatusCode);
+    }
 }
