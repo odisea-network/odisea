@@ -13,6 +13,13 @@ export const routes: Routes = [
   { path: 'offers', component: OffersPage, title: 'Offers — Odisea' },
   { path: 'collections', component: CollectionsPage, title: 'Collections — Odisea' },
   {
+    path: 'operator/offers',
+    title: 'My offers — Odisea',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./operator-offers.page').then(m => m.OperatorOffersPage),
+  },
+  {
     path: 'builder',
     title: 'Publication composer — Odisea',
     canActivate: [authGuard],
