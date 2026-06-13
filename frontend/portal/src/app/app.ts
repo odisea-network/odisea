@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService } from './auth/auth.service';
 
 @Component({
@@ -7,6 +8,7 @@ import { AuthService } from './auth/auth.service';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
+    @if (showChrome()) {
     <header>
       <div class="brand">Odisea Network</div>
       <nav>
@@ -32,7 +34,8 @@ import { AuthService } from './auth/auth.service';
         }
       </div>
     </header>
-    <main>
+    }
+    <main [class.bare]="!showChrome()">
       <router-outlet />
     </main>
   `,
@@ -57,12 +60,27 @@ import { AuthService } from './auth/auth.service';
     }
     .account button:hover { color: #fff; border-color: #557; }
     main { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+    main.bare { padding: 0; max-width: none; }
     h2 { margin-top: 0; }
   `],
 })
 export class App {
   auth = inject(AuthService);
   private router = inject(Router);
+
+  // The public landing page renders full-bleed without the portal chrome.
+  showChrome = signal(this.isPortalRoute(this.router.url));
+
+  constructor() {
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(e => this.showChrome.set(this.isPortalRoute(e.urlAfterRedirects)));
+  }
+
+  private isPortalRoute(url: string): boolean {
+    const path = url.split(/[?#]/)[0];
+    return path !== '/' && path !== '';
+  }
 
   logout(): void {
     this.auth.logout();
