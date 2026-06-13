@@ -128,6 +128,24 @@ export interface UpdateThemeRequest {
   tokens?: ThemeTokens;
 }
 
+export interface LeadDto {
+  id: string;
+  kind: string;
+  status: string;
+  agencyId: string;
+  publicationKey: string;
+  channel: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string | null;
+  message: string | null;
+  offerId: string | null;
+  partySize: number | null;
+  preferredDepartureDate: string | null;
+  nights: number | null;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -181,6 +199,17 @@ export class ApiService {
 
   publishPublication(id: string): Observable<PublicationDto> {
     return this.http.post<PublicationDto>(`${this.base}/publications/${id}/publish`, {});
+  }
+
+  // ── Leads inbox (AgencyMember) ────────────────────────────────────────────────
+
+  listLeads(status?: string): Observable<LeadDto[]> {
+    const params = status ? `?status=${status}` : '';
+    return this.http.get<LeadDto[]>(`${this.base}/leads${params}`);
+  }
+
+  setLeadStatus(id: string, status: string): Observable<LeadDto> {
+    return this.http.post<LeadDto>(`${this.base}/leads/${id}/status`, { status });
   }
 
   listThemes(agencyId?: string): Observable<ThemeDto[]> {
