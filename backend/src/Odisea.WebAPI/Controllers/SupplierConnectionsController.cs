@@ -5,6 +5,7 @@ using Odisea.Application.Common.Interfaces;
 using Odisea.Application.Suppliers.Connectors;
 using Odisea.Application.Suppliers.Dtos;
 using Odisea.Application.Suppliers.Freshness;
+using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
 
 namespace Odisea.WebAPI.Controllers;
@@ -15,7 +16,8 @@ namespace Odisea.WebAPI.Controllers;
 public class SupplierConnectionsController(
     IAppDbContext db,
     IImportRunner importRunner,
-    IFreshnessService freshness) : ControllerBase
+    IFreshnessService freshness,
+    IOperatorContext operatorCtx) : ControllerBase
 {
     // Last N runs surfaced per connection on the health rollup.
     private const int RecentRunWindow = 20;
@@ -23,7 +25,9 @@ public class SupplierConnectionsController(
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
+        var operatorId = operatorCtx.RequireOperator();
         var list = await db.SupplierConnections
+            .Where(c => c.OperatorId == operatorId)
             .OrderBy(c => c.Name)
             .ToListAsync(ct);
         return Ok(list.Select(c => c.ToDto()));
@@ -32,7 +36,7 @@ public class SupplierConnectionsController(
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var c = await db.SupplierConnections.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var c = await FindOwned(id, ct);
         return c is null ? NotFound() : Ok(c.ToDto());
     }
 
@@ -40,7 +44,7 @@ public class SupplierConnectionsController(
     [HttpPost("{id:guid}/run")]
     public async Task<IActionResult> Run(Guid id, CancellationToken ct)
     {
-        var connection = await db.SupplierConnections.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var connection = await FindOwned(id, ct);
         if (connection is null) return NotFound();
 
         var job = await importRunner.RunAsync(connection, ct);
@@ -54,8 +58,7 @@ public class SupplierConnectionsController(
     [HttpPost("{id:guid}/sweep")]
     public async Task<IActionResult> Sweep(Guid id, CancellationToken ct)
     {
-        if (!await db.SupplierConnections.AnyAsync(c => c.Id == id, ct))
-            return NotFound();
+        if (await FindOwned(id, ct) is null) return NotFound();
 
         var result = await freshness.SweepAsync(id, ct);
         return Ok(result);
@@ -66,8 +69,7 @@ public class SupplierConnectionsController(
     [HttpGet("{id:guid}/jobs")]
     public async Task<IActionResult> Jobs(Guid id, CancellationToken ct)
     {
-        if (!await db.SupplierConnections.AnyAsync(c => c.Id == id, ct))
-            return NotFound();
+        if (await FindOwned(id, ct) is null) return NotFound();
 
         var jobs = await db.ImportJobs
             .Where(j => j.SupplierConnectionId == id)
@@ -83,7 +85,9 @@ public class SupplierConnectionsController(
     [HttpGet("health")]
     public async Task<IActionResult> Health(CancellationToken ct)
     {
+        var operatorId = operatorCtx.RequireOperator();
         var connections = await db.SupplierConnections
+            .Where(c => c.OperatorId == operatorId)
             .OrderBy(c => c.Name)
             .ToListAsync(ct);
 
@@ -119,5 +123,14 @@ public class SupplierConnectionsController(
         });
 
         return Ok(health);
+    }
+
+    // Loads a connection only if it belongs to the calling operator. Returns null
+    // for both "missing" and "not yours" so we never leak another operator's data.
+    private async Task<SupplierConnection?> FindOwned(Guid id, CancellationToken ct)
+    {
+        var operatorId = operatorCtx.RequireOperator();
+        var connection = await db.SupplierConnections.FirstOrDefaultAsync(c => c.Id == id, ct);
+        return connection is not null && connection.OperatorId == operatorId ? connection : null;
     }
 }
