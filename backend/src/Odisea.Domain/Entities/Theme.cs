@@ -11,4 +11,9 @@ public class Theme : Entity
     public ThemeStatus Status { get; set; } = ThemeStatus.Draft;
     public int Version { get; set; } = 1;
     public ThemeTokens Tokens { get; set; } = ThemeTokens.Default();
+
+    // Platform-owned template any agency can browse and clone (the theme
+    // marketplace). Presets carry AgencyId Guid.Empty and never appear in an
+    // agency's own theme list.
+    public bool IsPreset { get; set; }
 }

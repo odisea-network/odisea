@@ -184,7 +184,44 @@ public static class Seeder
         await SeedUsersAsync(db, blue.Id, green.Id, sunOps.Id, ct);
 
         await SeedEventsAsync(db, ct);
+
+        await SeedThemePresetsAsync(db, ct);
     }
+
+    // Theme marketplace seed: a few platform-owned preset templates any agency can
+    // clone. Presets carry AgencyId Guid.Empty and IsPreset = true.
+    private static async Task SeedThemePresetsAsync(AppDbContext db, CancellationToken ct)
+    {
+        try
+        {
+            if (await db.Themes.AnyAsync(t => t.IsPreset, ct)) return;
+
+            db.Themes.AddRange(
+                Preset("Coastal", accent: "#1a7f8c", price: "#0e1618", bg: "#f3fafb", surface: "#ffffff", radius: "12", ratio: "4 / 3"),
+                Preset("Sunset", accent: "#e26d3f", price: "#3a1d12", bg: "#fdf4ef", surface: "#ffffff", radius: "10", ratio: "3 / 2"),
+                Preset("Midnight", accent: "#6c5ce7", price: "#f5f5ff", bg: "#15161f", surface: "#1f2030", radius: "8", ratio: "16 / 9"));
+
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // Themes table may not exist on an older DB state; presets are optional.
+        }
+    }
+
+    private static Theme Preset(string name, string accent, string price, string bg, string surface, string radius, string ratio) => new()
+    {
+        AgencyId = Guid.Empty,
+        Name = name,
+        Status = ThemeStatus.Published,
+        IsPreset = true,
+        Tokens = new ThemeTokens
+        {
+            Foundation = new() { ["accent"] = accent, ["fontBody"] = "Onest", ["fontHead"] = "Onest", ["radius"] = radius },
+            Semantic = new() { ["price"] = price, ["bg"] = bg, ["surface"] = surface },
+            Component = new() { ["cardRatio"] = ratio },
+        },
+    };
 
     // Dev convenience: a 30-day spread of analytics events for the seeded
     // publications so the dashboard has real numbers to render. The funnel

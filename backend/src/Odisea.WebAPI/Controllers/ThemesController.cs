@@ -16,13 +16,64 @@ public class ThemesController(IAppDbContext db, IAgencyContext agencyCtx) : Cont
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] Guid? agencyId, CancellationToken ct)
     {
-        var q = db.Themes.AsQueryable();
+        // Presets are platform templates with their own endpoint — keep them out of
+        // an agency's working theme list.
+        var q = db.Themes.Where(t => !t.IsPreset);
         if (agencyId.HasValue)
             q = q.Where(t => t.AgencyId == agencyId.Value);
 
         var list = await q.OrderBy(t => t.Name).ToListAsync(ct);
         return Ok(list.Select(ThemeMappings.ToDto));
     }
+
+    // The theme marketplace: platform-owned preset templates any agency can browse.
+    // Anonymous — presets are public catalog content, not tenant data.
+    [HttpGet("presets")]
+    public async Task<IActionResult> Presets(CancellationToken ct)
+    {
+        var presets = await db.Themes
+            .Where(t => t.IsPreset)
+            .OrderBy(t => t.Name)
+            .ToListAsync(ct);
+        return Ok(presets.Select(ThemeMappings.ToDto));
+    }
+
+    // Clones a preset's tokens into a new Draft theme owned by the caller's agency.
+    [Authorize(Policy = "AgencyMember")]
+    [HttpPost("from-preset/{presetId:guid}")]
+    public async Task<IActionResult> CloneFromPreset(Guid presetId, CloneFromPresetRequest req, CancellationToken ct)
+    {
+        if (agencyCtx.AgencyId is not Guid agencyId)
+            return Problem(title: "Validation",
+                detail: "Platform admins must specify an agency; this endpoint requires an agency-scoped caller.",
+                statusCode: 400);
+
+        var preset = await db.Themes.FirstOrDefaultAsync(t => t.Id == presetId && t.IsPreset, ct);
+        if (preset is null)
+            return Problem(title: "Not found", detail: "Preset not found.", statusCode: 404);
+
+        var theme = new Theme
+        {
+            AgencyId = agencyId,
+            Name = string.IsNullOrWhiteSpace(req.Name) ? $"{preset.Name} (copy)" : req.Name,
+            Status = ThemeStatus.Draft,
+            Version = 1,
+            // Deep-copy the tokens so editing the clone never touches the preset.
+            Tokens = CloneTokens(preset.Tokens),
+            IsPreset = false,
+        };
+
+        db.Themes.Add(theme);
+        await db.SaveChangesAsync(ct);
+        return CreatedAtAction(nameof(Get), new { id = theme.Id }, theme.ToDto());
+    }
+
+    private static Domain.ValueObjects.ThemeTokens CloneTokens(Domain.ValueObjects.ThemeTokens src) => new()
+    {
+        Foundation = new(src.Foundation),
+        Semantic = new(src.Semantic),
+        Component = new(src.Component),
+    };
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
