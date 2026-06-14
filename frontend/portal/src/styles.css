@@ -191,6 +191,14 @@ body {
 .od-secret { padding: 18px 20px; border-radius: var(--od-r-lg); background: var(--od-gold-50); border: 1px solid var(--od-gold-200); }
 .od-secret__code { display: block; flex: 1; font-family: var(--od-mono); font-size: 13.5px; background: var(--od-ink); color: #cfe8e6; border-radius: var(--od-r-md); padding: 12px 14px; overflow: auto; white-space: nowrap; }
 
+/* Pages not yet migrated to .od-page get default portal padding inside the shell */
+app-operator-offers-page, app-builder-page, app-theme-studio-page {
+  display: block;
+  padding: 28px 32px 60px;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
 @keyframes odFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes odPop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes odSlide { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
