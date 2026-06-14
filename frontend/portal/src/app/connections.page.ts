@@ -1,10 +1,22 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ConnectionHealthDto, ImportJobDto } from './api.service';
 import { CANONICAL_FIELDS, FieldMapRow, buildConfigJson, parseConfig } from './connection-config';
+import { OdIcon } from './shared/od-icon';
 
 const KINDS = ['JsonApi', 'Xml', 'Manual', 'CsvSftp'];
+const KIND_LABEL: Record<string, string> = { JsonApi: 'JSON API', Xml: 'XML', Manual: 'Ръчно', CsvSftp: 'CSV · SFTP' };
+const CONN_STATUS: Record<string, { tone: string; label: string }> = {
+  Active: { tone: 'success', label: 'Активна' },
+  Paused: { tone: 'neutral', label: 'На пауза' },
+  Failed: { tone: 'danger', label: 'Неуспешна' },
+};
+const RUN_STATUS: Record<string, { tone: string; label: string }> = {
+  Succeeded: { tone: 'success', label: 'Успешно' },
+  Failed: { tone: 'danger', label: 'Неуспешно' },
+  Running: { tone: 'info', label: 'В процес' },
+};
 
 interface ConnForm {
   name: string;
@@ -17,183 +29,198 @@ interface ConnForm {
 @Component({
   selector: 'app-connections-page',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, OdIcon],
   template: `
-    <div class="head">
-      <h2>Supplier connections</h2>
-      <div class="head-actions">
-        <button type="button" (click)="newConnection()">New connection</button>
-        <button type="button" class="ghost" (click)="reload()" [disabled]="loading()">Refresh</button>
+    <div class="od-page">
+      <div class="od-pagehead">
+        <div>
+          <div class="od-eyebrow">Supply side</div>
+          <h1>Връзки с доставчици</h1>
+          <p class="od-pagehead__sub">Управлявайте връзките към доставчиците и следете състоянието на импортирането. Единен договор: извличане, разбор, валидиране, нормализиране и обновяване.</p>
+        </div>
+        <div class="od-pagehead__actions">
+          <button type="button" class="od-btn od-btn--secondary" (click)="reload()" [disabled]="loading()"><od-icon name="refresh" [size]="16" />Опресни</button>
+          <button type="button" class="od-btn od-btn--primary" (click)="newConnection()"><od-icon name="plus" [size]="16" />Нова връзка</button>
+        </div>
       </div>
+
+      <div class="od-stats" style="margin-top:22px;margin-bottom:20px">
+        <div class="od-stat"><div class="od-stat__top"><span class="od-stat__label">Активни връзки</span><span class="od-stat__icon"><od-icon name="link" [size]="16" /></span></div><div class="od-stat__value">{{ stats().active }}</div></div>
+        <div class="od-stat"><div class="od-stat__top"><span class="od-stat__label">Връзки общо</span><span class="od-stat__icon"><od-icon name="package" [size]="16" /></span></div><div class="od-stat__value">{{ stats().total }}</div></div>
+        <div class="od-stat"><div class="od-stat__top"><span class="od-stat__label">Изпълнения · 24ч</span><span class="od-stat__icon gold"><od-icon name="refresh" [size]="16" /></span></div><div class="od-stat__value">{{ stats().runs }}</div></div>
+        <div class="od-stat"><div class="od-stat__top"><span class="od-stat__label">Неуспешни · 24ч</span><span class="od-stat__icon"><od-icon name="alert" [size]="16" /></span></div><div class="od-stat__value">{{ stats().failed }}</div></div>
+      </div>
+
+      @if (notice()) { <div class="od-notice od-notice--success"><od-icon name="check" [size]="16" /><span>{{ notice() }}</span><button type="button" (click)="notice.set(null)"><od-icon name="x" [size]="15" /></button></div> }
+      @if (error()) { <div class="od-notice od-notice--error"><od-icon name="alert" [size]="16" /><span>{{ error() }}</span><button type="button" (click)="error.set(null)"><od-icon name="x" [size]="15" /></button></div> }
+
+      @if (loading()) {
+        <p class="muted">Зареждане…</p>
+      } @else if (health().length === 0) {
+        <div class="od-empty">
+          <div class="od-empty__icon"><od-icon name="link" [size]="24" /></div>
+          <h3>Все още нямате връзки</h3>
+          <p>Добавете първата си връзка към доставчик, за да започнете да импортирате оферти в каталога.</p>
+          <button type="button" class="od-btn od-btn--primary" (click)="newConnection()"><od-icon name="plus" [size]="16" />Нова връзка</button>
+        </div>
+      } @else {
+        <div class="od-tablewrap">
+          <table class="od-table">
+            <thead><tr>
+              <th>Връзка</th><th>Последна синхронизация</th><th>Последно изпълнение</th><th>Изпълнения 24ч</th><th style="text-align:right">Действия</th>
+            </tr></thead>
+            <tbody>
+              @for (c of health(); track c.supplierConnectionId) {
+                <tr [class.expanded]="expandedId() === c.supplierConnectionId">
+                  <td>
+                    <div class="conn">
+                      <div class="conn__icon"><od-icon [name]="c.kind === 'Manual' ? 'user' : 'link'" [size]="16" /></div>
+                      <div>
+                        <div class="conn__title">
+                          <span class="conn__name">{{ c.name }}</span>
+                          <span class="od-badge od-badge--sm od-badge--neutral">{{ kindLabel(c.kind) }}</span>
+                          <span class="od-badge od-badge--sm" [class]="'od-badge--' + connStatus(c.status).tone">{{ connStatus(c.status).label }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (c.lastSyncedAt) {
+                      <span class="sync" [class.stale]="isStale(c.lastSyncedAt)">@if (isStale(c.lastSyncedAt)) { <od-icon name="alert" [size]="14" /> }{{ c.lastSyncedAt | date:'short' }}</span>
+                    } @else { <span class="muted">няма</span> }
+                  </td>
+                  <td>
+                    @if (busy().has(c.supplierConnectionId)) {
+                      <span class="od-badge od-badge--sm od-badge--info">В процес</span>
+                    } @else if (c.lastRunStatus) {
+                      <span class="od-badge od-badge--sm" [class]="'od-badge--' + runStatus(c.lastRunStatus).tone">{{ runStatus(c.lastRunStatus).label }}</span>
+                    } @else { <span class="muted">—</span> }
+                  </td>
+                  <td class="od-num"><span style="color:var(--od-700)">{{ c.recentRuns }}</span>@if (c.recentFailures > 0) { <span class="fail">{{ c.recentFailures }} неуспешни</span> }</td>
+                  <td>
+                    <div class="row-actions">
+                      <button type="button" class="od-btn od-btn--subtle od-btn--sm" [disabled]="busy().has(c.supplierConnectionId)" (click)="run(c)"><od-icon [name]="busy().has(c.supplierConnectionId) ? 'clock' : 'play'" [size]="15" />{{ busy().has(c.supplierConnectionId) ? 'Тече…' : 'Стартирай' }}</button>
+                      <button type="button" class="od-iconbtn" title="Обнови актуалност" [disabled]="busy().has(c.supplierConnectionId)" (click)="sweep(c)"><od-icon name="refresh" [size]="17" /></button>
+                      <button type="button" class="od-iconbtn" [class.od-iconbtn--active]="expandedId() === c.supplierConnectionId" title="История" (click)="toggleJobs(c)"><od-icon name="history" [size]="17" /></button>
+                      <button type="button" class="od-iconbtn" title="Редактирай" (click)="editConnection(c)"><od-icon name="settings" [size]="17" /></button>
+                      <button type="button" class="od-iconbtn" title="Изтрий" (click)="remove(c)"><od-icon name="trash" [size]="17" /></button>
+                    </div>
+                  </td>
+                </tr>
+                @if (expandedId() === c.supplierConnectionId) {
+                  <tr class="hist">
+                    <td colspan="5">
+                      <div class="hist__in">
+                        <div class="od-eyebrow" style="margin-bottom:8px">История на изпълненията</div>
+                        @if (jobsLoading()) { <span class="muted">Зареждане…</span> }
+                        @else {
+                          <table class="hist__table">
+                            <thead><tr><th>Започнато</th><th>Статус</th><th style="text-align:right">Изтеглени</th><th style="text-align:right">Импортирани</th><th style="text-align:right">Грешки</th></tr></thead>
+                            <tbody>
+                              @for (j of jobs(); track j.id) {
+                                <tr>
+                                  <td class="od-mono">{{ j.startedAt | date:'short' }}</td>
+                                  <td><span class="od-badge od-badge--sm" [class]="'od-badge--' + runStatus(j.status).tone">{{ runStatus(j.status).label }}</span></td>
+                                  <td class="od-num" style="text-align:right">{{ j.offersFetched }}</td>
+                                  <td class="od-num" style="text-align:right">{{ j.offersImported }}</td>
+                                  <td class="od-num" style="text-align:right" [class.fail]="j.errors.length > 0">{{ j.errors.length }}</td>
+                                </tr>
+                              } @empty { <tr><td colspan="5" class="muted">Няма записани изпълнения.</td></tr> }
+                            </tbody>
+                          </table>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
-    @if (error()) { <p class="error">{{ error() }}</p> }
-    @if (notice()) { <p class="notice">{{ notice() }}</p> }
 
     @if (showForm()) {
-      <section class="form-card">
-        <h3>{{ editingId() ? 'Edit connection' : 'New connection' }}</h3>
-        <div class="grid">
-          <label>Name<input name="cname" [(ngModel)]="form.name" /></label>
-          <label>Kind
-            <select name="ckind" [(ngModel)]="form.kind" [disabled]="editingId() !== null">
-              @for (k of kinds; track k) { <option [value]="k">{{ k }}</option> }
-            </select>
-          </label>
-          <label>Freshness TTL (hours)<input name="cttl" type="number" [(ngModel)]="form.ttl" /></label>
-          @if (form.kind !== 'Manual') {
-            <label class="full">Feed URL<input name="curl" [(ngModel)]="form.url" placeholder="https://supplier.example/offers.json" /></label>
-          }
-        </div>
-
-        @if (form.kind !== 'Manual') {
-          <div class="fieldmap">
-            <div class="fm-head">
-              <span>Field mapping <span class="muted">(optional — map canonical fields to the supplier's names)</span></span>
-              <button type="button" class="link" (click)="addRow()">+ Add field</button>
+      <div class="od-modal-overlay" (click)="cancelForm()">
+        <div class="od-modal" (click)="$event.stopPropagation()">
+          <div class="od-modal__head">
+            <div>
+              <div class="od-eyebrow" style="margin-bottom:5px">{{ editingId() ? 'Редакция' : 'Нова връзка' }}</div>
+              <h2>{{ editingId() ? form.name : 'Добавяне на връзка' }}</h2>
             </div>
-            @for (row of form.fieldMap; track $index) {
-              <div class="fm-row">
-                <select [(ngModel)]="row.canonical" [name]="'fmcanon' + $index">
-                  @for (f of canonicalFields; track f) { <option [value]="f">{{ f }}</option> }
-                </select>
-                <span class="arrow">→</span>
-                <input [(ngModel)]="row.supplier" [name]="'fmsup' + $index" placeholder="supplier's field name" />
-                <button type="button" class="link danger" (click)="removeRow($index)">remove</button>
-              </div>
-            }
+            <button type="button" class="od-iconbtn" (click)="cancelForm()"><od-icon name="x" [size]="18" /></button>
           </div>
-        }
-
-        <div class="actions">
-          <button type="button" (click)="save()" [disabled]="saving() || !form.name.trim()">
-            {{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Create' }}
-          </button>
-          <button type="button" class="ghost" (click)="cancelForm()">Cancel</button>
-        </div>
-      </section>
-    }
-
-    @if (loading()) {
-      <p class="muted">Loading…</p>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Connection</th><th>Last sync</th><th>Last run</th>
-            <th>Runs (24h)</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (c of health(); track c.supplierConnectionId) {
-            <tr>
-              <td>
-                <div class="name">{{ c.name }}</div>
-                <div class="sub">{{ c.kind }} · <span class="status" [attr.data-s]="c.status">{{ c.status }}</span></div>
-              </td>
-              <td>
-                @if (c.lastSyncedAt) {
-                  <span [class.stale]="isStale(c.lastSyncedAt)">{{ c.lastSyncedAt | date:'short' }}</span>
-                } @else { <span class="muted">never</span> }
-              </td>
-              <td>
-                @if (c.lastRunStatus) {
-                  <span class="run" [attr.data-s]="c.lastRunStatus">{{ c.lastRunStatus }}</span>
-                } @else { <span class="muted">—</span> }
-              </td>
-              <td>
-                {{ c.recentRuns }}
-                @if (c.recentFailures > 0) { <span class="fail">· {{ c.recentFailures }} failed</span> }
-              </td>
-              <td class="row-actions">
-                <button type="button" (click)="run(c)" [disabled]="busy().has(c.supplierConnectionId)">
-                  {{ busy().has(c.supplierConnectionId) ? '…' : 'Run' }}
-                </button>
-                <button type="button" class="ghost" (click)="sweep(c)" [disabled]="busy().has(c.supplierConnectionId)">Sweep</button>
-                <button type="button" class="link" (click)="toggleJobs(c)">
-                  {{ expandedId() === c.supplierConnectionId ? 'Hide' : 'History' }}
-                </button>
-                <button type="button" class="link" (click)="editConnection(c)">Edit</button>
-                <button type="button" class="link danger" (click)="remove(c)">Delete</button>
-              </td>
-            </tr>
-            @if (expandedId() === c.supplierConnectionId) {
-              <tr class="jobs-row">
-                <td colspan="5">
-                  @if (jobsLoading()) {
-                    <span class="muted">Loading runs…</span>
-                  } @else {
-                    <table class="jobs">
-                      <thead>
-                        <tr><th>Started</th><th>Status</th><th>Fetched</th><th>Imported</th><th>Errors</th></tr>
-                      </thead>
-                      <tbody>
-                        @for (j of jobs(); track j.id) {
-                          <tr>
-                            <td>{{ j.startedAt | date:'short' }}</td>
-                            <td><span class="run" [attr.data-s]="j.status">{{ j.status }}</span></td>
-                            <td>{{ j.offersFetched }}</td>
-                            <td>{{ j.offersImported }}</td>
-                            <td class="errs">{{ j.errors.length ? j.errors.join('; ') : '—' }}</td>
-                          </tr>
-                        } @empty {
-                          <tr><td colspan="5" class="muted">No runs recorded yet.</td></tr>
-                        }
-                      </tbody>
-                    </table>
+          <div class="od-modal__body">
+            <div class="fields">
+              <div><label class="od-label">Име</label><input class="od-input" name="cname" [(ngModel)]="form.name" placeholder="напр. Solvex Travel" /></div>
+              <div>
+                <label class="od-label">Тип @if (editingId()) { <span class="muted">· заключен при редакция</span> }</label>
+                <div class="kinds" [class.locked]="editingId() !== null">
+                  @for (k of kinds; track k) {
+                    <button type="button" class="od-chip" [class.od-chip--on]="form.kind === k" (click)="form.kind = k">{{ kindLabel(k) }}</button>
                   }
-                </td>
-              </tr>
-            }
-          } @empty {
-            <tr><td colspan="5" class="muted">No supplier connections yet.</td></tr>
-          }
-        </tbody>
-      </table>
+                </div>
+              </div>
+              @if (form.kind !== 'Manual') {
+                <div><label class="od-label">Адрес на емисията (Feed URL)</label>
+                  <div class="od-input od-input--withicon"><od-icon name="link" [size]="16" /><input name="curl" [(ngModel)]="form.url" placeholder="https://…" /></div>
+                </div>
+              }
+              <div><label class="od-label">Freshness TTL (часове)</label><input class="od-input" style="max-width:180px" name="cttl" type="number" min="1" [(ngModel)]="form.ttl" /></div>
+
+              <div class="map">
+                <div class="map__head">
+                  <div>
+                    <div class="map__title">Съпоставяне на полета</div>
+                    <div class="map__hint">Канонично поле на Odisea → поле от източника</div>
+                  </div>
+                  <button type="button" class="od-btn od-btn--subtle od-btn--sm" (click)="addRow()"><od-icon name="plus" [size]="15" />Добави ред</button>
+                </div>
+                @for (row of form.fieldMap; track $index) {
+                  <div class="map__row">
+                    <select class="od-input" style="height:38px" [(ngModel)]="row.canonical" [name]="'fmc' + $index">
+                      @for (f of canonicalFields; track f) { <option [value]="f">{{ f }}</option> }
+                    </select>
+                    <od-icon name="arrowR" [size]="16" />
+                    <input class="od-input" style="height:38px" [(ngModel)]="row.supplier" [name]="'fms' + $index" placeholder="поле от източника" />
+                    <button type="button" class="od-iconbtn" title="Премахни" (click)="removeRow($index)"><od-icon name="trash" [size]="16" /></button>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="od-modal__foot">
+            <button type="button" class="od-btn od-btn--secondary" (click)="cancelForm()">Отказ</button>
+            <button type="button" class="od-btn od-btn--primary" [disabled]="saving() || !form.name.trim()" (click)="save()"><od-icon name="check" [size]="16" />{{ editingId() ? 'Запази' : 'Създай връзка' }}</button>
+          </div>
+        </div>
+      </div>
     }
   `,
   styles: [`
-    .head { display: flex; align-items: center; justify-content: space-between; }
-    .head-actions { display: flex; gap: 10px; }
-    .form-card { border: 1px solid #e3e3e3; border-radius: 8px; padding: 16px; margin-bottom: 20px; background: #fafbfc; }
-    .form-card h3 { margin: 0 0 12px; font-size: 1rem; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #555; }
-    label.full { grid-column: 1 / -1; }
-    input, select { padding: 7px 9px; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
-    .fieldmap { margin-top: 14px; }
-    .fm-head { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px; }
-    .fm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .fm-row select { flex: 0 0 160px; }
-    .fm-row input { flex: 1; }
-    .arrow { color: #888; }
-    .actions { margin-top: 14px; display: flex; gap: 10px; }
-    .danger { color: #c0392b; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
-    th { font-weight: 600; background: #fafafa; }
-    .name { font-weight: 500; }
-    .sub { color: #888; font-size: 0.8rem; }
-    .status, .run { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; background: #eee; }
-    .status[data-s="Active"] { background: #e6f7ee; color: #186; }
-    .status[data-s="Paused"] { background: #fff4e0; color: #a66; }
-    .status[data-s="Failed"] { background: #fdecea; color: #c0392b; }
-    .run[data-s="Succeeded"] { background: #e6f7ee; color: #186; }
-    .run[data-s="Failed"] { background: #fdecea; color: #c0392b; }
-    .run[data-s="Running"] { background: #e7f0ff; color: #1a5; }
-    .stale { color: #c0392b; }
-    .fail { color: #c0392b; font-size: 0.8rem; }
-    .row-actions { display: flex; gap: 8px; white-space: nowrap; }
-    button { padding: 5px 12px; border: 0; border-radius: 6px; background: #0a2540; color: #fff; cursor: pointer; font-size: 0.85rem; }
-    button.ghost { background: transparent; color: #555; border: 1px solid #ccc; }
-    button.link { background: transparent; color: #0a2540; padding: 5px 4px; }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .jobs-row td { background: #fafbfc; }
-    table.jobs { margin: 4px 0; }
-    table.jobs th, table.jobs td { padding: 6px 8px; font-size: 0.85rem; border-bottom: 1px solid #eee; }
-    .errs { max-width: 320px; color: #c0392b; }
-    .muted { color: #888; }
-    .error { color: #c00; }
-    .notice { color: #186; background: #e6f7ee; padding: 8px 12px; border-radius: 6px; }
+    .muted { color: var(--od-500); }
+    .conn { display: flex; align-items: center; gap: 11px; }
+    .conn__icon { width: 34px; height: 34px; border-radius: 9px; background: var(--od-teal-50); color: var(--od-teal-600); display: grid; place-items: center; flex: none; }
+    .conn__title { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .conn__name { font-weight: 600; color: var(--od-ink); }
+    .sync { display: inline-flex; align-items: center; gap: 5px; color: var(--od-600); }
+    .sync.stale { color: var(--od-danger); font-weight: 600; }
+    .fail { color: var(--od-danger); margin-left: 6px; font-size: 12px; }
+    .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+    .od-table tbody tr.expanded { background: var(--od-50); }
+    .hist td { background: var(--od-50); padding: 0; }
+    .hist__in { padding: 12px 18px 16px 56px; }
+    .hist__table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .hist__table th { padding: 5px 8px; font-weight: 600; color: var(--od-500); text-align: left; }
+    .hist__table td { padding: 7px 8px; border-top: 1px solid var(--od-border-2); }
+    .fields { display: flex; flex-direction: column; gap: 16px; }
+    .kinds { display: flex; gap: 6px; flex-wrap: wrap; }
+    .kinds.locked { opacity: 0.6; pointer-events: none; }
+    .map { border-top: 1px solid var(--od-border-2); padding-top: 16px; }
+    .map__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .map__title { font-size: 13.5px; font-weight: 700; color: var(--od-ink); }
+    .map__hint { font-size: 11.5px; color: var(--od-500); margin-top: 2px; }
+    .map__row { display: grid; grid-template-columns: 1fr 20px 1fr 34px; gap: 8px; align-items: center; margin-bottom: 8px; }
   `],
 })
 export class ConnectionsPage {
@@ -220,6 +247,16 @@ export class ConnectionsPage {
   saving = signal(false);
   form: ConnForm = ConnectionsPage.emptyForm();
 
+  stats = computed(() => {
+    const h = this.health();
+    return {
+      active: h.filter(c => c.status === 'Active').length,
+      total: h.length,
+      runs: h.reduce((a, c) => a + c.recentRuns, 0),
+      failed: h.reduce((a, c) => a + c.recentFailures, 0),
+    };
+  });
+
   constructor() {
     this.reload();
   }
@@ -227,6 +264,10 @@ export class ConnectionsPage {
   private static emptyForm(): ConnForm {
     return { name: '', kind: 'JsonApi', url: '', ttl: 24, fieldMap: [] };
   }
+
+  kindLabel(k: string): string { return KIND_LABEL[k] ?? k; }
+  connStatus(s: string): { tone: string; label: string } { return CONN_STATUS[s] ?? { tone: 'neutral', label: s }; }
+  runStatus(s: string): { tone: string; label: string } { return RUN_STATUS[s] ?? { tone: 'neutral', label: s }; }
 
   newConnection(): void {
     this.editingId.set(null);
