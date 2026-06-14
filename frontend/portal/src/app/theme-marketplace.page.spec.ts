@@ -14,6 +14,7 @@ const preset = (id: string, name: string): ThemeDto => ({
 function setup(api: Partial<Record<keyof ApiService, unknown>> = {}, router: Partial<Router> = {}) {
   const apiMock = {
     listPresets: vi.fn().mockReturnValue(of([preset('p1', 'Coastal'), preset('p2', 'Sunset')])),
+    listThemes: vi.fn().mockReturnValue(of([])),
     cloneFromPreset: vi.fn().mockReturnValue(of({ ...preset('new-1', 'Coastal (copy)'), isPreset: false })),
     ...api,
   } as unknown as ApiService;
