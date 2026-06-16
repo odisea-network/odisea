@@ -1,0 +1,22 @@
+sequenceDiagram
+  actor AG as Агенция
+  participant PO as Портал
+  participant API as Web API
+  participant DB as PostgreSQL
+  participant EMB as Вграден компонент
+  actor TR as Пътешественик
+  AG->>PO: Създава колекция и публикация
+  PO->>API: POST /collections, /publications
+  API->>DB: запис
+  AG->>PO: Публикува
+  PO->>API: POST /publications/{id}/publish
+  API->>DB: статус Published
+  Note over EMB,TR: По-късно, в сайта на агенцията
+  TR->>EMB: Зарежда страницата
+  EMB->>API: GET /publications/{key}
+  API->>DB: чете публикация и оферти
+  API-->>EMB: манифест и оферти
+  EMB-->>TR: Оферти в облика на агенцията
+  TR->>EMB: Изпраща запитване
+  EMB->>API: POST /leads
+  API->>DB: запис на запитване

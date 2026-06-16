@@ -1,0 +1,21 @@
+sequenceDiagram
+  actor AG as Агенция
+  participant CO as Композитор
+  participant API as Web API
+  participant DB as PostgreSQL
+  AG->>CO: Отваря композитора
+  CO->>API: GET /collections, GET /themes
+  API->>DB: чете колекции и теми
+  API-->>CO: налични колекции и теми
+  AG->>CO: Избира колекция, изглед и тема
+  CO->>API: GET /collections/{id}/offers
+  API->>DB: прилага филтъра и подбира офертите
+  API-->>CO: съответстващи оферти
+  CO-->>AG: жив преглед в избрания стил
+  AG->>CO: Натиска „Публикувай“
+  CO->>API: POST /publications
+  API->>DB: запис на публикацията
+  CO->>API: POST /publications/{id}/publish
+  API->>DB: статус Published, версия +1
+  API-->>CO: публичен ключ и код за вграждане
+  CO-->>AG: показва кода за вграждане

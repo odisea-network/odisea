@@ -1,0 +1,11 @@
+flowchart LR
+  O["Оферта<br/>(Offer)"] --> C["Колекция<br/>(Collection)"]
+  C --> P["Публикация<br/>(Publication)"]
+  E["Преживяване<br/>(Experience)"] --> P
+  T["Тема<br/>(Theme)"] --> P
+  P --> CH["Канали за<br/>вграждане"]
+  CH --> W["Сайт на<br/>агенцията"]
+  classDef a fill:#dcebec,stroke:#14474e,color:#0e1618;
+  classDef b fill:#faf4e7,stroke:#9a7434,color:#0e1618;
+  class O,C,P a
+  class E,T,CH,W b

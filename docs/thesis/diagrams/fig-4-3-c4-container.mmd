@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph browser["Браузър"]
+    portal["Портал и лендинг<br/>(Angular 21)"]:::c
+    comp["Вградими компоненти<br/>(Lit 3, в сайта на агенцията)"]:::c
+  end
+  subgraph server["Сървърна среда"]
+    api["Web API<br/>(.NET 10, REST)"]:::c
+    sched["Планировчик за конектори<br/>(BackgroundService)"]:::c
+  end
+  db[("PostgreSQL 17")]:::db
+  supp["Системи на доставчици"]:::ext
+  crm["Външни CRM (webhooks)"]:::ext
+  portal -->|HTTPS / JSON| api
+  comp -->|HTTPS / JSON| api
+  api --> db
+  sched --> db
+  sched -->|внос| supp
+  api -->|известия| crm
+  classDef c fill:#dcebec,stroke:#14474e,color:#0e1618;
+  classDef db fill:#faf4e7,stroke:#9a7434,color:#0e1618;
+  classDef ext fill:#f1f4f3,stroke:#888,color:#0e1618;

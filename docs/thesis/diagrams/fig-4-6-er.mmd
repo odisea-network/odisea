@@ -1,0 +1,139 @@
+erDiagram
+  USER {
+    uuid id PK
+    string email
+    string display_name
+    enum status
+  }
+  MEMBERSHIP {
+    uuid id PK
+    uuid user_id FK
+    enum tenant_type
+    uuid tenant_id
+    enum role
+  }
+  AGENCY {
+    uuid id PK
+    string name
+    string slug
+  }
+  OPERATOR {
+    uuid id PK
+    string name
+    string slug
+  }
+  OFFER {
+    uuid id PK
+    string title
+    enum owner_type
+    uuid owning_operator_id FK
+    string country
+    decimal price
+    enum status
+  }
+  COLLECTION {
+    uuid id PK
+    uuid agency_id FK
+    string slug
+    enum status
+    json filter
+  }
+  THEME {
+    uuid id PK
+    uuid agency_id FK
+    string name
+    enum status
+    json tokens
+  }
+  EXPERIENCE {
+    uuid id PK
+    uuid agency_id FK
+    string name
+    json config
+  }
+  PUBLICATION {
+    uuid id PK
+    uuid agency_id FK
+    string key
+    uuid collection_id FK
+    uuid theme_id FK
+    enum status
+  }
+  ALLOWED_DOMAIN {
+    uuid id PK
+    uuid publication_id FK
+    string domain
+  }
+  SUPPLIER_CONNECTION {
+    uuid id PK
+    uuid operator_id FK
+    enum kind
+    json config_json
+    enum status
+  }
+  SOURCE_OFFER {
+    uuid id PK
+    uuid supplier_connection_id FK
+    string external_id
+    enum state
+    datetime last_seen_at
+  }
+  IMPORT_JOB {
+    uuid id PK
+    uuid supplier_connection_id FK
+    enum status
+    int offers_imported
+  }
+  ENTITLEMENT {
+    uuid id PK
+    uuid operator_id FK
+    uuid agency_id FK
+    decimal commission_percent
+  }
+  LEAD {
+    uuid id PK
+    uuid agency_id FK
+    enum kind
+    enum status
+    string contact_email
+  }
+  WEBHOOK_SUBSCRIPTION {
+    uuid id PK
+    uuid agency_id FK
+    string url
+    string event_types
+  }
+  API_KEY {
+    uuid id PK
+    uuid agency_id FK
+    string prefix
+    string scopes
+  }
+  EVENT {
+    uuid id PK
+    string publication_key
+    enum event_type
+    datetime occurred_at
+  }
+
+  USER ||--o{ MEMBERSHIP : има
+  AGENCY ||--o{ MEMBERSHIP : наема
+  OPERATOR ||--o{ MEMBERSHIP : наема
+  OPERATOR ||--o{ OFFER : публикува
+  OPERATOR ||--o{ SUPPLIER_CONNECTION : притежава
+  SUPPLIER_CONNECTION ||--o{ SOURCE_OFFER : доставя
+  SUPPLIER_CONNECTION ||--o{ IMPORT_JOB : изпълнява
+  AGENCY ||--o{ COLLECTION : създава
+  AGENCY ||--o{ THEME : създава
+  AGENCY ||--o{ EXPERIENCE : създава
+  AGENCY ||--o{ PUBLICATION : публикува
+  COLLECTION ||--o{ PUBLICATION : основа
+  THEME ||--o{ PUBLICATION : стил
+  EXPERIENCE ||--o{ PUBLICATION : поведение
+  PUBLICATION ||--o{ ALLOWED_DOMAIN : ограничава
+  PUBLICATION ||--o{ EVENT : генерира
+  AGENCY ||--o{ LEAD : получава
+  AGENCY ||--o{ WEBHOOK_SUBSCRIPTION : регистрира
+  AGENCY ||--o{ API_KEY : издава
+  OPERATOR ||--o{ ENTITLEMENT : предоставя
+  AGENCY ||--o{ ENTITLEMENT : получава

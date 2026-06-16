@@ -1,0 +1,20 @@
+flowchart TB
+  ctrl["SupplierConnectionsController"]:::c
+  sch["ConnectorSchedulerService"]:::c
+  run["ImportRunner"]:::c
+  reg["ConnectorRegistry"]:::c
+  ad["Адаптери:<br/>Manual, JSON, XML"]:::c
+  imp["SourceOfferImporter"]:::c
+  fr["FreshnessService"]:::c
+  db["IAppDbContext<br/>(EF Core)"]:::db
+  ctrl --> run
+  sch --> run
+  sch --> fr
+  run --> reg
+  reg --> ad
+  ad --> imp
+  imp --> db
+  fr --> db
+  run --> db
+  classDef c fill:#dcebec,stroke:#14474e,color:#0e1618;
+  classDef db fill:#faf4e7,stroke:#9a7434,color:#0e1618;

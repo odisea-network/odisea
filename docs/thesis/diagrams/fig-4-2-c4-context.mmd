@@ -1,0 +1,19 @@
+flowchart TB
+  op["Туроператор"]:::person
+  ag["Агенция"]:::person
+  tr["Пътешественик"]:::person
+  adm["Администратор<br/>на платформата"]:::person
+  sys["Платформа Odisea<br/>(дистрибуция и представяне<br/>на туристически оферти)"]:::sys
+  supp["Външни системи на<br/>доставчици (XML, JSON)"]:::ext
+  crm["Външни CRM и<br/>автоматизации (webhooks)"]:::ext
+  site["Сайтове на агенции<br/>(вградени компоненти)"]:::ext
+  op --> sys
+  ag --> sys
+  adm --> sys
+  supp --> sys
+  sys --> crm
+  sys --> site
+  tr --> site
+  classDef person fill:#dcebec,stroke:#14474e,color:#0e1618;
+  classDef sys fill:#1a5a61,stroke:#0b2a2e,color:#ffffff;
+  classDef ext fill:#f1f4f3,stroke:#888,color:#0e1618;

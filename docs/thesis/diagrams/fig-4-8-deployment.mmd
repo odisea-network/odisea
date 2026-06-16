@@ -1,0 +1,13 @@
+flowchart TB
+  user["Браузър на потребителя"]:::ext
+  subgraph host["Хост, оркестриран с Docker Compose"]
+    portalc["Контейнер portal<br/>(nginx + Angular билд)<br/>порт 4200"]:::c
+    apic["Контейнер api<br/>(.NET 10)<br/>порт 8080"]:::c
+    dbc[("Контейнер db<br/>PostgreSQL 17<br/>порт 5433")]:::db
+  end
+  user -->|HTTP| portalc
+  portalc -->|reverse proxy /api| apic
+  apic -->|TCP| dbc
+  classDef c fill:#dcebec,stroke:#14474e,color:#0e1618;
+  classDef db fill:#faf4e7,stroke:#9a7434,color:#0e1618;
+  classDef ext fill:#f1f4f3,stroke:#888,color:#0e1618;

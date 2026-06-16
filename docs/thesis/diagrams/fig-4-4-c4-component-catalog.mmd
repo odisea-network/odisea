@@ -1,0 +1,16 @@
+flowchart TB
+  oc["OffersController"]:::c
+  cc["CollectionsController"]:::c
+  cr["CollectionResolver"]:::c
+  fr["FilterResolver"]:::c
+  ap["OfferAccessPolicy<br/>(право на дистрибуция)"]:::c
+  db["IAppDbContext<br/>(EF Core)"]:::db
+  cc --> cr
+  cr --> fr
+  cr --> ap
+  cc --> db
+  oc --> db
+  ap --> db
+  fr --> db
+  classDef c fill:#dcebec,stroke:#14474e,color:#0e1618;
+  classDef db fill:#faf4e7,stroke:#9a7434,color:#0e1618;
