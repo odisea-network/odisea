@@ -15,8 +15,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration config)
     {
-        var connectionString = config.GetConnectionString("Default")
-            ?? "Host=localhost;Port=5432;Database=odisea;Username=odisea;Password=odisea";
+        var connectionString = NormalizeConnectionString(
+            config.GetConnectionString("Default")
+            ?? "Host=localhost;Port=5432;Database=odisea;Username=odisea;Password=odisea");
 
         services.AddDbContext<AppDbContext>(opt =>
             opt.UseNpgsql(connectionString)
@@ -61,6 +62,57 @@ public static class DependencyInjection
             throw new InvalidOperationException("Jwt:Secret must be at least 32 characters.");
 
         return services;
+    }
+
+    // Managed Postgres providers (Neon, Railway, Heroku, Supabase) hand out
+    // libpq URI connection strings — postgresql://user:pass@host:port/db?sslmode=require.
+    // Npgsql's connection-string builder only understands keyword form, so translate
+    // the URI here. Keyword strings (and the local default) pass through untouched.
+    private static string NormalizeConnectionString(string raw)
+    {
+        if (!raw.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+            !raw.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            return raw;
+        }
+
+        var uri = new Uri(raw);
+        var userInfo = uri.UserInfo.Split(':', 2);
+
+        // Default to requiring TLS — every managed provider mandates it — and honor
+        // an explicit sslmode from the query string if one is present.
+        var sslMode = "Require";
+        foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv.Length == 2 && kv[0].Equals("sslmode", StringComparison.OrdinalIgnoreCase))
+            {
+                sslMode = kv[1].ToLowerInvariant() switch
+                {
+                    "disable" => "Disable",
+                    "allow" => "Allow",
+                    "prefer" => "Prefer",
+                    "verify-ca" => "VerifyCA",
+                    "verify-full" => "VerifyFull",
+                    _ => "Require",
+                };
+            }
+        }
+
+        var parts = new List<string>
+        {
+            $"Host={uri.Host}",
+            $"Database={Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'))}",
+            $"Username={Uri.UnescapeDataString(userInfo[0])}",
+        };
+        if (!uri.IsDefaultPort && uri.Port > 0)
+            parts.Add($"Port={uri.Port}");
+        if (userInfo.Length > 1)
+            parts.Add($"Password={Uri.UnescapeDataString(userInfo[1])}");
+        parts.Add($"SSL Mode={sslMode}");
+        parts.Add("Trust Server Certificate=true");
+
+        return string.Join(';', parts);
     }
 
     // Read via the indexer (not the binder) to keep Infrastructure off the
