@@ -1,229 +1,168 @@
-# Odisea Network
+<div align="center">
 
-B2B travel offers platform for the Bulgarian market. Travel **agencies** and tour
-**operators** post travel packages ("offers") and define reusable, filtered
-**Collections** of those offers. Agencies embed lightweight **web components** into
-their own websites; those components render Collections to travelers.
+<img src="docs/assets/odisea-banner.png" alt="Odisea" width="100%" />
 
-> Status: **Increment 1 of 4, Scaffold.** One thin vertical slice runs end to end.
-> Filter engine, Collection builder UI, package posting form, parameter binding,
-> auth, and theming all land in later increments.
+<br/>
 
-## Architecture (Increment 1)
+**A B2B platform that lets travel operators publish once and agencies distribute everywhere — through modern, themeable web components instead of dated iframes.**
 
+[![CI](https://github.com/odisea-network/odisea/actions/workflows/ci.yml/badge.svg)](https://github.com/odisea-network/odisea/actions/workflows/ci.yml)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
+![Angular 21](https://img.shields.io/badge/Angular-21-DD0031)
+![Lit 3](https://img.shields.io/badge/Lit-3-324FFF)
+![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
+![Tests](https://img.shields.io/badge/tests-passing-1a7a4a)
+
+[Overview](#overview) · [Features](#features) · [Architecture](#architecture) · [Quick start](#quick-start) · [Project layout](#project-layout) · [Testing](#testing)
+
+</div>
+
+---
+
+## Overview
+
+Travel offers are created by **tour operators** but sold by **travel agencies**, and between the two there is no shared layer that keeps content fresh *and* on‑brand. Agencies are left choosing between hand‑maintained listings that look right but go stale, and iframe embeds that stay current but feel like a foreign box on the page.
+
+**Odisea** removes that compromise. A shared catalog of offers is curated by agencies into reusable **collections**, styled with a token‑based **theme**, and published as **embeddable web components** that render directly inside the agency's own site and inherit its look. Publish once, distribute everywhere, keep your brand.
+
+The platform spans three surfaces, all sharing one design‑token system:
+
+| Surface | What it is |
+|---|---|
+| **Landing** | Bilingual (BG/EN) marketing site with a live, themeable component demo |
+| **Portal** | The B2B workspace: catalog, collection/publication composer, theme studio, supplier connectors, leads, webhooks |
+| **Components** | Framework‑agnostic Lit web components that agencies embed and theme via CSS variables |
+
+## Features
+
+### 🗂 Catalog & distribution
+- Shared offer catalog with manual entry and bulk CSV import
+- **Collections** — saved, parameterized selections with nested `any`/`all` filter groups, pinned and excluded offers, per‑tenant slugs
+- **Publications** — `Collection + Experience + Theme` with a stable public key and a cacheable manifest
+- **Theme studio** — foundation / semantic / component design tokens, presets, draft vs published versions, CSS & JSON export
+- **Embeddable components** that inherit the host site's look through `--odc-*` CSS variables (no iframe)
+
+### 🔌 Supply & connectors
+- Pluggable **connector engine** with a single contract and swappable adapters (Manual, JSON, XML)
+- Background **scheduler** with freshness sweeps and idempotent imports
+- Configurable **field mapping** so non‑canonical supplier feeds map onto the canonical offer
+- Source lineage, import jobs and per‑connection health
+
+### 🔐 Platform & security
+- JWT auth with self‑service registration (a new user provisions their own agency/operator)
+- Role policies (`PlatformAdmin` / `OperatorAdmin` / `AgencyAdmin` / `AgencyEditor`) and strict **multi‑tenant isolation**
+- Embed security: scoped API keys, per‑publication allowed domains, HMAC‑signed webhooks, rate‑limited public endpoints
+- Operator → agency **entitlements** with commission terms, a **leads** inbox, and basic analytics
+
+## Architecture
+
+The backend follows **Clean Architecture** with dependencies pointing inward; `Odisea.Domain` depends on nothing. The connector scheduler runs as a background service in the same process, and the Lit components are built once and served as static assets.
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    P["Angular portal + landing"]
+    C["Lit web components<br/>(on agency sites)"]
+  end
+  subgraph Server
+    A["ASP.NET Core 10 API<br/>Clean Architecture"]
+    S["Connector scheduler"]
+  end
+  DB[("PostgreSQL 17")]
+  SUP["Supplier feeds<br/>XML / JSON"]
+  CRM["External CRM<br/>(webhooks)"]
+  P -->|REST / JSON| A
+  C -->|REST / JSON| A
+  A --> DB
+  S --> DB
+  S -->|import| SUP
+  A -->|signed events| CRM
 ```
-                 ┌────────────────────────────────────┐
-                 │   Agency website (someone else's)  │
-                 │   <script src="…/loader.js">       │
-                 │   <tp_offer_list collection="…"/>  │
-                 └─────────────┬──────────────────────┘
-                               │ fetch /api/v1/collections/{slug}/offers
-                               ▼
-┌────────────┐   /api    ┌───────────────────────────────────────────────┐   EF   ┌────────────┐
-│  Angular   │──────────►│  ASP.NET Core 10 Web API (modular monolith)   │───────►│ Postgres17 │
-│  portal    │           │  • /health, /swagger, /api/v1/*               │        │ snake_case │
-│  (nginx)   │           │  • serves /demo + /components (static)        │        └────────────┘
-└────────────┘           │  • Catalog module: Offer, Collection, Filter  │
-                         │  • Tenancy module: Agency, Operator (seed)    │
-                         └───────────────────────────────────────────────┘
-```
 
-* **Clean Architecture** layout: `Odisea.Domain` (entities, value objects, enums) →
-  `Odisea.Application` (DTOs, business logic, `IAppDbContext` abstraction) →
-  `Odisea.Infrastructure` (EF Core, `AppDbContext`, migrations, seeding) →
-  `Odisea.WebAPI` (Program.cs, minimal API endpoints). Dependencies always
-  flow inward; `Odisea.Domain` references nothing.
-* One shared `AppDbContext` in Infrastructure implements `IAppDbContext` (defined in
-  Application). Endpoints depend on the interface, not on EF Core directly.
-* EF Core 10 with `EFCore.NamingConventions` → all tables and columns are
-  `snake_case`. Migrations are applied automatically on startup **in Development
-  only**, then idempotent seed data is inserted on a clean DB.
-* The Lit web components package is **not** its own service. It is built once
-  (Node 22 inside the API's Dockerfile, Stage A) and copied into
-  `wwwroot/components/`, which the API serves as static files.
-* Demo "agency websites" (`agency_blue.html`, `agency_green.html`) are
-  handwritten static pages committed under `wwwroot/demo/`; each loads the
-  component via `<script src="/components/loader.js">` and themes it through
-  CSS custom properties.
-
-## Repository layout
-
-```
-odisea/
-  compose.yaml
-  backend/
-    Odisea.sln
-    global.json                       # pins SDK 10.0.300
-    src/
-      Odisea.Domain/                  # entities, value objects, enums (no dependencies)
-        Common/Entity.cs              # base class with Id, CreatedAt, UpdatedAt
-        Entities/                     # Offer, Collection, Agency, Operator
-        ValueObjects/FilterSpec.cs    # FilterSpec, FilterCondition, SortSpec, ParameterDef
-        Enums/                        # OwnerType, Visibility, BoardBasis, Transport, *Status
-      Odisea.Application/             # depends on Domain
-        Common/Interfaces/IAppDbContext.cs
-        Catalog/Dtos/Dtos.cs          # OfferDto, CollectionDto, CreateCollectionRequest, Mappings
-        Catalog/Filtering/FilterResolver.cs
-        Catalog/Collections/CollectionResolver.cs
-        DependencyInjection.cs        # AddApplicationServices()
-      Odisea.Infrastructure/          # depends on Application + Domain
-        Data/AppDbContext.cs          # implements IAppDbContext
-        Data/Seeder.cs                # idempotent dev seed
-        Data/Configurations/          # IEntityTypeConfiguration<T> per entity
-        Data/Migrations/              # EF Core migrations
-        DependencyInjection.cs        # AddInfrastructureServices(IConfiguration)
-      Odisea.WebAPI/                  # depends on Infrastructure + Application
-        Program.cs                    # composition root
-        Endpoints/                    # HealthEndpoints, OffersEndpoints, CollectionsEndpoints
-        wwwroot/demo/                 # static demo agency pages (committed)
-        wwwroot/components/           # loader.js committed; bundles built in Docker (gitignored)
-    tests/
-      Odisea.UnitTests/               # xUnit tests
-  frontend/
-    components/             # Lit 3 + TS + Vite library package
-    portal/                 # Angular 21 management portal (CSR, no SSR)
-  docs/
-```
+Layering: `Odisea.Domain` (entities, value objects, enums) → `Odisea.Application` (use cases, DTOs, `IAppDbContext`) → `Odisea.Infrastructure` (EF Core, migrations, connectors) → `Odisea.WebAPI` (MVC controllers, middleware). EF Core 10 with Npgsql maps everything to `snake_case`; enums persist as strings and flexible structures live in `jsonb`.
 
 ## Tech stack
 
-* **.NET 10** (SDK 10.0.300), ASP.NET Core minimal APIs, Serilog console sink,
-  Swashbuckle (Swagger).
-* **EF Core 10** with Npgsql + EFCore.NamingConventions → snake_case.
-* **PostgreSQL 17** (alpine image).
-* **Lit 3** + TypeScript, bundled with Vite in library mode (ESM + UMD).
-* **Angular 21** (CSR only, no SSR).
-* **Docker** plus a root `compose.yaml`.
+| Layer | Technology |
+|---|---|
+| Backend | .NET 10, ASP.NET Core (MVC controllers), EF Core 10, Serilog, Swagger/OpenAPI |
+| Database | PostgreSQL 17 (Npgsql, snake_case) |
+| Portal & landing | Angular 21 (standalone components, signals, CSR) |
+| Components | Lit 3 + TypeScript (Shadow DOM, themeable via CSS variables) |
+| Infra | Docker Compose, GitHub Actions CI |
 
-## Running the full stack
+## Quick start
 
-Build and start everything via Docker Compose: `docker compose up build`
-(invoke the build flag using the long form of the compose flag your shell
-prefers). Then:
+The whole stack runs with one command:
 
-| URL                                                | What you should see                                      |
-|                                                    |                                                          |
-| http://localhost:8080/health                       | `{"status":"healthy"}`                                   |
-| http://localhost:8080/swagger                      | Swagger UI listing every endpoint                        |
-| http://localhost:8080/api/v1/offers                | JSON array of ~14 seeded offers                          |
-| http://localhost:8080/api/v1/collections/summer_greece/offers | Greece only subset                            |
-| http://localhost:8080/demo/agency_blue.html        | Blue themed embed of `summer_greece`                     |
-| http://localhost:8080/demo/agency_green.html       | Green themed embed of `last_minute_egypt`                |
-| http://localhost:4200                              | Angular portal: Offers + Collections + Builder (stub)    |
-
-The `portal` container reverse proxies `/api/*` and `/health` to `api:8080`, so
-the browser sees a single origin on port 4200.
-
-## Running pieces locally for development
-
-The full stack is the easy path; these are for tighter feedback loops.
-
-**Backend** (needs .NET 10 SDK plus a running Postgres on localhost:5432):
-
-```
-cd backend
-dotnet run project src/Odisea.WebAPI
+```bash
+docker compose up -d --build
 ```
 
-**Components** (live rebuild of the Lit bundle):
+| Service | URL |
+|---|---|
+| Portal & landing | http://localhost:4200 |
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger |
+| Health | http://localhost:8080/health |
+| PostgreSQL | localhost:5433 |
 
-```
-cd frontend/components
-npm install
-npm run build         # writes to dist/, copy to ../../backend/src/Odisea.WebAPI/wwwroot/components/
-```
+Seeded demo accounts (development):
 
-**Portal** (Angular dev server with `/api` proxied):
+| Role | Email | Password |
+|---|---|---|
+| Agency | `blue@blue-horizon.com` | `Blue1234!` |
+| Operator | `ops@sun-operators.com` | `Ops1234!` |
+| Platform admin | `admin@odisea.net` | `Admin1234!` |
 
-```
-cd frontend/portal
-npm install
-npx ng serve          # http://localhost:4200
-```
+Stop with `docker compose down` (add `-v` to also wipe the database volume).
 
-## API surface (Increment 1)
+## Local development
 
-| Method | Path                                          | Notes                                             |
-|        |                                               |                                                   |
-| GET    | `/health`                                     | liveness probe                                    |
-| GET    | `/api/v1/offers?country=&city=&maxPrice=`     | published offers, light query params              |
-| GET    | `/api/v1/offers/{id}`                         |                                                   |
-| GET    | `/api/v1/collections`                         |                                                   |
-| GET    | `/api/v1/collections/{idOrSlug}`              |                                                   |
-| GET    | `/api/v1/collections/{idOrSlug}/offers`       | resolve filter → exclude → sort → prepend pinned  |
-| POST   | `/api/v1/collections`                         | create a Collection (no auth in Increment 1)      |
+Tighter feedback loops without containers:
 
-Errors return RFC 7807 `ProblemDetails`. Unknown filter `field` or `op` → `400`.
+```bash
+# Backend  (needs .NET 10 SDK + Postgres on localhost:5433)
+cd backend && dotnet run --project src/Odisea.WebAPI
 
-## FilterSpec (Increment 1)
+# Portal  (Angular dev server, proxies /api)
+cd frontend/portal && npm install && npx ng serve
 
-`FilterSpec` is **flat**: a list of `FilterCondition` records, all ANDed
-together.
-
-```jsonc
-{
-  "all": [
-    { "field": "country", "op": "eq",       "value": "GR" },
-    { "field": "maxPrice","op": "lte",      "value": 700 },
-    { "field": "tag",     "op": "contains", "value": "luxury" }
-  ]
-}
+# Components  (Lit library build)
+cd frontend/components && npm install && npm run build
 ```
 
-Whitelisted fields: `country`, `city`, `maxPrice`, `board`, `transport`, `tag`.
-Whitelisted ops: `eq`, `in`, `lte`, `contains`.
+## Project layout
 
-Each `(field, op)` pair is translated to typed EF Core LINQ in
-`Filtering/FilterResolver.cs`; we **never** build raw SQL from input. Unknown
-field or op → `400 ProblemDetails`.
+```
+odisea/
+├─ backend/
+│  ├─ Odisea.sln
+│  └─ src/
+│     ├─ Odisea.Domain/          # entities, value objects, enums (no dependencies)
+│     ├─ Odisea.Application/     # use cases, DTOs, IAppDbContext, business logic
+│     ├─ Odisea.Infrastructure/  # EF Core, migrations, connectors, services
+│     └─ Odisea.WebAPI/          # MVC controllers, middleware, Program.cs
+│     tests/Odisea.UnitTests/    # xUnit unit & integration tests
+├─ frontend/
+│  ├─ portal/                    # Angular 21 portal + landing + auth (CSR)
+│  └─ components/                # Lit 3 embeddable web components
+├─ docs/                         # architecture notes, thesis, assets
+└─ compose.yaml                  # db + api + portal
+```
 
-Nested `any` / `all` groups and parameter substitution land in Increment 2.
+## Testing
 
-## Seed data
+```bash
+dotnet test backend/Odisea.sln          # backend (xUnit, EF Core InMemory)
+cd frontend/portal && npx ng test        # portal (Vitest)
+```
 
-`Seeder.SeedAsync` runs on startup in Development if the DB is empty:
+Continuous integration (`.github/workflows/ci.yml`) runs three checks on every change: backend build + tests, Angular portal build, and the Lit components build.
 
-* 2 agencies: `blue_horizon`, `green_path`.
-* 1 operator: `sun_operators`.
-* ~14 published offers across `BG`, `GR`, `TR`, `EG` with varied price,
-  board, transport, and tags. A mix of `PlatformShared` operator offers and
-  `AgencyPrivate` agency owned offers.
-* 3 collections with stable slugs:
-  1. `summer_greece` (`country = GR`)
-  2. `last_minute_egypt` (`country = EG`, `maxPrice <= 700`)
-  3. `blue_horizon_vip` (`tag contains "luxury"`)
+## Status & roadmap
 
-## Assumptions made during Increment 1
+The platform covers the full path from offer ingestion to a branded embedded component, with a tenant‑safe portal and a working connector engine. Planned next: external (OAuth) sign‑in and password reset, real‑feed validation of the canonical offer schema, WordPress / Shopify distribution channels, SEO publishing, and a structured booking flow.
 
-* `.NET 10 SDK 10.0.300` is the target; the Docker image is `mcr.microsoft.com/dotnet/sdk:10.0`.
-* EF and Npgsql versions are pinned to `10.0.0` and `EFCore.NamingConventions`
-  to `10.0.0`.
-* Solution file is the classic `.sln` format (the .NET 10 default `.slnx`
-  was opted out of, matching the spec).
-* Enums are persisted as strings (not ints) for readability.
-* JSON value comparers for `jsonb` columns use a cheap
-  serialize and compare strategy; fine for the increment, replace with
-  proper structural comparers in Increment 2 if it ever shows up in profiling.
-* Two `RouteHandlerAnalyzer` warnings appear at build time because the
-  endpoint registration is generic on `TDb`; a known analyzer NRE in the
-  current ASP.NET tooling, benign.
-* The portal's `/builder` route is a stub component pointing at Increment 2.
-* No auth, no API key enforcement; CORS is wide open in Development.
-
-## Out of scope for Increment 1
-
-Authentication and API keys, the Collection builder UI, the package posting form,
-parameter substitution and binding, nested filter groups, payments, bookings,
-AI, microservices, message queues, marketing site, multi DbContext separation.
-
-## What is ready for Increment 2
-
-* Filter engine extension surface (`FilterResolver.Apply`); add an `any`/`all`
-  branch and a parameter substitution pass before whitelist checking.
-* Collection persistence is already wired for `Parameters` (`List<ParameterDef>`).
-* Stable Collection slugs the builder UI can target (`summer_greece`,
-  `last_minute_egypt`, `blue_horizon_vip`).
-* A second Lit component slot in `frontend/components/src/` for theming aware
-  variants.
-* An empty `/builder` route in the Angular portal as the entry point for the
-  Collection builder UI.
+<div align="center"><sub>Built with .NET, Angular, Lit and PostgreSQL · одисея</sub></div>
