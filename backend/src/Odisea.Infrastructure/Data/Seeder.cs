@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Odisea.Domain.Common;
 using Odisea.Domain.Entities;
 using Odisea.Domain.Enums;
 using Odisea.Domain.ValueObjects;
@@ -181,6 +182,8 @@ public static class Seeder
         // (migration is sequenced at merge with the Theme agent).
         await SeedPublicationsAsync(db, blue.Id, green.Id, summerGreece.Id, lastMinuteEgypt.Id, ct);
 
+        await SeedApiKeysAsync(db, blue.Id, green.Id, ct);
+
         await SeedUsersAsync(db, blue.Id, green.Id, sunOps.Id, ct);
 
         await SeedEventsAsync(db, ct);
@@ -280,6 +283,42 @@ public static class Seeder
             // Will succeed once the migration is applied.
         }
     }
+
+    // Stable publishable embed keys — one per demo agency. They gate the public
+    // manifest/offers endpoints (publications:read scope). Publishable means safe
+    // to expose in embed HTML: read-only, revocable, and origin-lockable via a
+    // publication's allowed-domains. The raw values are fixed so the demo pages
+    // can hardcode them; only the SHA-256 hash is persisted.
+    public const string BlueEmbedKey = "od_pub_blue_horizon_demo_key_v1";
+    public const string GreenEmbedKey = "od_pub_green_path_demo_key_v1";
+
+    private static async Task SeedApiKeysAsync(
+        AppDbContext db, Guid blueAgencyId, Guid greenAgencyId, CancellationToken ct)
+    {
+        try
+        {
+            if (await db.ApiKeys.AnyAsync(ct)) return;
+
+            db.ApiKeys.AddRange(
+                DemoEmbedKey(blueAgencyId, "Blue Horizon embed key", BlueEmbedKey),
+                DemoEmbedKey(greenAgencyId, "Green Path embed key", GreenEmbedKey));
+
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // api_keys table may not exist yet on a partially-migrated DB.
+        }
+    }
+
+    private static ApiKey DemoEmbedKey(Guid agencyId, string name, string rawKey) => new()
+    {
+        AgencyId = agencyId,
+        Name = name,
+        KeyHash = ApiKey.Hash(rawKey),
+        Prefix = rawKey[..8],
+        Scopes = ApiKeyScopes.PublicationsRead,
+    };
 
     private static async Task SeedPublicationsAsync(
         AppDbContext db,

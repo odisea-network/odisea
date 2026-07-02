@@ -50,12 +50,22 @@ public class CollectionsController(
         return Ok(c.ToDto());
     }
 
+    // Requires a publishable API key (publications:read) belonging to the
+    // collection's agency, or a portal agency member over JWT. This is the offers
+    // URL the manifest points embeds at, and the same URL the builder previews.
+    [Authorize(Policy = "EmbedRead")]
     [EnableCors("PublicEmbedCors")]
     [HttpGet("{idOrSlug}/offers")]
     public async Task<IActionResult> Resolve(string idOrSlug, CancellationToken ct)
     {
         var c = await FindAsync(idOrSlug, ct);
         if (c is null) return NotFound();
+
+        // The key (or portal token) must belong to the collection's agency; a
+        // PlatformAdmin token carries no agency and may resolve any collection.
+        if (agencyCtx.AgencyId is Guid agencyId && c.AgencyId != agencyId)
+            return Problem(title: "Forbidden", detail: "Collection does not belong to your agency.", statusCode: 403);
+
         try
         {
             // Gate the offer set to what the collection's agency may distribute

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { hasOfferSource, resolveOffersUrl } from '../src/od-fetch.js';
+import { authHeaders, hasOfferSource, resolveOffersUrl } from '../src/od-fetch.js';
 
 describe('resolveOffersUrl', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -17,8 +17,25 @@ describe('resolveOffersUrl', () => {
 
     const url = await resolveOffersUrl('https://api.example', { publication: 'blue-gr-summer' });
 
-    expect(fetchMock).toHaveBeenCalledWith('https://api.example/api/v1/publications/blue-gr-summer');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example/api/v1/publications/blue-gr-summer',
+      { headers: {} },
+    );
     expect(url).toBe('https://api.example/api/v1/collections/abc-123/offers');
+  });
+
+  it('sends the publishable key on the manifest request', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ offersUrl: '/api/v1/collections/abc-123/offers' }),
+    } as Response);
+
+    await resolveOffersUrl('https://api.example', { publication: 'blue-gr-summer' }, 'od_pub_demo');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example/api/v1/publications/blue-gr-summer',
+      { headers: { Authorization: 'ApiKey od_pub_demo' } },
+    );
   });
 
   it('throws when the manifest fetch fails', async () => {
@@ -48,5 +65,16 @@ describe('hasOfferSource', () => {
     expect(hasOfferSource({ collection: 's' })).toBe(true);
     expect(hasOfferSource({ endpoint: 'u' })).toBe(true);
     expect(hasOfferSource({})).toBe(false);
+  });
+});
+
+describe('authHeaders', () => {
+  it('builds an ApiKey header when a key is set', () => {
+    expect(authHeaders('od_pub_demo')).toEqual({ Authorization: 'ApiKey od_pub_demo' });
+  });
+
+  it('is empty when no key is set', () => {
+    expect(authHeaders()).toEqual({});
+    expect(authHeaders('')).toEqual({});
   });
 });
