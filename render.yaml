@@ -1,0 +1,36 @@
+# Render Blueprint — free single-origin deployment of Odisea.
+# One Docker web service builds the API + Angular portal + Lit components and
+# serves them on a single origin (no CORS needed). Pair it with a free Neon
+# Postgres database (set ConnectionStrings__Default after the first deploy).
+#
+# Free plan note: the service sleeps after ~15 min idle, so the first request
+# after a nap cold-starts in ~30-50s. That is expected and fine for a showcase.
+services:
+  - type: web
+    name: odisea
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/src/Odisea.WebAPI/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Match the port baked into the Dockerfile (ASPNETCORE_URLS=http://+:8080)
+      # so Render routes external traffic to the right container port.
+      - key: PORT
+        value: "8080"
+      # Run the demo seeder + expose Swagger on this showcase deployment.
+      - key: Seed__Demo
+        value: "true"
+      - key: Swagger__Enabled
+        value: "true"
+      # Generated once by Render and kept stable across deploys.
+      - key: Jwt__Secret
+        generateValue: true
+      # Set manually in the dashboard to the Neon connection string, e.g.:
+      #   Host=ep-xxx.eu-central-1.aws.neon.tech;Database=odisea;Username=odisea;
+      #   Password=...;SSL Mode=Require;Trust Server Certificate=true
+      - key: ConnectionStrings__Default
+        sync: false

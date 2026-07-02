@@ -15,6 +15,9 @@ import { OdIcon } from './shared/od-icon';
           <h1>Пазар на теми</h1>
           <p class="od-pagehead__sub">Разгледайте готови теми и вашите собствени. Клонирайте предварителна тема в нова чернова и я довършете в редактора.</p>
         </div>
+        <div class="od-pagehead__actions">
+          <button type="button" class="od-btn od-btn--primary" (click)="createNew()"><od-icon name="plus" [size]="16" />Нова тема</button>
+        </div>
       </div>
 
       @if (error()) { <div class="od-notice od-notice--error" style="margin-top:18px"><od-icon name="alert" [size]="16" /><span>{{ error() }}</span></div> }
@@ -153,5 +156,9 @@ export class ThemeMarketplacePage {
 
   edit(t: ThemeDto): void {
     this.router.navigate(['/themes', t.id]);
+  }
+
+  createNew(): void {
+    this.router.navigate(['/themes', 'new']);
   }
 }

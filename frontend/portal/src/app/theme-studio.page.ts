@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService, ThemeDto, ThemeTokens } from './api.service';
 
 const FONT_OPTS   = ['Onest', 'Manrope', 'Inter', 'Georgia', 'Prata'];
@@ -285,8 +285,9 @@ function deepCopy(t: ThemeTokens): ThemeTokens {
   `],
 })
 export class ThemeStudioPage implements OnInit {
-  private route = inject(ActivatedRoute);
-  private api   = inject(ApiService);
+  private route  = inject(ActivatedRoute);
+  private router = inject(Router);
+  private api    = inject(ApiService);
 
   theme      = signal<ThemeDto | null>(null);
   tok        = signal<ThemeTokens | null>(null);
@@ -332,6 +333,27 @@ export class ThemeStudioPage implements OnInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
+
+    // "/themes/new" starts a fresh draft: create it server-side, then swap the
+    // URL to the real id so saving, publishing and refresh all work.
+    if (id === 'new') {
+      // agencyId is taken from the auth token server-side; the empty GUID is a
+      // valid placeholder that the API ignores (it must still parse as a Guid).
+      this.api.createTheme({ agencyId: '00000000-0000-0000-0000-000000000000', name: 'Нова тема' }).subscribe({
+        next: (t) => {
+          this.theme.set(t);
+          this.tok.set(deepCopy(t.tokens));
+          this.loading.set(false);
+          this.router.navigate(['/themes', t.id], { replaceUrl: true });
+        },
+        error: (e) => {
+          this.error.set(e?.error?.detail ?? e.message ?? 'Failed to create theme');
+          this.loading.set(false);
+        },
+      });
+      return;
+    }
+
     this.api.getTheme(id).subscribe({
       next: (t) => {
         this.theme.set(t);
@@ -339,7 +361,7 @@ export class ThemeStudioPage implements OnInit {
         this.loading.set(false);
       },
       error: (e) => {
-        this.error.set(e.message ?? 'Failed to load theme');
+        this.error.set(e?.error?.detail ?? e.message ?? 'Failed to load theme');
         this.loading.set(false);
       },
     });

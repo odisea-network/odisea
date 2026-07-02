@@ -206,7 +206,7 @@ app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Odisea API v1"));
@@ -229,12 +229,21 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-if (app.Environment.IsDevelopment())
+// SPA fallback — unmatched GETs return the Angular shell so client-side deep links
+// (e.g. /offers, /themes/123) resolve. Controllers and static files match first.
+app.MapFallbackToFile("index.html");
+
+// Apply pending migrations on every boot so a fresh managed database (Neon, etc.)
+// self-provisions. Demo seeding is gated: always in Development, and in other
+// environments only when Seed:Demo is set (true on the showcase deployment).
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
-    await Seeder.SeedAsync(db);
+    if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Seed:Demo"))
+    {
+        await Seeder.SeedAsync(db);
+    }
 }
 
 app.Run();

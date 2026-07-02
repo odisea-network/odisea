@@ -10,6 +10,14 @@ RUN npm install --no-audit --no-fund
 COPY frontend/components/ ./
 RUN npm run build
 
+# ----- Stage A2: build the Angular portal (SPA) -----
+FROM node:22-alpine AS portal
+WORKDIR /src/portal
+COPY frontend/portal/package.json frontend/portal/package-lock.json* ./
+RUN npm install --no-audit --no-fund
+COPY frontend/portal/ ./
+RUN npx ng build --configuration=production
+
 # ----- Stage B: restore + publish .NET app -----
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet
 WORKDIR /src
@@ -28,6 +36,9 @@ RUN dotnet publish src/Odisea.WebAPI/Odisea.WebAPI.csproj -c Release -o /publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=dotnet /publish ./
+# Angular portal (SPA) served from wwwroot root; the API's MapFallbackToFile
+# routes client-side deep links back to index.html so one origin serves everything.
+COPY --from=portal /src/portal/dist/portal/browser/ ./wwwroot/
 # Versioned bundle — agencies embed via loader.js?data-version=1 or hardcode the v1 path:
 COPY --from=components /src/components/dist/v1/ ./wwwroot/components/v1/
 # loader.js and the legacy-path shim come from the source tree (published as wwwroot content).
