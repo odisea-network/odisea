@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { OfferDto } from './od-types.js';
-import { hasOfferSource, resolveOffersUrl } from './od-fetch.js';
+import { authHeaders, hasOfferSource, resolveOffersUrl } from './od-fetch.js';
 import './od-offer-card.js';
 
 /**
@@ -17,6 +17,8 @@ import './od-offer-card.js';
  *   Anonymous embeds 404 since slugs are tenant-scoped (#18) — use `publication`.
  * @attr {string} endpoint     - Full fetch URL (overrides `publication` / `collection`).
  * @attr {string} [api-base=""] - Origin/prefix for API calls.
+ * @attr {string} [api-key=""]  - Publishable embed key; sent as `Authorization: ApiKey …`
+ *   on the manifest + offers requests. Required once the publication's agency gates reads.
  * @attr {number} columns      - Fixed column count (omit for responsive auto-fill ≥260 px).
  * @attr {string} [card-style="default"] - Visual style forwarded to each card:
  *   "default" | "compact" | "editorial".
@@ -100,6 +102,7 @@ export class OdOfferGrid extends LitElement {
   @property({ type: String }) publication?: string;
   @property({ type: String }) endpoint?: string;
   @property({ attribute: 'api-base' }) apiBase = '';
+  @property({ attribute: 'api-key' }) apiKey = '';
   @property({ type: Number }) columns?: number;
   @property({ attribute: 'card-style' }) cardStyle: 'default' | 'compact' | 'editorial' = 'default';
   @property({ type: String }) title?: string;
@@ -122,7 +125,7 @@ export class OdOfferGrid extends LitElement {
   }
 
   updated(changed: Map<PropertyKey, unknown>) {
-    const watched = ['collection', 'publication', 'endpoint', 'apiBase'];
+    const watched = ['collection', 'publication', 'endpoint', 'apiBase', 'apiKey'];
     if (watched.some(k => changed.has(k)) && !this.offers) {
       this._load();
     }
@@ -134,14 +137,15 @@ export class OdOfferGrid extends LitElement {
     this._error = '';
     try {
       // A publication key resolves through the manifest to an id-based offers URL;
-      // collection/endpoint resolve directly. See od-fetch.ts.
+      // collection/endpoint resolve directly. See od-fetch.ts. The publishable
+      // api-key authenticates both the manifest and the offers request.
       const url = await resolveOffersUrl(this.apiBase, {
         endpoint: this.endpoint,
         publication: this.publication,
         collection: this.collection,
-      });
+      }, this.apiKey);
       if (!url) return;
-      const r = await fetch(url);
+      const r = await fetch(url, { headers: authHeaders(this.apiKey) });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       this._fetched = await r.json();
     } catch (e) {
