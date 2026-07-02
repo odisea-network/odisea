@@ -121,6 +121,46 @@ public class PublicationsControllerTests
         Assert.IsType<OkObjectResult>(result);
     }
 
+    [Fact]
+    public async Task GetManifest_KeyBelongsToPublicationsAgency_Returns200()
+    {
+        var (db, pub) = await SeedPublishedPublication("ownedkey001", []);
+        await using var _ = db;
+
+        // A publishable key resolves to its agency; it matches the publication's.
+        var controller = CreateController(db, agencyId: pub.AgencyId);
+        var result = await controller.GetManifest("ownedkey001", default);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetManifest_KeyBelongsToAnotherAgency_Returns403()
+    {
+        var (db, _) = await SeedPublishedPublication("ownedkey002", []);
+        await using var _ = db;
+
+        // A valid key, but for a different agency than the publication's owner.
+        var controller = CreateController(db, agencyId: Guid.NewGuid());
+        var result = await controller.GetManifest("ownedkey002", default);
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, obj.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetManifest_PlatformAdminNoAgency_Returns200()
+    {
+        var (db, _) = await SeedPublishedPublication("ownedkey003", []);
+        await using var _ = db;
+
+        // PlatformAdmin token carries no agency claim, so the ownership gate is skipped.
+        var controller = CreateController(db, agencyId: null);
+        var result = await controller.GetManifest("ownedkey003", default);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
     // ── Management ─────────────────────────────────────────────────────────────
 
     [Fact]

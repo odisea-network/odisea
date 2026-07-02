@@ -21,9 +21,12 @@ public class PublicationsController(
     // ── Public manifest ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Returns the cacheable manifest for an embed key.
-    /// Checks the Origin header against AllowedDomains when the list is non-empty.
+    /// Returns the cacheable manifest for an embed key. Requires a publishable
+    /// API key (publications:read) belonging to the publication's agency — or a
+    /// portal agency member over JWT. Origin allowlisting is a separate layer,
+    /// enforced upstream by EmbedSecurityMiddleware.
     /// </summary>
+    [Authorize(Policy = "EmbedRead")]
     [EnableCors("PublicEmbedCors")]
     [HttpGet("{key}")]
     public async Task<IActionResult> GetManifest(string key, CancellationToken ct)
@@ -38,6 +41,11 @@ public class PublicationsController(
             .FirstOrDefaultAsync(p => p.Key == key, ct);
 
         if (pub is null) return NotFound();
+
+        // The key (or portal token) must belong to the publication's agency; a
+        // PlatformAdmin token carries no agency and sees every publication.
+        if (agencyCtx.AgencyId is Guid agencyId && pub.AgencyId != agencyId)
+            return Problem(title: "Forbidden", detail: "Publication does not belong to your agency.", statusCode: 403);
 
         // Origin allowlisting is enforced upstream by EmbedSecurityMiddleware.
 

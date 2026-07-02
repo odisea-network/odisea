@@ -82,6 +82,22 @@ builder.Services.AddAuthorization(opts =>
         p.RequireClaim(ApiKeyAuthenticationHandler.ScopeClaimType, ApiKeyScopes.EventsWrite);
     });
 
+    // EmbedRead — the public read path (manifest + resolved offers). Satisfied by
+    // EITHER an embed key with publications:read (the anonymous-site embed) OR a
+    // portal agency role over JWT (the builder preview hits the same offers URL).
+    // Both schemes run so whichever credential is present populates the principal;
+    // per-agency ownership is enforced in the actions via IAgencyContext.
+    opts.AddPolicy("EmbedRead", p =>
+    {
+        p.AuthenticationSchemes =
+            [ApiKeyAuthenticationHandler.SchemeName, JwtBearerDefaults.AuthenticationScheme];
+        p.RequireAssertion(ctx =>
+            ctx.User.HasClaim(ApiKeyAuthenticationHandler.ScopeClaimType, ApiKeyScopes.PublicationsRead) ||
+            ctx.User.IsInRole(UserRole.PlatformAdmin.ToString()) ||
+            ctx.User.IsInRole(UserRole.AgencyAdmin.ToString()) ||
+            ctx.User.IsInRole(UserRole.AgencyEditor.ToString()));
+    });
+
     opts.AddPolicy("PlatformAdmin", p =>
         p.RequireRole(UserRole.PlatformAdmin.ToString()));
 

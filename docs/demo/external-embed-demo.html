@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Wanderlust Travel — powered by Odisea components</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      This file is a STANDALONE external website. It contains no Odisea code of
+      its own — every offer below is rendered by Odisea web components loaded
+      from the live CDN and fed by the live API, cross-origin:
+
+        CDN  : https://odisea-kw3x.onrender.com/components/loader.js
+        DATA : https://odisea-kw3x.onrender.com/api/v1/...
+
+      Open it straight from disk (double-click), host it on Netlify / GitHub
+      Pages / CodePen, or paste the two <od-*> lines into any CMS. Each embed
+      carries the agency's publishable api-key; the endpoints reject requests
+      without a valid key (no key, no offers) but the key is safe to expose.
+    -->
+    <style>
+      :root { --brand: #b0135a; --brand-ink: #2a0316; }
+      * { box-sizing: border-box; }
+      body {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        margin: 0;
+        color: var(--brand-ink);
+        background: #fff7fb;
+      }
+      header {
+        background: linear-gradient(120deg, var(--brand), #7a0d3d);
+        color: #fff;
+        padding: 40px 24px 48px;
+        text-align: center;
+      }
+      header .kicker { text-transform: uppercase; letter-spacing: .18em; font-size: 12px; opacity: .85; }
+      header h1 { margin: 8px 0 6px; font-size: 2rem; }
+      header p { margin: 0; opacity: .9; }
+      main { max-width: 1160px; margin: 0 auto; padding: 40px 24px 64px; }
+      .note {
+        background: #fff;
+        border: 1px solid #f2c9dd;
+        border-left: 4px solid var(--brand);
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin: 0 0 36px;
+        font-size: 14px;
+        color: #6b2244;
+      }
+      section { margin: 0 0 56px; }
+      h2 { font-size: 1.35rem; margin: 0 0 4px; }
+      .sub { margin: 0 0 22px; color: #9a5c76; font-size: 14px; }
+
+      /* Section A — Wanderlust brand (magenta) applied via Odisea CSS variables. */
+      .brand-magenta {
+        --odc-accent: #b0135a;
+        --odc-ink: #2a0316;
+        --odc-bg: #ffffff;
+        --odc-radius: 14px;
+        --odc-font: 'Segoe UI', system-ui, sans-serif;
+      }
+      /* Section B — a totally different look from the SAME component. */
+      .brand-forest {
+        --odc-accent: #1f7a4d;
+        --odc-ink: #06251a;
+        --odc-bg: #f5fbf7;
+        --odc-radius: 4px;
+        --odc-font: Georgia, 'Times New Roman', serif;
+      }
+
+      pre {
+        background: #2a0316; color: #ffd9ea;
+        padding: 16px 18px; border-radius: 10px;
+        overflow-x: auto; font-size: 13px; line-height: 1.5;
+      }
+      footer { text-align: center; padding: 28px; color: #9a5c76; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="kicker">A fictional third-party website</div>
+      <h1>Wanderlust Travel</h1>
+      <p>Handpicked getaways — served live by Odisea embeddable components.</p>
+    </header>
+
+    <main>
+      <p class="note">
+        Everything below is rendered by Odisea web components loaded from
+        <strong>odisea-kw3x.onrender.com</strong>. This page hosts no offer data
+        of its own — change a publication in the Odisea portal and it updates here.
+      </p>
+
+      <!-- Section A: grid, magenta brand. The api-key is Blue Horizon's publishable
+           embed key — safe to expose (read-only, revocable, origin-lockable). -->
+      <section class="brand-magenta">
+        <h2>Summer in Greece</h2>
+        <p class="sub">&lt;od-offer-grid&gt; · publication <code>blue-gr-summer</code> · magenta theme</p>
+        <od-offer-grid
+          publication="blue-gr-summer"
+          api-base="https://odisea-kw3x.onrender.com"
+          api-key="od_pub_blue_horizon_demo_key_v1"
+          columns="3"></od-offer-grid>
+      </section>
+
+      <!-- Section B: carousel, forest brand — Green Path's own publishable key. -->
+      <section class="brand-forest">
+        <h2>Last-minute Egypt</h2>
+        <p class="sub">&lt;od-offer-carousel&gt; · publication <code>green-eg-last</code> · forest theme</p>
+        <od-offer-carousel
+          publication="green-eg-last"
+          api-base="https://odisea-kw3x.onrender.com"
+          api-key="od_pub_green_path_demo_key_v1"
+          card-style="editorial"></od-offer-carousel>
+      </section>
+
+      <!-- The entire integration, shown verbatim -->
+      <section>
+        <h2>The entire integration</h2>
+        <p class="sub">Two tags plus one script — paste into any HTML page.</p>
+        <pre>&lt;od-offer-grid
+  publication="blue-gr-summer"
+  api-base="https://odisea-kw3x.onrender.com"
+  api-key="od_pub_blue_horizon_demo_key_v1"
+  columns="3"&gt;&lt;/od-offer-grid&gt;
+
+&lt;script src="https://odisea-kw3x.onrender.com/components/loader.js"
+        data-version="1"&gt;&lt;/script&gt;</pre>
+        <p class="sub" style="margin-top:12px">
+          The <code>api-key</code> is a <strong>publishable</strong> key: read-only, tied to
+          the agency, revocable, and lockable to specific domains. Without a valid key the
+          endpoints return 401 — no key, no offers.
+        </p>
+      </section>
+    </main>
+
+    <footer>Wanderlust Travel is a demo host. Offers &amp; rendering by Odisea.</footer>
+
+    <!-- The one script that boots every od-* component on the page. -->
+    <script src="https://odisea-kw3x.onrender.com/components/loader.js" data-version="1"></script>
+  </body>
+</html>
