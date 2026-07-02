@@ -125,4 +125,55 @@ public class CollectionsControllerTests
         var problem = Assert.IsType<ObjectResult>(result);
         Assert.Equal(403, problem.StatusCode);
     }
+
+    // ── Resolve (embed offers endpoint) — publishable-key agency gate ────────────
+
+    private static async Task<Guid> SeedCollection(AppDbContext db, Guid agencyId, string slug)
+    {
+        var created = Assert.IsType<CreatedAtActionResult>(
+            await CreateController(db, agencyId).Create(Request(agencyId, slug), default));
+        return Assert.IsType<CollectionDto>(created.Value).Id;
+    }
+
+    [Fact]
+    public async Task Resolve_KeyBelongsToCollectionsAgency_Returns200()
+    {
+        await using var db = CreateDb();
+        var blue = Guid.NewGuid();
+        var id = await SeedCollection(db, blue, "blue-offers");
+
+        // The embed key resolves to Blue's agency; it owns the collection.
+        var result = await CreateController(db, blue).Resolve(id.ToString(), default);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Resolve_KeyBelongsToAnotherAgency_Returns403()
+    {
+        await using var db = CreateDb();
+        var blue = Guid.NewGuid();
+        var green = Guid.NewGuid();
+        var id = await SeedCollection(db, blue, "blue-offers");
+
+        // A valid key for Green cannot resolve Blue's collection by its global id.
+        var result = await CreateController(db, green).Resolve(id.ToString(), default);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, problem.StatusCode);
+    }
+
+    [Fact]
+    public async Task Resolve_PlatformAdminNoAgency_Returns200()
+    {
+        await using var db = CreateDb();
+        var blue = Guid.NewGuid();
+        var id = await SeedCollection(db, blue, "blue-offers");
+
+        // PlatformAdmin token carries no agency claim; the ownership gate is skipped.
+        var controller = new CollectionsController(db, new FakeAgencyContext(null), new FakeOfferAccessPolicy(db));
+        var result = await controller.Resolve(id.ToString(), default);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
 }
