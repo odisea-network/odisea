@@ -69,7 +69,7 @@ const CHANNELS = [
 const STEPS = [
   { id: 'collection', label: 'Колекция',    sub: 'Кои оферти' },
   { id: 'experience', label: 'Experience',  sub: 'Кои компоненти' },
-  { id: 'theme',      label: '��ема',        sub: 'Какъв стил' },
+  { id: 'theme',      label: 'Тема',        sub: 'Какъв стил' },
   { id: 'publish',    label: 'Публикуване', sub: 'Къде' },
 ] as const;
 
