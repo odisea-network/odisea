@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Odisea.Api/Odisea.Api.csproj" />
+    <Project Path="src/Odisea.SharedKernel/Odisea.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/Odisea.Modules.Agencies/Odisea.Modules.Agencies.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Booking/Odisea.Modules.Booking.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Catalog/Odisea.Modules.Catalog.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Integrations/Odisea.Modules.Integrations.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Pricing/Odisea.Modules.Pricing.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Odisea.UnitTests/Odisea.UnitTests.csproj" />
+  </Folder>
+</Solution>

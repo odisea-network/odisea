@@ -10,6 +10,28 @@
 - **Integrations** — provider-agnostic reservation contract (`IReservationProvider`): Mock adapter first; external systems (TourVisio, Sejour, …) plug in behind the same interface.
 - **Frontend** — Angular 21 B2B portal (`frontend/portal`): agency area (search, booking wizard, bookings) and admin area (agencies, programs, pricing rules).
 
+## Layout
+
+```
+backend/
+  Odisea.slnx                      .NET 10 solution (slnx format, VS 17.14+)
+  Directory.Build.props            shared build settings (nullable, warnings as errors)
+  Directory.Packages.props         central package versions
+  src/
+    Odisea.Api/                    host: Serilog, Swagger, ProblemDetails, /health
+    Odisea.SharedKernel/           Entity, Money, DateRange, Pax, IClock, ICurrentUser
+    Modules/
+      Odisea.Modules.Agencies/     identity, agencies, users, credit limits, commissions
+      Odisea.Modules.Catalog/      destinations, hotels, programs, departures, mappings
+      Odisea.Modules.Pricing/      pricing rules, exchange rates, pricing engine
+      Odisea.Modules.Booking/      bookings, passengers, status history, documents
+      Odisea.Modules.Integrations/ provider contract + adapters (Mock, TourVisio, …)
+  tests/
+    Odisea.UnitTests/              value-object tests + module-boundary architecture test
+```
+
+Each module keeps a `PublicApi/` namespace — the only surface other modules may reference (enforced by an architecture test). One Postgres database, one schema per module.
+
 ## Status
 
-Phase 0 — repository reset. Scaffolding lands in Phase 1 (walking skeleton).
+Phase 1 — walking skeleton in progress. Backend solution scaffold is up (`dotnet build` / `dotnet test` in `backend/`); Agencies module, dev stack, and portal shell are next (#96–#98).
