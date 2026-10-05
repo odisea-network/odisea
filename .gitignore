@@ -1,0 +1,27 @@
+# Personal tooling (never commit)
+CLAUDE.local.md
+.claude/
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+artifacts/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+*.tsbuildinfo
+npm-debug.log*
+
+# Environment / secrets
+.env
+.env.*
+*.local.json
+!settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
