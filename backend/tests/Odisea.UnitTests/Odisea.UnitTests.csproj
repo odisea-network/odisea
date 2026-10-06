@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Odisea.SharedKernel\Odisea.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Odisea.Modules.Agencies\Odisea.Modules.Agencies.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Odisea.Modules.Catalog\Odisea.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Odisea.Modules.Pricing\Odisea.Modules.Pricing.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Odisea.Modules.Booking\Odisea.Modules.Booking.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Odisea.Modules.Integrations\Odisea.Modules.Integrations.csproj" />
+  </ItemGroup>
+</Project>
