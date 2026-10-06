@@ -1,4 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using Odisea.Api;
 using Odisea.Modules.Agencies;
+using Odisea.Modules.Agencies.Domain;
+using Odisea.Modules.Agencies.Infrastructure;
+using Odisea.Modules.Agencies.Infrastructure.Data;
 using Odisea.Modules.Booking;
 using Odisea.Modules.Catalog;
 using Odisea.Modules.Integrations;
@@ -18,6 +25,8 @@ try
         config.ReadFrom.Configuration(context.Configuration));
 
     builder.Services.AddSingleton<IClock, SystemClock>();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentUser, CurrentUser>();
     builder.Services.AddProblemDetails();
 
     builder.Services.AddControllers()
@@ -35,7 +44,31 @@ try
         .AddIntegrationsModule(builder.Configuration);
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer",
+                    },
+                },
+                []
+            },
+        });
+    });
 
     var app = builder.Build();
 
@@ -46,11 +79,25 @@ try
     app.UseSwagger();
     app.UseSwaggerUI();
 
+    app.UseAuthentication();
+    app.UseAuthorization();
+
     app.MapControllers();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
+        await db.Database.MigrateAsync();
+        await AgenciesSeeder.SeedAsync(
+            db,
+            scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserAccount>>(),
+            app.Configuration,
+            app.Logger);
+    }
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not Microsoft.Extensions.Hosting.HostAbortedException)
 {
     Log.Fatal(ex, "Host terminated unexpectedly");
 }
