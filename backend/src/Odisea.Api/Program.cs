@@ -99,6 +99,7 @@ try
             scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserAccount>>(),
             app.Configuration,
             app.Logger);
+        await DevDemoSeeder.SeedAsync(scope.ServiceProvider, app.Configuration, app.Logger);
     }
 
     app.Run();

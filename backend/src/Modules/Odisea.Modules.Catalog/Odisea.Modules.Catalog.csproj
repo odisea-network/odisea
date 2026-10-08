@@ -10,5 +10,6 @@
     <ProjectReference Include="..\..\Odisea.SharedKernel\Odisea.SharedKernel.csproj" />
     <ProjectReference Include="..\Odisea.Modules.Agencies\Odisea.Modules.Agencies.csproj" />
     <ProjectReference Include="..\Odisea.Modules.Integrations\Odisea.Modules.Integrations.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Pricing\Odisea.Modules.Pricing.csproj" />
   </ItemGroup>
 </Project>

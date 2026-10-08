@@ -1,6 +1,6 @@
 # Odisea.Modules.Catalog
 
-**What we sell.** The operator's product master data: where we go, which hotels we work with, and which packaged programs agencies can book. *(Entities + operator CRUD + mappings: implemented. Search lands with the Pricing module so net costs are never exposed.)*
+**What we sell.** The operator's product master data: where we go, which hotels we work with, and which packaged programs agencies can book. *(Entities + operator CRUD + mappings: implemented. Search implemented: agencies browse published programs and get live sell-priced offers; provider tokens are DataProtection-wrapped so net costs never leave the backend.)*
 
 ## Owns
 
