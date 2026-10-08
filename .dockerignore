@@ -1,0 +1,12 @@
+**/.git
+**/bin
+**/obj
+**/.vs
+**/node_modules
+**/dist
+**/.angular
+docs
+**/*.md
+.github
+.claude
+CLAUDE.local.md
