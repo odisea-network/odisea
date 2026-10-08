@@ -1,8 +1,8 @@
 # Odisea.Modules.Booking
 
-**The money moment.** Owns the reservation lifecycle from draft to confirmed (or cancelled), the passengers, and the documents. *(Skeleton — content lands in Phase 4.)*
+**The money moment.** Owns the reservation lifecycle from draft to confirmed (or cancelled), the passengers, and the documents. *(Implemented: full lifecycle against the mock provider.)*
 
-## Will own
+## Owns
 
 - **Domain:** `Booking` (human ref `ODI-2027-000123`, agency/agent/program/departure/hotel Guids, provider refs, net + sell price, breakdown jsonb), `BookingPassenger`, `BookingStatusHistory`, `BookingDocument`
 - **The state machine:** `Draft → PriceConfirmed → PendingConfirmation → Confirmed → Cancelled/Failed`, enforced in one place (`Booking.TransitionTo(...)` throws `InvalidBookingTransitionException`). Every transition is appended to status history.

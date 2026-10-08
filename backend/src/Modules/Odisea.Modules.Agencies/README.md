@@ -15,7 +15,7 @@
 - `AuthPolicies` — policy names for `[Authorize(Policy = ...)]`
 - `AuthClaims` — claim type names (e.g. Booking reads `agency_id` to scope data)
 
-Future (when Booking needs it): credit-limit check contract.
+- `IAgencyLookup` / `AgencySnapshot` — read-only agency facts (active?, credit limit) consumed by Booking.
 
 ## Relations
 

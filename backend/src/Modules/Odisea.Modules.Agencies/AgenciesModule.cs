@@ -36,6 +36,7 @@ public static class AgenciesModule
         services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
         services.AddScoped<TokenService>();
         services.AddScoped<AuthService>();
+        services.AddScoped<IAgencyLookup, Features.Lookup.AgencyLookup>();
 
         var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
