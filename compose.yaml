@@ -1,0 +1,42 @@
+# Odisea v2 — local development stack.
+# Services: postgres + the ASP.NET Core API. The Angular portal service joins with #98.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: odisea
+      POSTGRES_USER: odisea
+      POSTGRES_PASSWORD: odisea
+    ports:
+      # Host port 5433 to avoid conflict with a native Windows Postgres on 5432.
+      # Inside the compose network, services still talk on 5432 (see `Host=db;Port=5432`).
+      - "5433:5432"
+    volumes:
+      - odisea-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odisea -d odisea"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/Odisea.Api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=odisea;Username=odisea;Password=odisea"
+      # Dev-only JWT signing key (HS256). The host-side dev workflow uses
+      # `dotnet user-secrets`, but those don't propagate into the container,
+      # so the same `Jwt:Secret` key is set here via env-var override.
+      # DO NOT use this value in any non-dev environment.
+      Jwt__Secret: "dev-only-jwt-signing-key-please-replace-in-prod-this-string-is-at-least-32-bytes"
+    ports:
+      - "8080:8080"
+
+volumes:
+  odisea-db:
