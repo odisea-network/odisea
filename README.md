@@ -32,6 +32,27 @@ backend/
 
 Each module keeps a `PublicApi/` namespace — the only surface other modules may reference (enforced by an architecture test). One Postgres database, one schema per module.
 
+## Quickstart
+
+```bash
+docker compose up -d db                                  # Postgres 17 (host port 5433)
+dotnet run --project backend/src/Odisea.Api              # migrate + seed + listen on :8080
+```
+
+Open **http://localhost:8080/swagger**, call `POST /api/v1/auth/login` (dev: `admin@odisea.local` / `DevOnly-Odisea-Admin-2026!`), click **Authorize**, paste the token — every endpoint is now testable from the browser. Everything is 401 without a token by design.
+
+## Documentation
+
+| Doc | What it answers |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The overall picture: tiers, module boundaries, data & auth model, provider abstraction |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | The implementation plan: phases, status, definition of done |
+| [backend/README.md](backend/README.md) | How to run, test, and add migrations; project index |
+| `backend/src/**/README.md` | Each project's purpose and relations |
+| [Project board](https://github.com/orgs/odisea-network/projects/1) | Task-level source of truth |
+
+Repo workflow skills for Claude Code live in [.claude/skills/](.claude/skills/) (`run-stack`, `add-migration`, `new-module`, `pick-task`, `start-feature`, `commit-changes`, `finish-feature`).
+
 ## Status
 
-Phase 1 — walking skeleton in progress. Backend solution scaffold is up (`dotnet build` / `dotnet test` in `backend/`); Agencies module, dev stack, and portal shell are next (#96–#98).
+Phase 1 — walking skeleton. Done: solution scaffold (#95), Agencies module with hardened JWT auth (#96), dev stack + CI + CodeQL + Dependabot (#97). Next: Angular portal shell (#98). Security baseline: #100.
