@@ -1,8 +1,8 @@
 # Odisea.Modules.Pricing
 
-**What it costs.** Turns a provider's net cost into the final B2B sell price: our markup + fees, the agency's commission, currency conversion. *(Skeleton — content lands in Phase 3.)*
+**What it costs.** Turns a provider's net cost into the final B2B sell price: our markup + fees, the agency's commission, currency conversion. *(Implemented: rules + rates CRUD, pure engine, IPriceCalculator.)*
 
-## Will own
+## Owns
 
 - **Domain:** `PricingRule` (scope Global|Program|Agency; kind Markup|Fee|Commission; percent or fixed; priority; validity window), `ExchangeRate` (manual entry first; EUR is the base currency)
 - **The engine:** a **pure, deterministic, zero-I/O function** — `Calculate(PricingContext, rules) → PriceBreakdown`. Fixed order: currency conversion → markups (by priority) → fees → commission. Most-specific scope wins (Agency > Program > Global). Pure = exhaustively unit-testable.
@@ -10,7 +10,7 @@
 - **CRUD:** operator-only rule management
 - **Persistence:** `PricingDbContext` → schema `pricing`
 
-## PublicApi (planned)
+## PublicApi
 
 `IPriceCalculator` for the search flow and for Booking's re-price step.
 
