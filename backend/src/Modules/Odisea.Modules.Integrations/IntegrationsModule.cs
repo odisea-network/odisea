@@ -25,6 +25,11 @@ public static class IntegrationsModule
         services.AddScoped<IReservationProvider, MockReservationProvider>();
         services.AddScoped<IProviderRegistry, ProviderRegistry>();
 
+        // Protects provider offer tokens before they leave the backend (they can
+        // embed net costs). In production, persist DataProtection keys explicitly.
+        services.AddDataProtection();
+        services.AddScoped<IOfferTokenProtector, OfferTokenProtector>();
+
         return services;
     }
 }

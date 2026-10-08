@@ -15,6 +15,8 @@ public static class CatalogModule
                 npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", CatalogDbContext.Schema))
             .UseSnakeCaseNamingConvention());
 
+        services.AddScoped<Features.Search.SearchService>();
+
         return services;
     }
 }

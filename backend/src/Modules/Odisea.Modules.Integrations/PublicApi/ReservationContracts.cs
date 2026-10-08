@@ -20,6 +20,17 @@ public interface IProviderRegistry
     IReadOnlyList<string> KnownProviderCodes { get; }
 }
 
+/// Provider offer tokens may embed sensitive state (net cost, availability
+/// internals). Before a token leaves the backend it MUST be protected with
+/// this service, and unprotected again when a client hands it back.
+public interface IOfferTokenProtector
+{
+    string Protect(string providerToken);
+
+    /// <exception cref="InvalidOfferTokenException">Tampered or foreign token.</exception>
+    string Unprotect(string publicToken);
+}
+
 public sealed record ProviderSearchRequest(
     string ExternalLocationCode,
     DateRange Stay,
