@@ -21,7 +21,7 @@ jobs:
         # javascript-typescript joins when the Angular portal lands (#98).
         language: [csharp]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
