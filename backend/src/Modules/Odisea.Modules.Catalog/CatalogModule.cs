@@ -16,6 +16,7 @@ public static class CatalogModule
             .UseSnakeCaseNamingConvention());
 
         services.AddScoped<Features.Search.SearchService>();
+        services.AddScoped<PublicApi.IProgramLookup, Features.Lookup.ProgramLookup>();
 
         return services;
     }

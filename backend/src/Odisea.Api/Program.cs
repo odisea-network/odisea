@@ -92,6 +92,8 @@ try
             .Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Pricing.Infrastructure.PricingDbContext>()
             .Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Booking.Infrastructure.BookingDbContext>()
+            .Database.MigrateAsync();
         var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
         await db.Database.MigrateAsync();
         await AgenciesSeeder.SeedAsync(

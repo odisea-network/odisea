@@ -3,6 +3,14 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\Odisea.SharedKernel\Odisea.SharedKernel.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Agencies\Odisea.Modules.Agencies.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Catalog\Odisea.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Integrations\Odisea.Modules.Integrations.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Pricing\Odisea.Modules.Pricing.csproj" />
   </ItemGroup>
 </Project>
