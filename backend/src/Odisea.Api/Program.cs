@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Odisea.Api;
@@ -43,6 +45,25 @@ try
         .AddBookingModule(builder.Configuration)
         .AddIntegrationsModule(builder.Configuration);
 
+    // Brute-force protection on credential endpoints: 10 attempts/min per IP.
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    });
+
+    // Strict allowlist; empty config means no cross-origin access at all.
+    var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod()));
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
@@ -74,11 +95,27 @@ try
 
     app.UseExceptionHandler();
     app.UseStatusCodePages();
+
+    if (!app.Environment.IsDevelopment())
+        app.UseHsts();
+
+    app.Use(async (context, next) =>
+    {
+        var headers = context.Response.Headers;
+        headers.XContentTypeOptions = "nosniff";
+        headers.XFrameOptions = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+        headers["X-Permitted-Cross-Domain-Policies"] = "none";
+        await next();
+    });
+
     app.UseSerilogRequestLogging();
 
     app.UseSwagger();
     app.UseSwaggerUI();
 
+    app.UseCors();
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
 

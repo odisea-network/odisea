@@ -7,17 +7,17 @@
 | Phase | Deliverable | Status |
 |---|---|---|
 | **0 — Reset** | v1 archived (`archive/v1`, `v1.0-final`), fresh `main`, thesis backed up, tooling retooled, board rebuilt | ✅ done (2026-10-05) |
-| **1 — Walking skeleton** | Solution + 5 modules + SharedKernel (#95 ✅) · Agencies module with hardened JWT auth (#96 ✅) · compose + CI + CodeQL + Dependabot (#97 ✅) · Angular portal shell (#98) | 🔄 in progress |
-| **2 — Catalog + mock search** | Catalog CRUD (destinations, hotels, programs, departures, mappings) · `IReservationProvider` contract + Mock adapter + registry · `POST /api/v1/search` · agency search UI | ⬜ |
-| **3 — Pricing engine** | PricingRule CRUD · pure engine (currency → markups → fees → commission, most-specific scope wins) · breakdown persisted · sell prices in search | ⬜ |
-| **4 — Booking flow vs mock** | Draft → re-price (drift!) → confirm → booked · cancel · status state machine · bookings UI | ⬜ |
-| **5 — Real provider adapter** | TourVisio/Sejour adapter behind the same contract · content sync → mapping screens · call logging + resilience. **Gated on: intermediary decision + sandbox credentials** | ⬜ |
-| **6 — Operations** | Vouchers/PDFs · credit-limit enforcement · payments tracking · security hardening completion (#100) · deployment | ⬜ |
+| **1 — Walking skeleton** | Solution + modules (#95 ✅) · Agencies/auth (#96 ✅) · compose + CI + CodeQL + Dependabot (#97 ✅) · Angular portal shell (#98 — the one open frontend item) | 🔄 backend done |
+| **2 — Catalog + mock search** | Catalog CRUD (#108 ✅) · provider contract + Mock adapter + call logging (#107 ✅) · live-priced `POST /api/v1/search` + protected offer tokens (#110 ✅) · agency search UI (frontend, with #98) | ✅ backend done (2026-10-09) |
+| **3 — Pricing engine** | Rules + rates CRUD, pure engine, breakdown, sell prices in search (#109 ✅) | ✅ done (2026-10-09) |
+| **4 — Booking flow vs mock** | Full lifecycle, state machine, history, jsonb breakdown, sequence refs, operator oversight (#111 ✅) · bookings UI (frontend) | ✅ backend done (2026-10-09) |
+| **5 — Real provider adapter** | TourVisio/Sejour adapter behind the same contract · content sync → mapping screens · resilience. **Gated on: intermediary decision + sandbox credentials — the only blocker** | ⬜ gated |
+| **6 — Operations** | Hardening: rate limiting, headers, CORS, HSTS (#112 ✅) · remaining: refresh-token rotation, audit log, vouchers/PDFs, credit-limit enforcement, payments, deployment | 🔄 hardening done |
 
 ## Cross-cutting: security baseline — issue #100
 
-Done: PBKDF2 hashing, lockout, anti-enumeration login, JWT validation, deny-by-default authorization, CodeQL + Dependabot.
-Open: rate limiting, refresh-token rotation, security headers, HSTS, strict CORS, audit log, call-log redaction, pre-prod pen-test gate.
+Done: PBKDF2 hashing, lockout, anti-enumeration login, JWT validation, deny-by-default authorization, CodeQL + Dependabot, auth rate limiting (10/min/IP), security headers, strict CORS allowlist, HSTS outside dev, PII-free provider call logs, DataProtection-wrapped offer tokens (net cost never leaves the backend).
+Open: refresh-token rotation, audit log for sensitive operations, persist DataProtection keys for production, pre-prod pen-test gate.
 
 ## Standing decisions
 

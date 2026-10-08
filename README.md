@@ -55,4 +55,4 @@ Repo workflow skills for Claude Code live in [.claude/skills/](.claude/skills/) 
 
 ## Status
 
-Phase 1 — walking skeleton. Done: solution scaffold (#95), Agencies module with hardened JWT auth (#96), dev stack + CI + CodeQL + Dependabot (#97). Next: Angular portal shell (#98). Security baseline: #100.
+Backend complete through Phase 4 + hardening: auth (#96), dev stack/CI (#97), provider contract + mock (#107), catalog (#108), pricing engine (#109), live-priced search (#110), booking lifecycle (#111), rate limiting/headers/CORS/HSTS (#112). Open: Angular portal (#98), real provider adapter (Phase 5 — gated on the intermediary decision), remaining ops items (#100). See docs/ROADMAP.md.

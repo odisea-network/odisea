@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Odisea.Modules.Agencies.Domain;
 using Odisea.Modules.Agencies.Features.Auth;
 
@@ -8,6 +9,7 @@ namespace Odisea.Modules.Agencies.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
+[EnableRateLimiting("auth")]
 public class AuthController(AuthService auth) : ControllerBase
 {
     [HttpPost("login")]
