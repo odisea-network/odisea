@@ -1,6 +1,6 @@
 # Odisea v2 — Architecture Overview
 
-> Living document. Update it in the same PR as any structural change (new module, new external system, changed boundaries). Last updated: 2026-10-09 (Phase 1).
+> Living document. Update it in the same PR as any structural change (new module, new external system, changed boundaries). Last updated: 2026-10-09 (backend through Phase 4 + hardening).
 
 ## What Odisea is
 
@@ -67,6 +67,8 @@ One PostgreSQL database, **one schema + one DbContext + one migrations history t
 - Policies: `Operator` (back-office) and `Agency` (portal) — defined in `Agencies.PublicApi.AuthPolicies`, consumed by all modules.
 - Agency-scoped queries always filter by the **`agency_id` claim**, never by a client-supplied id.
 - Login hardening: PBKDF2 hashing, 5-failure/15-min lockout, anti-enumeration (identical error + dummy hash). Full baseline and remaining checklist: issue #100.
+- Perimeter: rate limiting on auth (10/min/IP → 429), security headers (nosniff, frame DENY, no-referrer), strict CORS allowlist from config, HSTS outside Development.
+- Offer tokens handed to clients are DataProtection-wrapped — provider payloads (which can embed net cost) never leave the backend readable.
 - Supply chain: Dependabot (nuget + actions) and CodeQL run in CI.
 
 ## Provider abstraction (tier 3)
