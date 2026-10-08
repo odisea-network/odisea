@@ -86,6 +86,8 @@ try
 
     using (var scope = app.Services.CreateScope())
     {
+        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Integrations.Infrastructure.IntegrationsDbContext>()
+            .Database.MigrateAsync();
         var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
         await db.Database.MigrateAsync();
         await AgenciesSeeder.SeedAsync(
