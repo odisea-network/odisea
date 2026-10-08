@@ -1,8 +1,8 @@
 # Odisea.Modules.Catalog
 
-**What we sell.** The operator's product master data: where we go, which hotels we work with, and which packaged programs agencies can book. *(Skeleton — content lands in Phase 2.)*
+**What we sell.** The operator's product master data: where we go, which hotels we work with, and which packaged programs agencies can book. *(Entities + operator CRUD + mappings: implemented. Search lands with the Pricing module so net costs are never exposed.)*
 
-## Will own
+## Owns
 
 - **Domain:** `Destination`, `Hotel` (internal master records), `Program` (season, destination, provider, Draft→Published→Archived), `ProgramDeparture` (date range, transport), `ProgramHotel` (the allowed-hotels list per program)
 - **Mappings:** `HotelMapping` / `LocationMapping` — the translation table between OUR ids and each external provider's codes. Catalog owns this because hotels are our master data; Integrations stays provider-generic. Unmapped provider results are dropped + logged, never shown half-mapped.

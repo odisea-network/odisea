@@ -88,6 +88,8 @@ try
     {
         await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Integrations.Infrastructure.IntegrationsDbContext>()
             .Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Catalog.Infrastructure.CatalogDbContext>()
+            .Database.MigrateAsync();
         var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
         await db.Database.MigrateAsync();
         await AgenciesSeeder.SeedAsync(
