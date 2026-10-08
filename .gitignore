@@ -1,6 +1,7 @@
-# Personal tooling (never commit)
+# Personal tooling (never commit) — but repo workflow skills ARE committed
 CLAUDE.local.md
-.claude/
+.claude/*
+!.claude/skills/
 
 # .NET
 bin/
