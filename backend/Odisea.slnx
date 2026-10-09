@@ -7,6 +7,7 @@
     <Project Path="src/Modules/Odisea.Modules.Agencies/Odisea.Modules.Agencies.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Booking/Odisea.Modules.Booking.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Catalog/Odisea.Modules.Catalog.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Documents/Odisea.Modules.Documents.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Integrations/Odisea.Modules.Integrations.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Pricing/Odisea.Modules.Pricing.csproj" />
   </Folder>

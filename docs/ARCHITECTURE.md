@@ -47,6 +47,7 @@ One deployable (`Odisea.Api`), five modules, hard boundaries:
 | **Pricing** | Pricing rules (markup/fee/commission), exchange rates, the pure pricing engine | — |
 | **Booking** | Bookings, passengers, status state machine, documents | Agencies (credit), Catalog (program refs), Pricing (breakdown), Integrations (provider ops) |
 | **Integrations** | `IReservationProvider` contract, provider adapters (Mock now, real later), call logs | — |
+| **Documents** | Bulgarian tax documents (фактури, известия): gapless numbering, margin scheme, PDFs, company profile | Agencies (billing), Booking (financial facts) |
 
 **Boundary rules (enforced by an architecture test, all 20 pairs):**
 - A module may reference another module **only through its `PublicApi` namespace**.

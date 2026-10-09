@@ -12,7 +12,7 @@
 | **3 — Pricing engine** | Rules + rates CRUD, pure engine, breakdown, sell prices in search (#109 ✅) | ✅ done (2026-10-09) |
 | **4 — Booking flow vs mock** | Full lifecycle, state machine, history, jsonb breakdown, sequence refs, operator oversight (#111 ✅) · bookings UI (frontend) | ✅ backend done (2026-10-09) |
 | **5 — Real provider adapter** | TourVisio/Sejour adapter behind the same contract · content sync → mapping screens · resilience. **Gated on: intermediary decision + sandbox credentials — the only blocker** | ⬜ gated |
-| **6 — Operations** | Hardening: rate limiting, headers, CORS, HSTS (#112 ✅) · remaining: refresh-token rotation, audit log, vouchers/PDFs, credit-limit enforcement, payments, deployment | 🔄 hardening done |
+| **6 — Operations** | Hardening (#112 ✅) · **Documents module: фактури/известия per ЗДДС with gapless numbering, margin scheme, PDFs (#119 ✅)** · remaining: refresh-token rotation, audit log, vouchers, credit-limit enforcement, payments, deployment | 🔄 in progress |
 
 ## Cross-cutting: security baseline — issue #100
 

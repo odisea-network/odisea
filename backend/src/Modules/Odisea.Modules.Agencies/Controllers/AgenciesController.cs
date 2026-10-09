@@ -40,6 +40,25 @@ public class AgenciesController(AgenciesDbContext db) : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = agency.Id }, agency.ToDto());
     }
 
+    [HttpPut("{id:guid}/billing")]
+    public async Task<ActionResult<AgencyDto>> UpdateBilling(
+        Guid id, UpdateAgencyBillingRequest request, CancellationToken ct)
+    {
+        var agency = await db.Agencies.FindAsync([id], ct);
+        if (agency is null)
+            return NotFound();
+
+        agency.LegalName = request.LegalName;
+        agency.Eik = request.Eik;
+        agency.VatNumber = request.VatNumber;
+        agency.BillingAddress = request.Address;
+        agency.BillingCity = request.City;
+        agency.Mol = request.Mol;
+
+        await db.SaveChangesAsync(ct);
+        return Ok(agency.ToDto());
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<AgencyDto>> Update(Guid id, UpdateAgencyRequest request, CancellationToken ct)
     {
