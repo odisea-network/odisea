@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="QuestPDF" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\DejaVuSans.ttf" />
+    <EmbeddedResource Include="Fonts\DejaVuSans-Bold.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Odisea.SharedKernel\Odisea.SharedKernel.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Agencies\Odisea.Modules.Agencies.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Booking\Odisea.Modules.Booking.csproj" />
+  </ItemGroup>
+</Project>

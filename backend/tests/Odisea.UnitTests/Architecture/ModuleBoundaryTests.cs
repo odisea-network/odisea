@@ -7,7 +7,7 @@ namespace Odisea.UnitTests.Architecture;
 public class ModuleBoundaryTests
 {
     private static readonly string[] ModuleNames =
-        ["Agencies", "Catalog", "Pricing", "Booking", "Integrations"];
+        ["Agencies", "Catalog", "Pricing", "Booking", "Integrations", "Documents"];
 
     private static readonly string[] InternalSegments =
         ["Domain", "Features", "Infrastructure", "Controllers"];

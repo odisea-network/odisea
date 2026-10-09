@@ -10,6 +10,7 @@ using Odisea.Modules.Agencies.Infrastructure;
 using Odisea.Modules.Agencies.Infrastructure.Data;
 using Odisea.Modules.Booking;
 using Odisea.Modules.Catalog;
+using Odisea.Modules.Documents;
 using Odisea.Modules.Integrations;
 using Odisea.Modules.Pricing;
 using Odisea.SharedKernel;
@@ -36,14 +37,16 @@ try
         .AddApplicationPart(typeof(CatalogModule).Assembly)
         .AddApplicationPart(typeof(PricingModule).Assembly)
         .AddApplicationPart(typeof(BookingModule).Assembly)
-        .AddApplicationPart(typeof(IntegrationsModule).Assembly);
+        .AddApplicationPart(typeof(IntegrationsModule).Assembly)
+        .AddApplicationPart(typeof(DocumentsModule).Assembly);
 
     builder.Services
         .AddAgenciesModule(builder.Configuration)
         .AddCatalogModule(builder.Configuration)
         .AddPricingModule(builder.Configuration)
         .AddBookingModule(builder.Configuration)
-        .AddIntegrationsModule(builder.Configuration);
+        .AddIntegrationsModule(builder.Configuration)
+        .AddDocumentsModule(builder.Configuration);
 
     // Brute-force protection on credential endpoints: 10 attempts/min per IP.
     builder.Services.AddRateLimiter(options =>
@@ -130,6 +133,8 @@ try
         await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Pricing.Infrastructure.PricingDbContext>()
             .Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Booking.Infrastructure.BookingDbContext>()
+            .Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Documents.Infrastructure.DocumentsDbContext>()
             .Database.MigrateAsync();
         var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
         await db.Database.MigrateAsync();

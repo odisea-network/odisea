@@ -12,12 +12,17 @@ COPY backend/src/Modules/Odisea.Modules.Catalog/Odisea.Modules.Catalog.csproj   
 COPY backend/src/Modules/Odisea.Modules.Pricing/Odisea.Modules.Pricing.csproj             ./backend/src/Modules/Odisea.Modules.Pricing/
 COPY backend/src/Modules/Odisea.Modules.Booking/Odisea.Modules.Booking.csproj             ./backend/src/Modules/Odisea.Modules.Booking/
 COPY backend/src/Modules/Odisea.Modules.Integrations/Odisea.Modules.Integrations.csproj   ./backend/src/Modules/Odisea.Modules.Integrations/
+COPY backend/src/Modules/Odisea.Modules.Documents/Odisea.Modules.Documents.csproj         ./backend/src/Modules/Odisea.Modules.Documents/
 COPY backend/tests/Odisea.UnitTests/Odisea.UnitTests.csproj                               ./backend/tests/Odisea.UnitTests/
 RUN dotnet restore backend/Odisea.slnx
 COPY backend/ ./backend/
 RUN dotnet publish backend/src/Odisea.Api/Odisea.Api.csproj -c Release -o /publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+# QuestPDF (SkiaSharp) needs fontconfig at runtime for PDF generation.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libfontconfig1 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /publish ./
 ENV ASPNETCORE_URLS=http://+:8080 \

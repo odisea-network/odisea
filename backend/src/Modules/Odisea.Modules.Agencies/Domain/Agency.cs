@@ -16,6 +16,15 @@ public class Agency : Entity
 
     public string? ContactEmail { get; set; }
     public Guid? CommissionLevelId { get; set; }
+
+    // Billing requisites for tax documents (чл.114 ЗДДС): the registered
+    // company name, ЕИК/UIC, optional ИН по ЗДДС, seat address and МОЛ.
+    public string? LegalName { get; set; }
+    public string? Eik { get; set; }
+    public string? VatNumber { get; set; }
+    public string? BillingAddress { get; set; }
+    public string? BillingCity { get; set; }
+    public string? Mol { get; set; }
 }
 
 public enum AgencyStatus

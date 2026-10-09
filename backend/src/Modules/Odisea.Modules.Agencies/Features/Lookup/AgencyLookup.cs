@@ -14,4 +14,14 @@ public class AgencyLookup(AgenciesDbContext db) : IAgencyLookup
             ? null
             : new AgencySnapshot(agency.Id, agency.Name, agency.Status == AgencyStatus.Active, agency.CreditLimit);
     }
+
+    public async Task<AgencyBillingInfo?> GetBillingInfoAsync(Guid agencyId, CancellationToken ct)
+    {
+        var agency = await db.Agencies.AsNoTracking().FirstOrDefaultAsync(a => a.Id == agencyId, ct);
+        return agency is null
+            ? null
+            : new AgencyBillingInfo(
+                agency.Id, agency.LegalName, agency.Eik, agency.VatNumber,
+                agency.BillingAddress, agency.BillingCity, agency.Mol);
+    }
 }

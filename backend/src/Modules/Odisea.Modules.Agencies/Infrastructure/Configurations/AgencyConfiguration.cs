@@ -13,6 +13,12 @@ public class AgencyConfiguration : IEntityTypeConfiguration<Agency>
         builder.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(a => a.CreditLimit).HasPrecision(18, 2);
         builder.Property(a => a.ContactEmail).HasMaxLength(320);
+        builder.Property(a => a.LegalName).HasMaxLength(200);
+        builder.Property(a => a.Eik).HasMaxLength(13);
+        builder.Property(a => a.VatNumber).HasMaxLength(15);
+        builder.Property(a => a.BillingAddress).HasMaxLength(300);
+        builder.Property(a => a.BillingCity).HasMaxLength(100);
+        builder.Property(a => a.Mol).HasMaxLength(200);
         builder.HasIndex(a => a.Name);
     }
 }

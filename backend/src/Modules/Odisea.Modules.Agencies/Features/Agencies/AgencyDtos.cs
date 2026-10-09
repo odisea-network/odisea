@@ -11,7 +11,22 @@ public record AgencyDto(
     decimal CreditLimit,
     string? ContactEmail,
     Guid? CommissionLevelId,
+    AgencyBillingDto? Billing,
     DateTimeOffset CreatedAt);
+
+public record AgencyBillingDto(
+    string? LegalName, string? Eik, string? VatNumber,
+    string? Address, string? City, string? Mol);
+
+public record UpdateAgencyBillingRequest(
+    [Required, MaxLength(200)] string LegalName,
+    // ЕИК: 9 digits (13 for branches/ЕТ with extensions).
+    [Required, RegularExpression(@"^\d{9}(\d{4})?$")] string Eik,
+    // ИН по ЗДДС, only when VAT-registered.
+    [RegularExpression(@"^BG\d{9,10}$")] string? VatNumber,
+    [Required, MaxLength(300)] string Address,
+    [Required, MaxLength(100)] string City,
+    [Required, MaxLength(200)] string Mol);
 
 public record CreateAgencyRequest(
     [Required, MaxLength(200)] string Name,
@@ -36,5 +51,8 @@ public static class AgencyDtoMapping
         agency.CreditLimit,
         agency.ContactEmail,
         agency.CommissionLevelId,
+        agency.Eik is null ? null : new AgencyBillingDto(
+            agency.LegalName, agency.Eik, agency.VatNumber,
+            agency.BillingAddress, agency.BillingCity, agency.Mol),
         agency.CreatedAt);
 }
