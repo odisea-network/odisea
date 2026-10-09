@@ -21,7 +21,6 @@ npm-debug.log*
 .env
 .env.*
 *.local.json
-!settings.local.json
 
 # OS / editor
 .DS_Store
