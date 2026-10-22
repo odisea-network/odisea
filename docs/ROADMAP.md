@@ -7,7 +7,7 @@
 | Phase | Deliverable | Status |
 |---|---|---|
 | **0 — Reset** | v1 archived (`archive/v1`, `v1.0-final`), fresh `main`, thesis backed up, tooling retooled, board rebuilt | ✅ done (2026-10-05) |
-| **1 — Walking skeleton** | Solution + modules (#95 ✅) · Agencies/auth (#96 ✅) · compose + CI + CodeQL + Dependabot (#97 ✅) · Angular portal shell (#98 — the one open frontend item) | 🔄 backend done |
+| **1 — Walking skeleton** | Solution + modules (#95 ✅) · Agencies/auth (#96 ✅) · compose + CI + CodeQL + Dependabot (#97 ✅) · Angular portal shell: login, guards, role shells (#98 ✅) | ✅ done (2026-10-22) |
 | **2 — Catalog + mock search** | Catalog CRUD (#108 ✅) · provider contract + Mock adapter + call logging (#107 ✅) · live-priced `POST /api/v1/search` + protected offer tokens (#110 ✅) · agency search UI (frontend, with #98) | ✅ backend done (2026-10-09) |
 | **3 — Pricing engine** | Rules + rates CRUD, pure engine, breakdown, sell prices in search (#109 ✅) | ✅ done (2026-10-09) |
 | **4 — Booking flow vs mock** | Full lifecycle, state machine, history, jsonb breakdown, sequence refs, operator oversight (#111 ✅) · bookings UI (frontend) | ✅ backend done (2026-10-09) |

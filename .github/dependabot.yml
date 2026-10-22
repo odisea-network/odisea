@@ -11,4 +11,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
-  # npm (frontend/portal) joins when the Angular workspace lands (#98).
+  - package-ecosystem: npm
+    directory: /frontend/portal
+    schedule:
+      interval: weekly
+    groups:
+      angular:
+        patterns: ["@angular*"]

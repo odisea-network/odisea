@@ -18,8 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # javascript-typescript joins when the Angular portal lands (#98).
-        language: [csharp]
+        language: [csharp, javascript-typescript]
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v4
