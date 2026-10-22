@@ -37,7 +37,11 @@ Each module keeps a `PublicApi/` namespace — the only surface other modules ma
 ```bash
 docker compose up -d db                                  # Postgres 17 (host port 5433)
 dotnet run --project backend/src/Odisea.Api              # migrate + seed + listen on :8080
+# portal: cd frontend/portal && npm start                # Angular on :4200, /api proxied
+# or everything at once: docker compose up -d --build    # portal on :4200 behind nginx
 ```
+
+**Portal dev logins:** agency `agent@odisea.local` / `DevOnly-Odisea-Agent-2026!` · operator `admin@odisea.local` / `DevOnly-Odisea-Admin-2026!`
 
 Open **http://localhost:8080/swagger**, call `POST /api/v1/auth/login` (dev: `admin@odisea.local` / `DevOnly-Odisea-Admin-2026!`), click **Authorize**, paste the token — every endpoint is now testable from the browser. Everything is 401 without a token by design.
 

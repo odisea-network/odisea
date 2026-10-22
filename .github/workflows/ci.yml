@@ -23,3 +23,22 @@ jobs:
         run: dotnet build Odisea.slnx --no-restore
       - name: Test
         run: dotnet test Odisea.slnx --no-build --verbosity normal
+
+  portal:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/portal/package-lock.json
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Test
+        run: npx ng test
+      - name: Build
+        run: npx ng build

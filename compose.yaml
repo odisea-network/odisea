@@ -1,5 +1,6 @@
 # Odisea v2 — local development stack.
-# Services: postgres + the ASP.NET Core API. The Angular portal service joins with #98.
+# Services: postgres + the ASP.NET Core API + the Angular portal behind nginx
+# (which reverse-proxies /api and /health to the API).
 
 services:
   db:
@@ -37,6 +38,15 @@ services:
       Jwt__Secret: "dev-only-jwt-signing-key-please-replace-in-prod-this-string-is-at-least-32-bytes"
     ports:
       - "8080:8080"
+
+  portal:
+    build:
+      context: ./frontend/portal
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
 
 volumes:
   odisea-db:
