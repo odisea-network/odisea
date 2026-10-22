@@ -19,7 +19,10 @@ public class DocumentPdfRenderer
             using var stream = Assembly.GetExecutingAssembly()
                 .GetManifestResourceStream($"Odisea.Modules.Documents.Fonts.{resource}")
                 ?? throw new InvalidOperationException($"Embedded font {resource} missing.");
-            FontManager.RegisterFontWithCustomName(Font, stream);
+            // Registers under the family name stored in the TTF ("DejaVu Sans"),
+            // which is what our Font constant refers to — works across QuestPDF
+            // versions (RegisterFontWithCustomName died in 2026.9).
+            FontManager.RegisterFont(stream);
         }
     }
 
