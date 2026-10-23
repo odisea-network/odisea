@@ -1,0 +1,11 @@
+# DBHub MCP configuration — local DEV database only (same creds as compose.yaml).
+# execute_sql is forced read-only; destructive SQL is impossible through this tool.
+
+[[sources]]
+id = "odisea-dev"
+dsn = "postgres://odisea:odisea@127.0.0.1:5433/odisea?sslmode=disable"
+
+[[tools]]
+name = "execute_sql"
+source = "odisea-dev"
+readonly = true
