@@ -13,47 +13,7 @@ const KIND_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-agency-documents',
-  template: `
-    <h2>Documents</h2>
-    @if (documents.isLoading()) {
-      <p>Loading…</p>
-    } @else {
-      <table class="card">
-        <thead>
-          <tr>
-            <th>№</th><th>Вид</th><th>Дата</th><th>Резервация</th>
-            <th class="num">Сума</th><th>Статус</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (d of documents.value(); track d.id) {
-            <tr>
-              <td class="strong">{{ d.number }}</td>
-              <td>{{ kindLabel(d.kind) }}
-                @if (d.relatedDocumentNumber) {
-                  <span class="muted">→ № {{ d.relatedDocumentNumber }}</span>
-                }
-              </td>
-              <td>{{ fmtDate(d.issueDate) }}</td>
-              <td>{{ d.bookingRef ?? '—' }}</td>
-              <td class="num">{{ fmtMoney(d.total, d.currency) }}</td>
-              <td>{{ d.status === 'Annulled' ? 'Анулиран' : 'Издаден' }}</td>
-              <td>
-                <button type="button" class="ghost" (click)="download(d)" [disabled]="downloading() === d.id">
-                  {{ downloading() === d.id ? '…' : 'PDF' }}
-                </button>
-              </td>
-            </tr>
-          } @empty {
-            <tr><td colspan="7">No documents yet.</td></tr>
-          }
-        </tbody>
-      </table>
-    }
-    @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
-    }
-  `,
+  templateUrl: './documents.html',
   styles: `
     .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: .75rem; width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: .7rem 1rem; border-bottom: 1px solid var(--border); }
@@ -80,8 +40,7 @@ export class AgencyDocuments {
     return KIND_LABELS[kind] ?? kind;
   }
 
-  /** Downloaded through HttpClient so the auth interceptor applies; the blob
-   *  URL is revoked immediately — nothing lingers in the page. */
+  /** Downloaded through HttpClient so the auth interceptor applies. */
   async download(doc: FinancialDocumentDto): Promise<void> {
     this.downloading.set(doc.id);
     this.error.set(null);
@@ -94,7 +53,9 @@ export class AgencyDocuments {
       anchor.href = url;
       anchor.download = `${this.kindLabel(doc.kind)}-${doc.number}.pdf`;
       anchor.click();
-      URL.revokeObjectURL(url);
+      // Some browsers resolve programmatic downloads asynchronously —
+      // revoking in the same task can abort them. Defer it.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
       this.error.set('Download failed.');
     } finally {

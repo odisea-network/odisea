@@ -1,73 +1,15 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Component, inject, resource, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { BookingDto, ProblemDetails } from '../../core/api.types';
+import { BookingDto } from '../../core/api.types';
 import { formatDate, formatMoney } from '../../core/format';
+import { problemMessage } from '../../core/problem';
 
 const CANCELLABLE = ['Draft', 'PriceConfirmed', 'Confirmed'];
 
 @Component({
   selector: 'app-agency-bookings',
-  template: `
-    <h2>Bookings</h2>
-    @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
-    }
-    @if (bookings.isLoading()) {
-      <p>Loading…</p>
-    } @else {
-      <table class="card">
-        <thead>
-          <tr>
-            <th>Ref</th><th>Program / hotel</th><th>Dates</th>
-            <th class="num">Price</th><th>Status</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (b of bookings.value(); track b.id) {
-            <tr (click)="toggle(b.id)" class="clickable">
-              <td class="strong">{{ b.ref }}</td>
-              <td>{{ b.programName }}<br /><span class="muted">{{ b.hotelName }}</span></td>
-              <td>{{ fmtDate(b.checkIn) }} – {{ fmtDate(b.checkOut) }}</td>
-              <td class="num">{{ fmtMoney(b.sellPrice, b.currency) }}</td>
-              <td><span class="chip" [class]="'chip s-' + b.status">{{ b.status }}</span></td>
-              <td>
-                @if (cancellable(b)) {
-                  <button type="button" class="ghost" (click)="cancel(b, $event)" [disabled]="busy()">
-                    Cancel
-                  </button>
-                }
-              </td>
-            </tr>
-            @if (expanded() === b.id) {
-              <tr class="detail">
-                <td colspan="6">
-                  <div class="columns">
-                    <div>
-                      <h4>Passengers</h4>
-                      @for (p of b.passengers; track p.id) {
-                        <p>{{ p.isLead ? '★ ' : '' }}{{ p.firstName }} {{ p.lastName }}</p>
-                      }
-                    </div>
-                    <div>
-                      <h4>History</h4>
-                      @for (h of b.history; track h.at) {
-                        <p class="muted">{{ fmtDate(h.at) }} · {{ h.from }} → {{ h.to }}
-                          @if (h.note) { <em> — {{ h.note }}</em> }
-                        </p>
-                      }
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            }
-          } @empty {
-            <tr><td colspan="6">No bookings yet — start from Search.</td></tr>
-          }
-        </tbody>
-      </table>
-    }
-  `,
+  templateUrl: './bookings.html',
   styles: `
     .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: .75rem; width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: .7rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -108,14 +50,16 @@ export class AgencyBookings {
 
   async cancel(b: BookingDto, event: Event): Promise<void> {
     event.stopPropagation();
+    // Cancellation is terminal server-side — never fire it from a bare click.
+    if (!window.confirm(`Cancel booking ${b.ref}? This cannot be undone.`)) return;
+
     this.busy.set(true);
     this.error.set(null);
     try {
       await firstValueFrom(this.http.post(`/api/v1/bookings/${b.id}/cancel`, {}));
       this.bookings.reload();
     } catch (err) {
-      const problem = err instanceof HttpErrorResponse ? (err.error as ProblemDetails) : null;
-      this.error.set(problem?.detail ?? 'Cancellation failed.');
+      this.error.set(problemMessage(err, 'Cancellation failed.'));
     } finally {
       this.busy.set(false);
     }

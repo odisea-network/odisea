@@ -12,8 +12,16 @@ export function formatMoney(amount: number | null | undefined, currency = 'EUR')
   }).format(amount);
 }
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
+  // Date-only values (check-in/out, issue dates) are calendar dates, not
+  // instants: formatting them via `new Date()` would shift them a day for
+  // users west of UTC. Format them literally.
+  const dateOnly = DATE_ONLY.exec(iso);
+  if (dateOnly) return `${dateOnly[3]}.${dateOnly[2]}.${dateOnly[1]} г.`;
+
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? iso

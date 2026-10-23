@@ -1,0 +1,41 @@
+<h2>Documents</h2>
+@if (documents.error()) {
+  <p class="error" role="alert">Could not load documents — try reloading.</p>
+} @else if (documents.isLoading()) {
+  <p>Loading…</p>
+} @else {
+  <table class="card">
+    <thead>
+      <tr>
+        <th>№</th><th>Вид</th><th>Дата</th><th>Резервация</th>
+        <th class="num">Сума</th><th>Статус</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (d of documents.value(); track d.id) {
+        <tr>
+          <td class="strong">{{ d.number }}</td>
+          <td>{{ kindLabel(d.kind) }}
+            @if (d.relatedDocumentNumber) {
+              <span class="muted">→ № {{ d.relatedDocumentNumber }}</span>
+            }
+          </td>
+          <td>{{ fmtDate(d.issueDate) }}</td>
+          <td>{{ d.bookingRef ?? '—' }}</td>
+          <td class="num">{{ fmtMoney(d.total, d.currency) }}</td>
+          <td>{{ d.status === 'Annulled' ? 'Анулиран' : 'Издаден' }}</td>
+          <td>
+            <button type="button" class="ghost" (click)="download(d)" [disabled]="downloading() === d.id">
+              {{ downloading() === d.id ? '…' : 'PDF' }}
+            </button>
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="7">No documents yet.</td></tr>
+      }
+    </tbody>
+  </table>
+}
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}

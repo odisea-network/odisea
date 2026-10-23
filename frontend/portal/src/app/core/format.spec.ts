@@ -24,7 +24,9 @@ describe('formatMoney', () => {
 });
 
 describe('formatDate', () => {
-  it('formats ISO dates as dd.MM.yyyy', () => {
+  it('formats date-only values literally — immune to the viewer timezone', () => {
+    // Regression: new Date('2027-03-30') is UTC midnight and rendered a day
+    // early for anyone west of UTC. Calendar dates must never pass через Date.
     expect(formatDate('2027-03-30')).toBe('30.03.2027 г.');
   });
 

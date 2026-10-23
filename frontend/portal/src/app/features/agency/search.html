@@ -1,0 +1,82 @@
+<h2>Search packages</h2>
+
+@if (programs.error()) {
+  <p class="error" role="alert">Could not load programs — try reloading.</p>
+} @else {
+  <section class="criteria card">
+    <div class="field">
+      <label for="program">Program</label>
+      <select id="program" [ngModel]="programId()" (ngModelChange)="selectProgram($event)">
+        <option value="" disabled>Choose a program…</option>
+        @for (program of programs.value(); track program.id) {
+          <option [value]="program.id">{{ program.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="departure">Departure</label>
+      <select id="departure" [ngModel]="departureId()" (ngModelChange)="departureId.set($event)"
+              [disabled]="detail.isLoading() || !detail.hasValue()">
+        <option value="" disabled>Choose dates…</option>
+        @if (detail.hasValue()) {
+          @for (dep of detail.value().departures; track dep.id) {
+            <option [value]="dep.id">
+              {{ fmtDate(dep.startDate) }} – {{ fmtDate(dep.endDate) }} ({{ dep.nights }} nights)
+            </option>
+          }
+        }
+      </select>
+    </div>
+
+    <div class="field pax">
+      <label for="adults">Adults</label>
+      <input id="adults" type="number" min="1" max="9" [(ngModel)]="adults" />
+      <label for="children">Children</label>
+      <input id="children" type="number" min="0" max="9" [(ngModel)]="children" />
+    </div>
+
+    <button type="button" (click)="search()" [disabled]="!canSearch() || searching()">
+      {{ searching() ? 'Searching…' : 'Search' }}
+    </button>
+  </section>
+}
+
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+
+@if (results(); as found) {
+  <h3>
+    {{ found.programName }} · {{ fmtDate(found.checkIn) }} – {{ fmtDate(found.checkOut) }}
+    · {{ found.nights }} nights
+  </h3>
+  <table class="card">
+    <thead>
+      <tr>
+        <th>Hotel</th><th>Room</th><th>Board</th>
+        <th class="num">Price</th><th class="num">Your commission</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (offer of found.offers; track offer.offerToken) {
+        <tr>
+          <td>{{ offer.hotelName }} <span class="muted">{{ '★'.repeat(offer.stars) }}</span></td>
+          <td>{{ offer.roomType }}</td>
+          <td>{{ offer.board }}</td>
+          <td class="num strong">{{ fmtMoney(offer.sellPrice, offer.currency) }}</td>
+          <td class="num">{{ fmtMoney(offer.agencyCommission, offer.currency) }}</td>
+          <td>
+            @if (expired(offer)) {
+              <span class="muted">Expired — search again</span>
+            } @else {
+              <button type="button" (click)="book(found, offer)">Book</button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="6">No availability for these criteria.</td></tr>
+      }
+    </tbody>
+  </table>
+}
