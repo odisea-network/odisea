@@ -11,13 +11,15 @@ public class AuthService(
     AgenciesDbContext db,
     IPasswordHasher<UserAccount> hasher,
     TokenService tokenService,
+    RefreshTokenService refreshTokens,
     IClock clock)
 {
     // Target for the dummy verification below; never persisted.
     private static readonly OperatorUser Dummy =
         new() { Email = "", PasswordHash = "", FullName = "" };
 
-    public async Task<LoginResponse> LoginAsync(string email, string password, CancellationToken ct)
+    public async Task<(LoginResponse Response, string RefreshToken)> LoginAsync(
+        string email, string password, CancellationToken ct)
     {
         var normalized = email.Trim().ToLowerInvariant();
 
@@ -50,6 +52,21 @@ public class AuthService(
         user.RegisterSuccessfulLogin();
         await db.SaveChangesAsync(ct);
 
+        return await CreateSessionAsync(user, ct);
+    }
+
+    /// Issues the short-lived access token plus a fresh refresh token.
+    /// Used by login (new family) and by the refresh endpoint (rotation
+    /// happens in RefreshTokenService before this is called).
+    public async Task<(LoginResponse Response, string RefreshToken)> CreateSessionAsync(
+        UserAccount user, CancellationToken ct)
+    {
+        var refresh = await refreshTokens.IssueAsync(user, ct);
+        return (BuildResponse(user), refresh);
+    }
+
+    public LoginResponse BuildResponse(UserAccount user)
+    {
         var (token, expiresAt) = tokenService.IssueFor(user);
         return new LoginResponse(
             token,

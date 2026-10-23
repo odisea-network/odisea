@@ -35,6 +35,7 @@ public static class AgenciesModule
 
         services.AddScoped<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
         services.AddScoped<TokenService>();
+        services.AddScoped<RefreshTokenService>();
         services.AddScoped<AuthService>();
         services.AddScoped<IAgencyLookup, Features.Lookup.AgencyLookup>();
 
