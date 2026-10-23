@@ -8,7 +8,7 @@ import { NavLink, Shell } from './shell';
 })
 export class AgencyShell {
   readonly links: NavLink[] = [
-    { path: '/agency/programs', label: 'Programs' },
+    { path: '/agency/search', label: 'Search' },
     { path: '/agency/bookings', label: 'Bookings' },
     { path: '/agency/documents', label: 'Documents' },
   ];

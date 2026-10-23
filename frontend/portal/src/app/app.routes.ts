@@ -12,20 +12,22 @@ export const routes: Routes = [
     canActivate: [agencyGuard],
     loadComponent: () => import('./layout/agency-shell').then(m => m.AgencyShell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'programs' },
+      { path: '', pathMatch: 'full', redirectTo: 'search' },
       {
-        path: 'programs',
-        loadComponent: () => import('./features/agency/programs').then(m => m.AgencyPrograms),
+        path: 'search',
+        loadComponent: () => import('./features/agency/search').then(m => m.AgencySearch),
+      },
+      {
+        path: 'book',
+        loadComponent: () => import('./features/agency/book').then(m => m.AgencyBook),
       },
       {
         path: 'bookings',
-        loadComponent: () => import('./features/placeholder').then(m => m.Placeholder),
-        data: { title: 'Bookings' },
+        loadComponent: () => import('./features/agency/bookings').then(m => m.AgencyBookings),
       },
       {
         path: 'documents',
-        loadComponent: () => import('./features/placeholder').then(m => m.Placeholder),
-        data: { title: 'Documents' },
+        loadComponent: () => import('./features/agency/documents').then(m => m.AgencyDocuments),
       },
     ],
   },
