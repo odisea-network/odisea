@@ -19,8 +19,7 @@ export interface DepartureDto {
   transportNote: string | null;
 }
 
-export interface ProgramDetail extends Omit<ProgramListItem, 'status'> {
-  status: string;
+export interface ProgramDetail extends ProgramListItem {
   departures: DepartureDto[];
   hotelIds: string[];
 }

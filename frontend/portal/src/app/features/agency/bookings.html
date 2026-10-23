@@ -1,0 +1,60 @@
+<h2>Bookings</h2>
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (bookings.error()) {
+  <p class="error" role="alert">Could not load bookings — try reloading.</p>
+} @else if (bookings.isLoading()) {
+  <p>Loading…</p>
+} @else {
+  <table class="card">
+    <thead>
+      <tr>
+        <th>Ref</th><th>Program / hotel</th><th>Dates</th>
+        <th class="num">Price</th><th>Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (b of bookings.value(); track b.id) {
+        <tr (click)="toggle(b.id)" class="clickable">
+          <td class="strong">{{ b.ref }}</td>
+          <td>{{ b.programName }}<br /><span class="muted">{{ b.hotelName }}</span></td>
+          <td>{{ fmtDate(b.checkIn) }} – {{ fmtDate(b.checkOut) }}</td>
+          <td class="num">{{ fmtMoney(b.sellPrice, b.currency) }}</td>
+          <td><span class="chip" [class]="'chip s-' + b.status">{{ b.status }}</span></td>
+          <td>
+            @if (cancellable(b)) {
+              <button type="button" class="ghost" (click)="cancel(b, $event)" [disabled]="busy()">
+                Cancel
+              </button>
+            }
+          </td>
+        </tr>
+        @if (expanded() === b.id) {
+          <tr class="detail">
+            <td colspan="6">
+              <div class="columns">
+                <div>
+                  <h4>Passengers</h4>
+                  @for (p of b.passengers; track p.id) {
+                    <p>{{ p.isLead ? '★ ' : '' }}{{ p.firstName }} {{ p.lastName }}</p>
+                  }
+                </div>
+                <div>
+                  <h4>History</h4>
+                  @for (h of b.history; track h.at) {
+                    <p class="muted">{{ fmtDate(h.at) }} · {{ h.from }} → {{ h.to }}
+                      @if (h.note) { <em> — {{ h.note }}</em> }
+                    </p>
+                  }
+                </div>
+              </div>
+            </td>
+          </tr>
+        }
+      } @empty {
+        <tr><td colspan="6">No bookings yet — start from Search.</td></tr>
+      }
+    </tbody>
+  </table>
+}
