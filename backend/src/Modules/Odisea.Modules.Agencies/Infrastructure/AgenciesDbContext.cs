@@ -11,6 +11,7 @@ public class AgenciesDbContext(DbContextOptions<AgenciesDbContext> options) : Db
     public DbSet<AgencyUser> AgencyUsers => Set<AgencyUser>();
     public DbSet<OperatorUser> OperatorUsers => Set<OperatorUser>();
     public DbSet<CommissionLevel> CommissionLevels => Set<CommissionLevel>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

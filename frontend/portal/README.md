@@ -40,7 +40,7 @@ npx ng build              # production build, budgets enforced
 ## Security notes
 
 - **Money is never computed client-side** — every amount (sell price, commission, totals) arrives calculated from the API; `formatMoney` only formats, and a CI guard test keeps net-cost fields out of agency-facing DTOs.
-- The JWT lives in **sessionStorage** (dies with the tab) and is attached only by the interceptor. Refresh-token rotation is tracked in #100 and will shorten access-token life.
+- The access token (15 min) lives **in memory only** — nothing script-readable is persisted. The session rides an HttpOnly SameSite=Strict refresh cookie scoped to /api/v1/auth; reloads restore via silent refresh, 401s retry once after a single-flight refresh, and replaying a used refresh token revokes the whole token family server-side.
 - The API's CORS allowlist covers `http://localhost:4200` in Development; in compose, nginx same-origin-proxies `/api` so CORS never applies.
 
 ## Relations

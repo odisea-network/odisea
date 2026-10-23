@@ -33,8 +33,9 @@ public class AuthServiceTests
         var jwt = Options.Create(new JwtOptions
         {
             Secret = "unit-test-secret-at-least-32-bytes-long!",
+            AccessTokenMinutes = 15,
         });
-        _service = new AuthService(_db, _hasher, new TokenService(jwt, _clock), _clock);
+        _service = new AuthService(_db, _hasher, new TokenService(jwt, _clock), new RefreshTokenService(_db, jwt, _clock), _clock);
     }
 
     private OperatorUser AddOperator(string email = "admin@test.local", bool isActive = true)
@@ -58,13 +59,16 @@ public class AuthServiceTests
     {
         AddOperator();
 
-        var result = await _service.LoginAsync("Admin@Test.Local", Password, CancellationToken.None);
+        var (result, refreshToken) = await _service.LoginAsync("Admin@Test.Local", Password, CancellationToken.None);
 
         Assert.NotEmpty(result.AccessToken);
         Assert.Equal("operator", result.UserType);
         Assert.Equal("Admin", result.Role);
         Assert.Null(result.AgencyId);
-        Assert.Equal(_clock.UtcNow.AddMinutes(60), result.ExpiresAt);
+        Assert.Equal(_clock.UtcNow.AddMinutes(15), result.ExpiresAt);
+        Assert.NotEmpty(refreshToken);
+        Assert.Single(_db.RefreshTokens); // hashed at rest
+        Assert.DoesNotContain(refreshToken, _db.RefreshTokens.Select(t => t.TokenHash));
     }
 
     [Fact]
@@ -83,7 +87,7 @@ public class AuthServiceTests
         _db.AgencyUsers.Add(user);
         _db.SaveChanges();
 
-        var result = await _service.LoginAsync("agent@test.local", Password, CancellationToken.None);
+        var (result, _) = await _service.LoginAsync("agent@test.local", Password, CancellationToken.None);
 
         Assert.Equal("agency", result.UserType);
         Assert.Equal(agency.Id, result.AgencyId);
@@ -141,7 +145,7 @@ public class AuthServiceTests
 
         _clock.UtcNow += UserAccount.LockoutDuration + TimeSpan.FromSeconds(1);
 
-        var result = await _service.LoginAsync(user.Email, Password, CancellationToken.None);
+        var (result, _) = await _service.LoginAsync(user.Email, Password, CancellationToken.None);
         Assert.NotEmpty(result.AccessToken);
         Assert.Equal(0, user.FailedLoginAttempts);
         Assert.Null(user.LockedOutUntil);
