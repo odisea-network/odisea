@@ -114,8 +114,20 @@ try
 
     app.UseSerilogRequestLogging();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    // API responses are authorized, per-user data — never cache them anywhere.
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+            context.Response.Headers.CacheControl = "no-store";
+        await next();
+    });
+
+    // Swagger is a dev tool: on in Development, elsewhere only by explicit opt-in.
+    if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
     app.UseCors();
     app.UseRateLimiter();
