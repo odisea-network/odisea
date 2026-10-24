@@ -22,6 +22,7 @@ flowchart TB
         BKG[Booking]
         INT[Integrations]
         DOC[Documents]
+        NTF[Notifications]
     end
     subgraph T3["3 · External reservation systems"]
         MOCK["Mock provider (dev)"]
@@ -50,6 +51,7 @@ One deployable (`Odisea.Api`), six modules, hard boundaries:
 | **Booking** | Reservation lifecycle (state machine with actors), passengers with encrypted travel documents, payments, operator oversight | Agencies (agency active check, policies), Catalog (program refs), Pricing (breakdown), Integrations (re-price/book/cancel) |
 | **Integrations** | `IReservationProvider` contract, provider adapters (Mock now, real later), offer-token protection, call logs | — |
 | **Documents** | Bulgarian tax documents (фактури, известия): gapless numbering, margin scheme, PDFs, company profile; contract documents filled from operator-uploaded Word templates (placeholder catalogue, custom fields, versioned templates, sharing with agencies, agency self-service) | Agencies (billing + contract facts), Booking (financial + contract facts incl. passengers) |
+| **Notifications** | Transactional e-mail outbox (`IEmailOutbox`), background dispatcher with retry/backoff, SMTP (MailKit) or logging transport, operator view of what went out | Agencies (policies) |
 
 **Boundary rules (enforced by an architecture test over every ordered pair of modules):**
 - A module may reference another module **only through its `PublicApi` namespace**.
@@ -63,7 +65,7 @@ One deployable (`Odisea.Api`), six modules, hard boundaries:
 
 ## Data architecture
 
-One PostgreSQL database, **one schema + one DbContext + one migrations history table per module**: `agencies`, `catalog`, `pricing`, `booking`, `integrations`, `documents`. snake_case naming, enums stored as strings, version-7 GUIDs (time-ordered → append-only B-tree inserts). `SharedKernel` provides `Entity`, `Money`, `DateRange`, `Pax`, `IClock`, `ICurrentUser` — no EF, no HTTP.
+One PostgreSQL database, **one schema + one DbContext + one migrations history table per module**: `agencies`, `catalog`, `pricing`, `booking`, `integrations`, `documents`, `notifications`. snake_case naming, enums stored as strings, version-7 GUIDs (time-ordered → append-only B-tree inserts). `SharedKernel` provides `Entity`, `Money`, `DateRange`, `Pax`, `IClock`, `ICurrentUser` — no EF, no HTTP.
 
 Sensitive columns: passenger document numbers are encrypted with a DataProtection value converter (`booking.booking_passengers.document_number`); refresh tokens and API keys are stored as SHA-256 hashes. The DataProtection key ring lives in `agencies.data_protection_keys` (not yet encrypted at rest — #153). Bookings carry an `xmin`-based optimistic concurrency token.
 
