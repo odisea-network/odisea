@@ -12,6 +12,7 @@
     <Project Path="src/Modules/Odisea.Modules.Pricing/Odisea.Modules.Pricing.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Odisea.IntegrationTests/Odisea.IntegrationTests.csproj" />
     <Project Path="tests/Odisea.UnitTests/Odisea.UnitTests.csproj" />
   </Folder>
 </Solution>

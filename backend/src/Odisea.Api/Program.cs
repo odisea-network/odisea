@@ -1,13 +1,8 @@
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Odisea.Api;
 using Odisea.Modules.Agencies;
-using Odisea.Modules.Agencies.Domain;
-using Odisea.Modules.Agencies.Infrastructure;
-using Odisea.Modules.Agencies.Infrastructure.Data;
 using Odisea.Modules.Booking;
 using Odisea.Modules.Catalog;
 using Odisea.Modules.Documents;
@@ -31,6 +26,9 @@ try
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
     builder.Services.AddProblemDetails();
+
+    // Migrate every module schema + seed before the server listens (also under WebApplicationFactory).
+    builder.Services.AddHostedService<StartupMigrator>();
 
     builder.Services.AddControllers()
         .AddApplicationPart(typeof(AgenciesModule).Assembly)
@@ -136,28 +134,6 @@ try
 
     app.MapControllers();
 
-    using (var scope = app.Services.CreateScope())
-    {
-        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Integrations.Infrastructure.IntegrationsDbContext>()
-            .Database.MigrateAsync();
-        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Catalog.Infrastructure.CatalogDbContext>()
-            .Database.MigrateAsync();
-        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Pricing.Infrastructure.PricingDbContext>()
-            .Database.MigrateAsync();
-        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Booking.Infrastructure.BookingDbContext>()
-            .Database.MigrateAsync();
-        await scope.ServiceProvider.GetRequiredService<Odisea.Modules.Documents.Infrastructure.DocumentsDbContext>()
-            .Database.MigrateAsync();
-        var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
-        await db.Database.MigrateAsync();
-        await AgenciesSeeder.SeedAsync(
-            db,
-            scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserAccount>>(),
-            app.Configuration,
-            app.Logger);
-        await DevDemoSeeder.SeedAsync(scope.ServiceProvider, app.Configuration, app.Logger);
-    }
-
     app.Run();
 }
 catch (Exception ex) when (ex is not Microsoft.Extensions.Hosting.HostAbortedException)
@@ -168,3 +144,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Exposes the entry-point type to WebApplicationFactory<Program> in Odisea.IntegrationTests.
+public partial class Program;
