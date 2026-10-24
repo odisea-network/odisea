@@ -93,7 +93,7 @@ export class AgencySearch {
       this.error.set('This offer has expired — please search again.');
       return;
     }
-    this.draft.start(search, offer);
+    this.draft.start(search, offer, this.adults, this.children);
     void this.router.navigate(['/agency/book']);
   }
 }

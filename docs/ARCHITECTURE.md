@@ -99,7 +99,7 @@ Cancelled          Cancelled            ▼                                 │ 
 
 ## Frontend
 
-One Angular 21 app (`frontend/portal`): standalone components, signals, strict templates. `core/` (auth, interceptor, guards) · `layout/` (agency + admin shells) · `features/{auth,agency,admin}`. Routes `/login`, `/agency/**`, `/admin/**`, lazy-loaded. The agency booking wizard still targets the pre-MVP flow; updating it to `/submit` with the full passenger form, and building the admin area, is tracked in #145.
+One Angular 21 app (`frontend/portal`) shipped as a **white-label build**: standalone components, signals, strict templates. `core/` (auth, interceptor, guards, branding) · `layout/` (branded shell, agency + admin nav) · `features/{auth,agency,admin}`. Routes `/login`, `/agency/**`, `/admin/**`, lazy-loaded. At startup the portal loads `GET /api/v1/branding` and dresses itself (colours into CSS tokens, name, logo, favicon, support contact, legal footer), so one build serves every operator deployment. The agency area follows the reservation contract end to end: occupancy-sized passenger form with travel documents and one lead → draft → re-price with drift warning → submit → awaiting payment, with payment status and the actor trail in the bookings list. The admin area is still placeholders over the live operator API.
 
 ## Dev & verification workflow
 

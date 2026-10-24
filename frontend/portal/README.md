@@ -6,14 +6,17 @@ The **B2B web app** — one Angular 21 application with two role-based areas ove
 
 ```
 src/app/
-  core/        auth.service (signals + sessionStorage session), auth.interceptor
-               (Bearer header, 401 → login), guards (agencyGuard, adminGuard)
-  layout/      shared Shell + AgencyShell / AdminShell (nav per role)
+  core/        auth.service (access token in memory, HttpOnly refresh cookie), auth.interceptor
+               (Bearer header, single-flight refresh on 401), guards (agencyGuard, adminGuard),
+               branding.service (operator name, colours, logo from GET /api/v1/branding at startup),
+               api.types (DTO mirrors), format (display-only money/date helpers), problem (ProblemDetails)
+  layout/      shared Shell (branded header, nav per role, legal footer) + AgencyShell / AdminShell
   features/
-    auth/      login page (redirects by user_type claim)
-    agency/    search (program/departure/pax -> live-priced offers), book (wizard:
-               passengers -> draft -> re-price with drift warning -> confirm),
-               bookings (list, history, cancel), documents (фактури + PDF download)
+    auth/      login page, branded; redirects by user_type claim
+    agency/    search (program/departure/pax -> live-priced offers), book (wizard: occupancy-sized
+               passenger form with travel documents and one lead -> draft -> re-price with drift
+               warning -> submit -> awaiting payment), bookings (list with paid/due and payment
+               deadline, history with actors, cancel while unpaid), documents (фактури + PDF download)
     placeholder.ts for admin routes whose API already exists but UI doesn't yet
 ```
 
@@ -33,9 +36,13 @@ Dev login: `agent@odisea.local` / `DevOnly-Odisea-Agent-2026!` (agency) · `admi
 ## Verify
 
 ```bash
-npm test                  # vitest (auth service, guards, app)
+npm test                  # vitest (auth, branding, guards, passenger validation, wizard rules, app)
 npx ng build              # production build, budgets enforced
 ```
+
+## White-label branding
+
+One build serves every operator deployment. At startup `BrandingService` loads `GET /api/v1/branding` (anonymous, so the login page is branded too), writes the primary colour into `--accent` and the accent colour into `--accent-2`, sets the document title and favicon, and exposes the name, logo and support contact to the shell and login page. Operators change all of it through the API; nothing brand-specific is compiled in. If the API is unreachable the portal falls back to neutral defaults.
 
 ## Security notes
 

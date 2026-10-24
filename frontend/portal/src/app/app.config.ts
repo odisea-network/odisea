@@ -7,6 +7,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth.interceptor';
 import { AuthService } from './core/auth.service';
+import { BrandingService } from './core/branding.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,5 +17,7 @@ export const appConfig: ApplicationConfig = {
     // Restore the session from the HttpOnly refresh cookie before routing,
     // so guards see the user on a hard reload.
     provideAppInitializer(() => inject(AuthService).tryRestore()),
+    // Dress the portal in the operator's branding before the first screen paints.
+    provideAppInitializer(() => inject(BrandingService).load()),
   ],
 };

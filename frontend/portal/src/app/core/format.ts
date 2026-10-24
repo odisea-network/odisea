@@ -27,3 +27,14 @@ export function formatDate(iso: string | null | undefined): string {
     ? iso
     : new Intl.DateTimeFormat('bg-BG', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
 }
+
+/** Instants (status changes, payment deadlines): date and time in the viewer's zone. */
+export function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? iso
+    : new Intl.DateTimeFormat('bg-BG', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      }).format(date);
+}

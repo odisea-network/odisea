@@ -1,6 +1,7 @@
 import { Component, inject, input } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { BrandingService } from '../core/branding.service';
 
 export interface NavLink {
   path: string;
@@ -13,7 +14,12 @@ export interface NavLink {
   template: `
     <div class="shell">
       <header>
-        <span class="brand">Odisea</span>
+        <span class="brand">
+          @if (brand.logoSrc(); as logo) {
+            <img [src]="logo" alt="" />
+          }
+          {{ brand.branding().displayName }}
+        </span>
         <nav>
           @for (link of links(); track link.path) {
             <a [routerLink]="link.path" routerLinkActive="active">{{ link.label }}</a>
@@ -27,6 +33,19 @@ export interface NavLink {
       <main>
         <router-outlet />
       </main>
+      @if (brand.branding().legalFooter || brand.branding().supportEmail || brand.branding().supportPhone) {
+        <footer>
+          <span>{{ brand.branding().legalFooter }}</span>
+          <span class="contact">
+            @if (brand.branding().supportEmail; as email) {
+              <a [href]="'mailto:' + email">{{ email }}</a>
+            }
+            @if (brand.branding().supportPhone; as phone) {
+              <span>{{ phone }}</span>
+            }
+          </span>
+        </footer>
+      }
     </div>
   `,
   styles: `
@@ -35,7 +54,8 @@ export interface NavLink {
       display: flex; align-items: center; gap: 2rem; padding: 0 1.5rem; height: 3.5rem;
       background: var(--surface-1); border-bottom: 1px solid var(--border);
     }
-    .brand { font-weight: 700; font-size: 1.1rem; }
+    .brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.1rem; color: var(--accent-2); }
+    .brand img { height: 2rem; max-width: 9rem; object-fit: contain; }
     nav { display: flex; gap: 1rem; flex: 1; }
     nav a {
       padding: .4rem .7rem; border-radius: .4rem; text-decoration: none;
@@ -44,10 +64,18 @@ export interface NavLink {
     nav a.active { background: var(--surface-2); color: var(--text); font-weight: 600; }
     .user { display: flex; align-items: center; gap: .75rem; font-size: .85rem; }
     main { flex: 1; padding: 1.5rem; background: var(--surface-2); }
+    footer {
+      display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      padding: .75rem 1.5rem; font-size: .8rem; color: var(--text-muted);
+      background: var(--surface-1); border-top: 1px solid var(--border);
+    }
+    .contact { display: flex; gap: 1rem; }
+    footer a { color: inherit; }
   `,
 })
 export class Shell {
   protected readonly auth = inject(AuthService);
+  protected readonly brand = inject(BrandingService);
   private readonly router = inject(Router);
 
   readonly links = input.required<NavLink[]>();
