@@ -108,6 +108,12 @@ namespace Odisea.Modules.Agencies.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("plan");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)

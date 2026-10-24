@@ -11,6 +11,9 @@ public class Agency : Entity
 
     public AgencyStatus Status { get; set; } = AgencyStatus.Active;
 
+    /// Commercial tier; see PlanFeatures for what each plan unlocks.
+    public AgencyPlan Plan { get; set; } = AgencyPlan.Core;
+
     /// EUR — the platform's base currency.
     public decimal CreditLimit { get; set; }
 

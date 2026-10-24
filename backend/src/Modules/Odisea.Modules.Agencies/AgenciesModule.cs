@@ -42,6 +42,7 @@ public static class AgenciesModule
         services.AddScoped<RefreshTokenService>();
         services.AddScoped<AuthService>();
         services.AddScoped<IAgencyLookup, Features.Lookup.AgencyLookup>();
+        services.AddScoped<IAgencyEntitlements, Features.Plans.AgencyEntitlementsService>();
 
         // Security plumbing lives here. The key ring is persisted in agencies.data_protection_keys
         // so protected payloads (offer tokens, encrypted passenger documents) survive restarts
