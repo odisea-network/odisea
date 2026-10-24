@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Odisea.Modules.Documents.Features.Contracts;
 using Odisea.Modules.Documents.Features.Issuing;
 using Odisea.Modules.Documents.Features.Numbering;
 using Odisea.Modules.Documents.Features.Pdf;
@@ -21,6 +22,9 @@ public static class DocumentsModule
         services.AddScoped<NumberSeries>();
         services.AddScoped<DocumentService>();
         services.AddSingleton<DocumentPdfRenderer>();
+        services.AddSingleton<DocxTemplateRenderer>();
+        services.AddScoped<ContractMergeDataBuilder>();
+        services.AddScoped<ContractService>();
 
         return services;
     }

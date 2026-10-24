@@ -35,6 +35,9 @@ public class BookingServiceTests
             Task.FromResult<AgencyBillingInfo?>(new AgencyBillingInfo(
                 agencyId, "Тест Ейджънси ЕООД", "201234567", "BG201234567",
                 "ул. Тестова 1", "София", "Тест МОЛ"));
+
+        public Task<AgencyContractInfo?> GetContractInfoAsync(Guid agencyId, CancellationToken ct) =>
+            Task.FromResult<AgencyContractInfo?>(null);
     }
 
     private sealed class FakeProgramLookup(BookingTarget? target) : IProgramLookup

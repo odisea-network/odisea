@@ -10,6 +10,8 @@ public class DocumentsDbContext(DbContextOptions<DocumentsDbContext> options) : 
     public DbSet<FinancialDocument> FinancialDocuments => Set<FinancialDocument>();
     public DbSet<CompanyProfile> CompanyProfiles => Set<CompanyProfile>();
     public DbSet<DocumentCounter> DocumentCounters => Set<DocumentCounter>();
+    public DbSet<ContractTemplate> ContractTemplates => Set<ContractTemplate>();
+    public DbSet<GeneratedContract> GeneratedContracts => Set<GeneratedContract>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,5 +63,25 @@ public class DocumentsDbContext(DbContextOptions<DocumentsDbContext> options) : 
         var counter = modelBuilder.Entity<DocumentCounter>();
         counter.HasKey(c => c.Series);
         counter.Property(c => c.Series).HasMaxLength(20);
+
+        var template = modelBuilder.Entity<ContractTemplate>();
+        template.Property(t => t.Name).HasMaxLength(100);
+        template.Property(t => t.Kind).HasConversion<string>().HasMaxLength(20);
+        template.Property(t => t.Description).HasMaxLength(500);
+        template.Property(t => t.FileName).HasMaxLength(255);
+        template.Property(t => t.ContentHash).HasMaxLength(64);
+        template.HasIndex(t => new { t.Kind, t.IsActive });
+        template.HasIndex(t => new { t.IsActive, t.AgencyUsable });
+
+        var contract = modelBuilder.Entity<GeneratedContract>();
+        contract.Property(c => c.TemplateName).HasMaxLength(100);
+        contract.Property(c => c.Kind).HasConversion<string>().HasMaxLength(20);
+        contract.Property(c => c.BookingRef).HasMaxLength(20);
+        contract.Property(c => c.FileName).HasMaxLength(255);
+        contract.Property(c => c.Note).HasMaxLength(500);
+        contract.HasIndex(c => c.AgencyId);
+        contract.HasIndex(c => c.BookingId);
+        // Templates used by a contract must stay (the service refuses to delete them).
+        contract.HasOne<ContractTemplate>().WithMany().HasForeignKey(c => c.TemplateId).OnDelete(DeleteBehavior.Restrict);
     }
 }

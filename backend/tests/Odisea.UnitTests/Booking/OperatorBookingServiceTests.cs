@@ -33,6 +33,9 @@ public class OperatorBookingServiceTests
 
         public Task<AgencyBillingInfo?> GetBillingInfoAsync(Guid agencyId, CancellationToken ct) =>
             Task.FromResult<AgencyBillingInfo?>(null);
+
+        public Task<AgencyContractInfo?> GetContractInfoAsync(Guid agencyId, CancellationToken ct) =>
+            Task.FromResult<AgencyContractInfo?>(null);
     }
 
     private sealed class FakeProgramLookup(BookingTarget target) : IProgramLookup
