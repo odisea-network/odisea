@@ -1,6 +1,19 @@
 // Mirrors of the backend DTOs (camelCase over the wire). Money fields are
 // numbers for DISPLAY only — the frontend never computes prices.
 
+export interface BrandingDto {
+  displayName: string;
+  primaryColor: string;
+  accentColor: string;
+  supportEmail: string | null;
+  supportPhone: string | null;
+  legalFooter: string | null;
+  hasLogo: boolean;
+  logoUrl: string | null;
+  logoVersion: string | null;
+  updatedAt: string | null;
+}
+
 export interface ProgramListItem {
   id: string;
   name: string;
@@ -47,12 +60,43 @@ export interface SearchResponse {
   offers: HotelOffer[];
 }
 
-export interface PassengerDto {
-  id: string;
+export type Gender = 'Male' | 'Female';
+export type TravelDocumentType = 'Passport' | 'IdCard';
+export type PassengerType = 'Adult' | 'Child' | 'Infant';
+
+/** What the API accepts for a passenger (POST /bookings, PUT /bookings/{id}/passengers). */
+export interface PassengerRequest {
+  title: string | null;
+  gender: Gender | null;
   firstName: string;
   lastName: string;
   birthDate: string | null;
+  nationality: string | null;
+  documentType: TravelDocumentType | null;
+  documentNumber: string | null;
+  documentIssuingCountry: string | null;
+  documentExpiryDate: string | null;
   isLead: boolean;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface PassengerDto {
+  id: string;
+  title: string | null;
+  gender: string | null;
+  firstName: string;
+  lastName: string;
+  birthDate: string | null;
+  passengerType: string | null;
+  nationality: string | null;
+  documentType: string | null;
+  documentNumber: string | null;
+  documentIssuingCountry: string | null;
+  documentExpiryDate: string | null;
+  isLead: boolean;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface StatusHistoryDto {
@@ -60,19 +104,37 @@ export interface StatusHistoryDto {
   from: string;
   to: string;
   note: string | null;
+  /** Agency | ApiClient | Operator | System — never an operator's identity. */
+  actor: string;
 }
+
+export type BookingStatus =
+  | 'Draft'
+  | 'PriceConfirmed'
+  | 'PendingConfirmation'
+  | 'AwaitingPayment'
+  | 'Confirmed'
+  | 'Rejected'
+  | 'Expired'
+  | 'Cancelled'
+  | 'Failed';
 
 export interface BookingDto {
   id: string;
   ref: string;
-  status: string;
+  status: BookingStatus | string;
   programName: string;
   hotelName: string;
   checkIn: string;
   checkOut: string;
+  adults: number;
+  children: number;
   sellPrice: number | null;
   agencyCommission: number | null;
   currency: string;
+  paidAmount: number;
+  balanceDue: number;
+  paymentDueAt: string | null;
   providerBookingRef: string | null;
   createdAt: string;
   passengers: PassengerDto[];

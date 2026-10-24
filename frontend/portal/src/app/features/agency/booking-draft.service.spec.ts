@@ -14,19 +14,21 @@ const search: SearchResponse = {
 };
 
 describe('BookingDraftService', () => {
-  it('captures the offer and the search-time price for drift comparison', () => {
+  it('captures the offer, the occupancy and the search-time price for drift comparison', () => {
     const service = new BookingDraftService();
-    service.start(search, offer);
+    service.start(search, offer, 2, 1);
 
     const context = service.context();
     expect(context?.offer.offerToken).toBe('tok');
     expect(context?.searchSellPrice).toBe(831.1);
     expect(context?.nights).toBe(7);
+    expect(context?.adults).toBe(2);
+    expect(context?.children).toBe(1);
   });
 
   it('clear() empties the context', () => {
     const service = new BookingDraftService();
-    service.start(search, offer);
+    service.start(search, offer, 2, 0);
     service.clear();
     expect(service.context()).toBeNull();
   });
