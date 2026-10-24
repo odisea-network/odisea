@@ -128,6 +128,68 @@ namespace Odisea.Modules.Agencies.Infrastructure.Data.Migrations
                     b.ToTable("agencies", "agencies");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Agencies.Domain.AgencyApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("key_hash");
+
+                    b.Property<string>("KeyPrefix")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("key_prefix");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_agency_api_keys");
+
+                    b.HasIndex("AgencyId")
+                        .HasDatabaseName("ix_agency_api_keys_agency_id");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_agency_api_keys_key_hash");
+
+                    b.ToTable("agency_api_keys", "agencies");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Agencies.Domain.AgencyUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -334,6 +396,16 @@ namespace Odisea.Modules.Agencies.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_refresh_tokens_user_id");
 
                     b.ToTable("refresh_tokens", "agencies");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Agencies.Domain.AgencyApiKey", b =>
+                {
+                    b.HasOne("Odisea.Modules.Agencies.Domain.Agency", null)
+                        .WithMany()
+                        .HasForeignKey("AgencyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_agency_api_keys_agencies_agency_id");
                 });
 
             modelBuilder.Entity("Odisea.Modules.Agencies.Domain.AgencyUser", b =>

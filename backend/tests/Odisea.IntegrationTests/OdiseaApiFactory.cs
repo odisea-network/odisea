@@ -55,6 +55,8 @@ public sealed class OdiseaApiFactory : WebApplicationFactory<Program>, IAsyncLif
                 ["Seed:Operator:Password"] = AdminPassword,
                 ["Seed:Operator:FullName"] = "Test Operator Admin",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
+                // Tests hammer one key; the 60/min production default is covered by manual smoke.
+                ["RateLimiting:ApiKeyPerMinute"] = "100000",
             };
 
             // The test runner swallows the host's console output. Set ODISEA_TEST_LOG to a file
@@ -96,6 +98,14 @@ public sealed class OdiseaApiFactory : WebApplicationFactory<Program>, IAsyncLif
     }
 
     public HttpClient AnonymousClient() => CreateClient();
+
+    /// An external agency: no login, just the key header on every request.
+    public HttpClient ClientWithApiKey(string apiKey)
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+        return client;
+    }
 
     private async Task<string> LoginAsync(string email, string password)
     {

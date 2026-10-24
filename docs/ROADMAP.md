@@ -12,7 +12,7 @@
 | **3 — Pricing engine** | Rules + rates CRUD, pure engine, breakdown, sell prices in search (#109 ✅) | ✅ done (2026-10-09) |
 | **4 — Booking flow vs mock** | Full lifecycle, state machine, history, jsonb breakdown, sequence refs, operator oversight (#111 ✅) · booking wizard + bookings UI (#132 ✅) | ✅ done (2026-10-23) |
 | **5 — Real provider adapter** | TourVisio/Sejour adapter behind the same contract · content sync → mapping screens · resilience. **Gated on: intermediary decision + sandbox credentials — the only blocker** | ⬜ gated |
-| **6 — Operations** | Hardening (#112 ✅) · **Documents module: фактури/известия per ЗДДС with gapless numbering, margin scheme, PDFs (#119 ✅)** · refresh-token rotation (#135 ✅) · DataProtection keys in the DB (#140 ✅) · **reservation lifecycle: full passenger data with encrypted documents (#142 ✅), submit → provider hold → payments → admin confirmation, operator oversight (#144 ✅)** · remaining: API keys for external agencies, audit log, auto-expiry job, vouchers, credit-limit enforcement, deployment | 🔄 in progress |
+| **6 — Operations** | Hardening (#112 ✅) · **Documents module: фактури/известия per ЗДДС with gapless numbering, margin scheme, PDFs (#119 ✅)** · refresh-token rotation (#135 ✅) · DataProtection keys in the DB (#140 ✅) · **reservation lifecycle: full passenger data with encrypted documents (#142 ✅), submit → provider hold → payments → admin confirmation, operator oversight (#144 ✅)** · API keys for external agencies (#147 ✅) · remaining: audit log, auto-expiry job, vouchers, credit-limit enforcement, deployment | 🔄 in progress |
 
 ## Cross-cutting: security baseline — issue #100
 

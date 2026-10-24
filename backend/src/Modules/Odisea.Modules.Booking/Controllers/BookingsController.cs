@@ -56,7 +56,8 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
 
         try
         {
-            return await action(agencyId, new BookingActor(BookingActorType.Agency, userId));
+            var actorType = currentUser.IsApiClient ? BookingActorType.ApiClient : BookingActorType.Agency;
+            return await action(agencyId, new BookingActor(actorType, userId));
         }
         catch (BookingNotFoundException ex)
         {

@@ -21,3 +21,12 @@
 ## Relations
 
 Depends only on SharedKernel. Booking consumes `IAgencyLookup` (active check; credit-limit enforcement is still open); every module uses its policies, and the host relies on the DataProtection registration made here. Security rationale and remaining hardening: issue #100.
+
+## API keys for external agencies
+
+Partner agencies that integrate directly (no portal login) authenticate with a per-agency key in the `X-Api-Key` header.
+
+- **Issuing:** operators call `POST /api/v1/agencies/{agencyId}/api-keys` (name, optional expiry). The response is the only time the secret (`odk_live_` + 43 base64url chars) is shown; the database stores a SHA-256 hash and a 16-character prefix for display. `GET` lists keys (prefix, created, expires, revoked, last used), `DELETE .../{keyId}` revokes (idempotent).
+- **Authenticating:** the default authentication scheme is a selector — a request with `X-Api-Key` goes to the `ApiKey` handler, anything else to JWT bearer (header wins). A valid, unrevoked, unexpired key of an active agency yields the same identity shape as an agency login (`user_type=agency`, `agency_id`, `sub` = key id, `role=ApiClient`, `auth_method=api_key`), so every agency-scoped endpoint and policy works unchanged, operator endpoints stay unreachable, and the auth endpoints issue no session. Rejections are a uniform 401 with `WWW-Authenticate: ApiKey`.
+- **Trail:** `ICurrentUser.IsApiClient` lets Booking record the `ApiClient` actor; `LastUsedAt` is written at most every five minutes.
+- **Rate limit:** `RateLimiting:ApiKeyPerMinute` (default 60) per presented key, partitioned by a hash of the header because the limiter runs before authentication — unknown keys are throttled too.
