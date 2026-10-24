@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Booking.Domain;
 using Odisea.Modules.Booking.Infrastructure;
@@ -10,6 +11,7 @@ using Odisea.SharedKernel;
 
 namespace Odisea.Modules.Booking.Features.Bookings;
 
+/// The agency side of a reservation: draft → passengers → re-price → submit → (await payment).
 public class BookingService(
     BookingDbContext db,
     IProviderRegistry providers,
@@ -18,11 +20,15 @@ public class BookingService(
     IAgencyLookup agencyLookup,
     IProgramLookup programLookup,
     IBookingRefGenerator refGenerator,
+    IOptions<BookingOptions> options,
     IClock clock)
 {
     public async Task<BookingDto> CreateDraftAsync(
-        CreateBookingRequest request, Guid agencyId, Guid agentUserId, CancellationToken ct)
+        CreateBookingRequest request, Guid agencyId, BookingActor actor, CancellationToken ct)
     {
+        var agentUserId = actor.UserId
+            ?? throw new ArgumentException("Agency actors always carry the caller's id.", nameof(actor));
+
         var agency = await agencyLookup.FindAsync(agencyId, ct);
         if (agency is null || !agency.IsActive)
             throw new BookingValidationException("Your agency is not active.");
@@ -62,6 +68,8 @@ public class BookingService(
             BookingId = booking.Id,
             FromStatus = "-",
             ToStatus = BookingStatus.Draft.ToString(),
+            ActorType = actor.Type,
+            ActorUserId = actor.UserId,
             Note = "Draft created",
             CreatedAt = now,
         });
@@ -90,7 +98,8 @@ public class BookingService(
         return booking.ToDto();
     }
 
-    public async Task<RePriceResponse> RePriceAsync(Guid bookingId, Guid agencyId, CancellationToken ct)
+    public async Task<RePriceResponse> RePriceAsync(
+        Guid bookingId, Guid agencyId, BookingActor actor, CancellationToken ct)
     {
         var booking = await LoadOwnedAsync(bookingId, agencyId, ct);
         if (booking.Status is not (BookingStatus.Draft or BookingStatus.PriceConfirmed))
@@ -113,7 +122,7 @@ public class BookingService(
         booking.CommissionAmount = breakdown.AgencyCommission.Amount;
         booking.Currency = breakdown.SellPrice.Currency;
         booking.BreakdownJson = JsonSerializer.Serialize(breakdown);
-        Transition(booking, BookingStatus.PriceConfirmed,
+        Transition(booking, BookingStatus.PriceConfirmed, actor,
             priceChanged
                 ? $"Re-priced: {breakdown.SellPrice} (was {previousSell} {booking.Currency})"
                 : $"Price confirmed: {breakdown.SellPrice}");
@@ -122,14 +131,26 @@ public class BookingService(
         return new RePriceResponse(booking.ToDto(), priceChanged, previousSell);
     }
 
-    public async Task<BookingDto> ConfirmAsync(Guid bookingId, Guid agencyId, CancellationToken ct)
+    /// Submit hands the reservation to the provider and starts the payment clock. Two saves on
+    /// purpose: PendingConfirmation is persisted BEFORE the provider call, so a crash in between
+    /// leaves a visible row operators can reconcile instead of a silently lost reservation.
+    /// Provider exceptions (as opposed to a declined result) therefore leave the booking in
+    /// PendingConfirmation by design.
+    public async Task<BookingDto> SubmitAsync(
+        Guid bookingId, Guid agencyId, BookingActor actor, CancellationToken ct)
     {
         var booking = await LoadOwnedAsync(bookingId, agencyId, ct);
+        if (booking.Status != BookingStatus.PriceConfirmed)
+            throw new InvalidBookingTransitionException(booking.Status, BookingStatus.PendingConfirmation);
+
+        booking.EnsureReadyForSubmit();
         var passengers = booking.Passengers
             .OrderBy(p => p.Position)
             .Select(p => ToProviderPassenger(p, booking.CheckIn))
             .ToList();
-        Transition(booking, BookingStatus.PendingConfirmation, "Sent to provider");
+
+        Transition(booking, BookingStatus.PendingConfirmation, actor, "Submitted to the provider");
+        await db.SaveChangesAsync(ct);
 
         var provider = providers.Get(booking.ProviderCode);
         var result = await provider.BookAsync(
@@ -137,32 +158,43 @@ public class BookingService(
 
         if (result.Success)
         {
+            var dueAt = PaymentDeadline.Compute(clock.UtcNow, booking.CheckIn, options.Value);
             booking.ProviderBookingRef = result.ProviderBookingRef;
-            Transition(booking, BookingStatus.Confirmed, $"Provider confirmed: {result.ProviderBookingRef}");
+            booking.PaymentDueAt = dueAt;
+            Transition(booking, BookingStatus.AwaitingPayment, BookingActor.System,
+                $"Provider holds the reservation ({result.ProviderBookingRef}); payment due by {dueAt:yyyy-MM-dd HH:mm} UTC");
         }
         else
         {
-            Transition(booking, BookingStatus.Failed, result.FailureReason);
+            Transition(booking, BookingStatus.Failed, BookingActor.System, result.FailureReason);
         }
 
         await db.SaveChangesAsync(ct);
         return booking.ToDto();
     }
 
-    public async Task<BookingDto> CancelAsync(Guid bookingId, Guid agencyId, CancellationToken ct)
+    /// Agencies may withdraw a reservation until money has been received. Once paid (or while
+    /// the provider call is in flight), cancellation means refunds, credit notes and possibly
+    /// provider penalties — an operator decision.
+    public async Task<BookingDto> CancelAsync(
+        Guid bookingId, Guid agencyId, BookingActor actor, CancellationToken ct)
     {
         var booking = await LoadOwnedAsync(bookingId, agencyId, ct);
+        if (booking.Status is BookingStatus.Confirmed or BookingStatus.PendingConfirmation)
+            throw new BookingStateException(booking.Status, "cancel");
+        if (booking.PaidAmount > 0)
+            throw new BookingStateException(
+                "Payments have already been recorded for this reservation; ask the operator to cancel and refund.");
 
-        if (booking.Status == BookingStatus.Confirmed)
+        if (booking.ProviderBookingRef is { } providerRef)
         {
-            var provider = providers.Get(booking.ProviderCode);
-            var result = await provider.CancelAsync(booking.ProviderBookingRef!, ct);
+            var result = await providers.Get(booking.ProviderCode).CancelAsync(providerRef, ct);
             if (!result.Success)
                 throw new BookingValidationException(
                     $"The provider refused the cancellation: {result.FailureReason}");
         }
 
-        Transition(booking, BookingStatus.Cancelled, "Cancelled by agency");
+        Transition(booking, BookingStatus.Cancelled, actor, "Cancelled by the agency");
         await db.SaveChangesAsync(ct);
         return booking.ToDto();
     }
@@ -171,6 +203,7 @@ public class BookingService(
     {
         var booking = await db.Bookings
             .Include(b => b.Passengers)
+            .Include(b => b.Payments)
             .Include(b => b.History)
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.AgencyId == agencyId, ct);
@@ -180,6 +213,7 @@ public class BookingService(
     public async Task<List<BookingDto>> ListAsync(Guid agencyId, CancellationToken ct) =>
         [.. (await db.Bookings
             .Include(b => b.Passengers)
+            .Include(b => b.Payments)
             .Include(b => b.History)
             .AsNoTracking()
             .Where(b => b.AgencyId == agencyId)
@@ -223,14 +257,12 @@ public class BookingService(
         }
     }
 
-    /// The provider contract carries what real systems register travellers with. Missing
-    /// required data is a validation error at this point; the submit flow checks the full
-    /// completeness rules up front.
+    /// EnsureReadyForSubmit has already guaranteed the required fields; the pattern matches
+    /// below only keep the compiler honest about nullability.
     private static ProviderPassenger ToProviderPassenger(BookingPassenger p, DateOnly checkIn)
     {
         if (p.BirthDate is not { } birthDate || p.Gender is not { } gender || p.Nationality is null)
-            throw new BookingValidationException(
-                $"Passenger {p.Position + 1}: birth date, gender and nationality are required.");
+            throw new InvalidOperationException("Passenger data was not validated before submit.");
 
         ProviderTravelDocument? document = null;
         if (p.DocumentType is { } documentType
@@ -274,15 +306,16 @@ public class BookingService(
     /// TransitionTo creates the history row inside the domain entity. Its id is
     /// preset (v7 GUID), so change-tracker discovery would classify it as an
     /// EXISTING row (Modified) — explicitly Add it so EF inserts instead.
-    private void Transition(Domain.Booking booking, BookingStatus next, string? note)
+    private void Transition(Domain.Booking booking, BookingStatus next, BookingActor actor, string? note)
     {
-        booking.TransitionTo(next, note, clock.UtcNow);
+        booking.TransitionTo(next, actor, note, clock.UtcNow);
         db.Add(booking.History[^1]);
     }
 
     private async Task<Domain.Booking> LoadOwnedAsync(Guid bookingId, Guid agencyId, CancellationToken ct) =>
         await db.Bookings
             .Include(b => b.Passengers)
+            .Include(b => b.Payments)
             .Include(b => b.History)
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.AgencyId == agencyId, ct)
         ?? throw new BookingNotFoundException();

@@ -1,7 +1,7 @@
 namespace Odisea.Modules.Booking.PublicApi;
 
-/// Read-only booking facts for invoicing. The tax event for a confirmed
-/// booking is the provider confirmation; for a cancelled one, the cancellation.
+/// Read-only booking facts for invoicing. The tax event for a confirmed booking is the
+/// operator's confirmation (given only once fully paid); for a cancelled one, the cancellation.
 public interface IBookingLookup
 {
     Task<BookingFinancialInfo?> FindAsync(Guid bookingId, CancellationToken ct);

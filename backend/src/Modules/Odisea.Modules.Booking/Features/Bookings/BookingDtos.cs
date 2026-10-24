@@ -56,7 +56,8 @@ public record PassengerDto(
     string? Email,
     string? Phone);
 
-public record StatusHistoryDto(DateTimeOffset At, string From, string To, string? Note);
+/// Agencies see who acted (agency, API client, operator, system) but not which operator.
+public record StatusHistoryDto(DateTimeOffset At, string From, string To, string? Note, string Actor);
 
 public record BookingDto(
     Guid Id,
@@ -71,6 +72,9 @@ public record BookingDto(
     decimal? SellPrice,
     decimal? AgencyCommission,
     string Currency,
+    decimal PaidAmount,
+    decimal BalanceDue,
+    DateTimeOffset? PaymentDueAt,
     string? ProviderBookingRef,
     DateTimeOffset CreatedAt,
     IReadOnlyList<PassengerDto> Passengers,
@@ -84,10 +88,11 @@ public static class BookingDtoMapping
         b.Id, b.Ref, b.Status.ToString(), b.ProgramName, b.HotelName,
         b.CheckIn, b.CheckOut, b.Adults, b.Children,
         b.SellAmount, b.CommissionAmount, b.Currency,
+        b.PaidAmount, b.BalanceDue, b.PaymentDueAt,
         b.ProviderBookingRef, b.CreatedAt,
         [.. b.Passengers.OrderBy(p => p.Position).Select(p => p.ToDto(b.CheckIn))],
         [.. b.History.OrderBy(h => h.CreatedAt).Select(h =>
-            new StatusHistoryDto(h.CreatedAt, h.FromStatus, h.ToStatus, h.Note))]);
+            new StatusHistoryDto(h.CreatedAt, h.FromStatus, h.ToStatus, h.Note, h.ActorType.ToString()))]);
 
     public static PassengerDto ToDto(this BookingPassenger p, DateOnly checkIn) => new(
         p.Id, p.Title, p.Gender?.ToString(), p.FirstName, p.LastName, p.BirthDate,

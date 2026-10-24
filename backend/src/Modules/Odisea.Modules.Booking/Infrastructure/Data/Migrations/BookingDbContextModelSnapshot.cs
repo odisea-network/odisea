@@ -100,6 +100,10 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(4000)")
                         .HasColumnName("offer_token");
 
+                    b.Property<DateTimeOffset?>("PaymentDueAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("payment_due_at");
+
                     b.Property<Guid>("ProgramId")
                         .HasColumnType("uuid")
                         .HasColumnName("program_id");
@@ -138,6 +142,12 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(25)")
                         .HasColumnName("status");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_bookings");
 
@@ -147,6 +157,9 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
 
                     b.HasIndex("AgencyId", "CreatedAt")
                         .HasDatabaseName("ix_bookings_agency_id_created_at");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_bookings_status_created_at");
 
                     b.ToTable("bookings", "booking");
                 });
@@ -243,12 +256,94 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                     b.ToTable("booking_passengers", "booking");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Booking.Domain.BookingPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("method");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly>("ReceivedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("received_on");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("void_reason");
+
+                    b.Property<DateTimeOffset?>("VoidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("voided_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_booking_payments");
+
+                    b.HasIndex("BookingId")
+                        .HasDatabaseName("ix_booking_payments_booking_id");
+
+                    b.ToTable("booking_payments", "booking");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Booking.Domain.BookingStatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("ActorType")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("actor_type");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
 
                     b.Property<Guid>("BookingId")
                         .HasColumnType("uuid")
@@ -294,6 +389,16 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_booking_passengers_bookings_booking_id");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Booking.Domain.BookingPayment", b =>
+                {
+                    b.HasOne("Odisea.Modules.Booking.Domain.Booking", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_booking_payments_bookings_booking_id");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Booking.Domain.BookingStatusHistory", b =>
                 {
                     b.HasOne("Odisea.Modules.Booking.Domain.Booking", null)
@@ -309,6 +414,8 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                     b.Navigation("History");
 
                     b.Navigation("Passengers");
+
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

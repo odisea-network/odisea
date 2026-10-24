@@ -13,6 +13,7 @@ public class BookingDbContext(DbContextOptions<BookingDbContext> options, IDataP
 
     public DbSet<Domain.Booking> Bookings => Set<Domain.Booking>();
     public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
+    public DbSet<BookingPayment> BookingPayments => Set<BookingPayment>();
     public DbSet<BookingStatusHistory> BookingStatusHistory => Set<BookingStatusHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,6 +25,7 @@ public class BookingDbContext(DbContextOptions<BookingDbContext> options, IDataP
         booking.Property(b => b.Ref).HasMaxLength(20);
         booking.HasIndex(b => b.Ref).IsUnique();
         booking.HasIndex(b => new { b.AgencyId, b.CreatedAt });
+        booking.HasIndex(b => new { b.Status, b.CreatedAt });
         booking.Property(b => b.ProgramName).HasMaxLength(200);
         booking.Property(b => b.HotelName).HasMaxLength(200);
         booking.Property(b => b.ProviderCode).HasMaxLength(30);
@@ -36,7 +38,15 @@ public class BookingDbContext(DbContextOptions<BookingDbContext> options, IDataP
         booking.Property(b => b.CommissionAmount).HasPrecision(18, 2);
         booking.Property(b => b.BreakdownJson).HasColumnType("jsonb");
         booking.HasMany(b => b.Passengers).WithOne().HasForeignKey(p => p.BookingId);
+        booking.HasMany(b => b.Payments).WithOne().HasForeignKey(p => p.BookingId);
         booking.HasMany(b => b.History).WithOne().HasForeignKey(h => h.BookingId);
+
+        // Optimistic concurrency rides on Postgres' xmin system column (no column of its own);
+        // other providers (the InMemory test double) have nothing equivalent, so skip it there.
+        if (Database.IsNpgsql())
+            booking.Property(b => b.Version).IsRowVersion();
+        else
+            booking.Ignore(b => b.Version);
 
         var passenger = modelBuilder.Entity<BookingPassenger>();
         passenger.Property(p => p.Title).HasMaxLength(10);
@@ -59,9 +69,19 @@ public class BookingDbContext(DbContextOptions<BookingDbContext> options, IDataP
             .HasConversion(plain => documents.Protect(plain!), stored => documents.Unprotect(stored))
             .HasMaxLength(512);
 
+        var payment = modelBuilder.Entity<BookingPayment>();
+        payment.Property(p => p.Amount).HasPrecision(18, 2);
+        payment.Property(p => p.Currency).HasMaxLength(3);
+        payment.Property(p => p.Method).HasConversion<string>().HasMaxLength(15);
+        payment.Property(p => p.Reference).HasMaxLength(100);
+        payment.Property(p => p.Note).HasMaxLength(500);
+        payment.Property(p => p.VoidReason).HasMaxLength(300);
+        payment.HasIndex(p => p.BookingId);
+
         var history = modelBuilder.Entity<BookingStatusHistory>();
         history.Property(h => h.FromStatus).HasMaxLength(25);
         history.Property(h => h.ToStatus).HasMaxLength(25);
+        history.Property(h => h.ActorType).HasConversion<string>().HasMaxLength(15);
         history.Property(h => h.Note).HasMaxLength(500);
         history.HasIndex(h => h.BookingId);
     }
