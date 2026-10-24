@@ -14,6 +14,7 @@ COPY backend/src/Modules/Odisea.Modules.Booking/Odisea.Modules.Booking.csproj   
 COPY backend/src/Modules/Odisea.Modules.Integrations/Odisea.Modules.Integrations.csproj   ./backend/src/Modules/Odisea.Modules.Integrations/
 COPY backend/src/Modules/Odisea.Modules.Documents/Odisea.Modules.Documents.csproj         ./backend/src/Modules/Odisea.Modules.Documents/
 COPY backend/src/Modules/Odisea.Modules.Notifications/Odisea.Modules.Notifications.csproj ./backend/src/Modules/Odisea.Modules.Notifications/
+COPY backend/src/Modules/Odisea.Modules.Workspace/Odisea.Modules.Workspace.csproj             ./backend/src/Modules/Odisea.Modules.Workspace/
 COPY backend/tests/Odisea.UnitTests/Odisea.UnitTests.csproj                               ./backend/tests/Odisea.UnitTests/
 COPY backend/tests/Odisea.IntegrationTests/Odisea.IntegrationTests.csproj                 ./backend/tests/Odisea.IntegrationTests/
 RUN dotnet restore backend/Odisea.slnx

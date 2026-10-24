@@ -23,6 +23,7 @@ flowchart TB
         INT[Integrations]
         DOC[Documents]
         NTF[Notifications]
+        WSP[Workspace]
     end
     subgraph T3["3 · External reservation systems"]
         MOCK["Mock provider (dev)"]
@@ -52,6 +53,7 @@ One deployable (`Odisea.Api`), six modules, hard boundaries:
 | **Integrations** | `IReservationProvider` contract, provider adapters (Mock now, real later), offer-token protection, call logs | — |
 | **Documents** | Bulgarian tax documents (фактури, известия): gapless numbering, margin scheme, PDFs, company profile; contract documents filled from operator-uploaded Word templates (placeholder catalogue, custom fields, versioned templates, sharing with agencies, agency self-service) | Agencies (billing + contract facts), Booking (financial + contract facts incl. passengers) |
 | **Notifications** | Transactional e-mail outbox (`IEmailOutbox`), background dispatcher with retry/backoff, SMTP (MailKit) or logging transport, operator view of what went out | Agencies (policies) |
+| **Workspace** | The paid agency tier: external reservations (agency's own reference and status, free-form JSON payload, timeline with actors, anonymous customer tracking page), usage per agency for billing; inquiry forms next | Agencies (policies, `IAgencyEntitlements`, agency name), Notifications (e-mail, from #171) |
 
 **Boundary rules (enforced by an architecture test over every ordered pair of modules):**
 - A module may reference another module **only through its `PublicApi` namespace**.
@@ -65,7 +67,7 @@ One deployable (`Odisea.Api`), six modules, hard boundaries:
 
 ## Data architecture
 
-One PostgreSQL database, **one schema + one DbContext + one migrations history table per module**: `agencies`, `catalog`, `pricing`, `booking`, `integrations`, `documents`, `notifications`. snake_case naming, enums stored as strings, version-7 GUIDs (time-ordered → append-only B-tree inserts). `SharedKernel` provides `Entity`, `Money`, `DateRange`, `Pax`, `IClock`, `ICurrentUser` — no EF, no HTTP.
+One PostgreSQL database, **one schema + one DbContext + one migrations history table per module**: `agencies`, `catalog`, `pricing`, `booking`, `integrations`, `documents`, `notifications`, `workspace`. snake_case naming, enums stored as strings, version-7 GUIDs (time-ordered → append-only B-tree inserts). `SharedKernel` provides `Entity`, `Money`, `DateRange`, `Pax`, `IClock`, `ICurrentUser` — no EF, no HTTP.
 
 Sensitive columns: passenger document numbers are encrypted with a DataProtection value converter (`booking.booking_passengers.document_number`); refresh tokens and API keys are stored as SHA-256 hashes. The DataProtection key ring lives in `agencies.data_protection_keys` (not yet encrypted at rest — #153). Bookings carry an `xmin`-based optimistic concurrency token.
 
@@ -87,7 +89,7 @@ Cancelled          Cancelled            ▼                                 │ 
 ## Auth & security model
 
 - **Two ways in, one identity shape.** Portal users log in and get a JWT (HS256, secret ≥ 256 bits, validated at startup; 15-minute access tokens, HttpOnly refresh cookie with rotation and reuse detection). External agency systems send a per-agency API key in `X-Api-Key` (`odk_live_…`, hashed at rest, operator-issued and revocable, optional expiry). The default authentication scheme is a selector: header present → API-key handler, otherwise JWT bearer. Both produce `sub`, `name`, `user_type` (`operator`|`agency`), `role`, `agency_id` (agency callers); key callers additionally carry `role=ApiClient` and `auth_method=api_key`.
-- **Deny by default:** a fallback authorization policy requires authentication on every endpoint; only `/api/v1/auth/login|refresh|logout`, `/health` and the public branding reads (`/api/v1/branding`, `/api/v1/branding/logo`) are `[AllowAnonymous]`.
+- **Deny by default:** a fallback authorization policy requires authentication on every endpoint; only `/api/v1/auth/login|refresh|logout`, `/health`, the public branding reads (`/api/v1/branding`, `/api/v1/branding/logo`) and the workspace public endpoints (`/api/v1/public/track/{code}`; any origin, per-IP rate limit, no personal data) are `[AllowAnonymous]`.
 - **Policies** (`Agencies.PublicApi.AuthPolicies`, consumed by all modules): `Operator` (back-office), `OperatorAdmin` (operator with role `Admin`: confirm a paid reservation, cancel it, void a payment), `Agency` (portal users and API keys alike). A key can never satisfy an operator policy or obtain a session.
 - Agency-scoped queries always filter by the **`agency_id` claim**, never by a client-supplied id; offer envelopes additionally bind agency, hotel and occupancy. Not-found and not-yours are the same 404.
 - Login hardening: PBKDF2 hashing, 5-failure/15-min lockout, anti-enumeration (identical error + dummy hash). Full baseline and remaining checklist: issue #100.

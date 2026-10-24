@@ -11,6 +11,7 @@
     <Project Path="src/Modules/Odisea.Modules.Integrations/Odisea.Modules.Integrations.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Notifications/Odisea.Modules.Notifications.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Pricing/Odisea.Modules.Pricing.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Workspace/Odisea.Modules.Workspace.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Odisea.IntegrationTests/Odisea.IntegrationTests.csproj" />

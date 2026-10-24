@@ -19,5 +19,6 @@
     <ProjectReference Include="..\Modules\Odisea.Modules.Integrations\Odisea.Modules.Integrations.csproj" />
     <ProjectReference Include="..\Modules\Odisea.Modules.Documents\Odisea.Modules.Documents.csproj" />
     <ProjectReference Include="..\Modules\Odisea.Modules.Notifications\Odisea.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\Odisea.Modules.Workspace\Odisea.Modules.Workspace.csproj" />
   </ItemGroup>
 </Project>

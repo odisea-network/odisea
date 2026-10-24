@@ -29,6 +29,7 @@ backend/
       Odisea.Modules.Integrations/ provider contract + adapters (Mock, TourVisio, …)
       Odisea.Modules.Documents/    Bulgarian tax documents: фактури, известия, PDFs; contracts from Word templates
       Odisea.Modules.Notifications/ transactional e-mail outbox + SMTP dispatcher
+      Odisea.Modules.Workspace/    paid agency tier: external reservations + public tracking, inquiry forms
   tests/
     Odisea.UnitTests/              unit + module-boundary architecture tests (EF InMemory)
     Odisea.IntegrationTests/       HTTP tests over the real host against Postgres
