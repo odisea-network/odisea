@@ -9,6 +9,7 @@ using Odisea.Modules.Documents.Infrastructure;
 using Odisea.Modules.Integrations.Infrastructure;
 using Odisea.Modules.Notifications.Infrastructure;
 using Odisea.Modules.Pricing.Infrastructure;
+using Odisea.Modules.Workspace.Infrastructure;
 
 namespace Odisea.Api;
 
@@ -31,6 +32,7 @@ public sealed class StartupMigrator(
         await services.GetRequiredService<BookingDbContext>().Database.MigrateAsync(ct);
         await services.GetRequiredService<DocumentsDbContext>().Database.MigrateAsync(ct);
         await services.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync(ct);
+        await services.GetRequiredService<WorkspaceDbContext>().Database.MigrateAsync(ct);
 
         // Agencies last: its seeder needs the operator table, and the demo seeder needs everything.
         var agencies = services.GetRequiredService<AgenciesDbContext>();

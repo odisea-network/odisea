@@ -11,6 +11,7 @@ using Odisea.Modules.Booking;
 using Odisea.Modules.Catalog;
 using Odisea.Modules.Documents;
 using Odisea.Modules.Notifications;
+using Odisea.Modules.Workspace;
 using Odisea.Modules.Integrations;
 using Odisea.Modules.Pricing;
 using Odisea.SharedKernel;
@@ -44,7 +45,8 @@ try
         .AddApplicationPart(typeof(BookingModule).Assembly)
         .AddApplicationPart(typeof(IntegrationsModule).Assembly)
         .AddApplicationPart(typeof(DocumentsModule).Assembly)
-        .AddApplicationPart(typeof(NotificationsModule).Assembly);
+        .AddApplicationPart(typeof(NotificationsModule).Assembly)
+        .AddApplicationPart(typeof(WorkspaceModule).Assembly);
 
     builder.Services
         .AddAgenciesModule(builder.Configuration)
@@ -53,13 +55,15 @@ try
         .AddBookingModule(builder.Configuration)
         .AddIntegrationsModule(builder.Configuration)
         .AddDocumentsModule(builder.Configuration)
-        .AddNotificationsModule(builder.Configuration);
+        .AddNotificationsModule(builder.Configuration)
+        .AddWorkspaceModule(builder.Configuration);
 
     // Brute-force protection on credential endpoints: 10 attempts/min per IP, and a per-key
     // budget for external API clients. The limiter runs before authentication, so the key
     // partition is a hash of the presented header (never the raw key); unknown keys are
     // throttled too, which also slows down key guessing. Portal (JWT) traffic is unlimited here.
     var apiKeyPerMinute = builder.Configuration.GetValue("RateLimiting:ApiKeyPerMinute", 60);
+    var publicPerMinute = builder.Configuration.GetValue("RateLimiting:PublicPerMinute", 60);
     builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -82,12 +86,26 @@ try
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             }));
+        // Anonymous workspace endpoints (customer tracking page, inquiry forms): per-IP budget.
+        options.AddPolicy(WorkspaceModule.PublicRateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = publicPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
     });
 
     // Strict allowlist; empty config means no cross-origin access at all.
     var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-    builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod()));
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy => policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod());
+        // Anonymous workspace endpoints are embedded in agency websites: any origin, no credentials.
+        options.AddPolicy(WorkspaceModule.PublicCorsPolicy, policy =>
+            policy.AllowAnyOrigin().AllowAnyHeader().WithMethods("GET", "POST", "OPTIONS"));
+    });
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>

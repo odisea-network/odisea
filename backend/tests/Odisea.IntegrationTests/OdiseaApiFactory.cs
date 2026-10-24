@@ -57,6 +57,7 @@ public sealed class OdiseaApiFactory : WebApplicationFactory<Program>, IAsyncLif
                 ["Serilog:MinimumLevel:Default"] = "Warning",
                 // Tests hammer one key; the 60/min production default is covered by manual smoke.
                 ["RateLimiting:ApiKeyPerMinute"] = "100000",
+                ["RateLimiting:PublicPerMinute"] = "100000",
                 // No background sends during tests; EmailOutboxTests dispatch through the admin endpoint.
                 ["Email:Enabled"] = "false",
             };
