@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Booking.Domain;
 using Odisea.Modules.Booking.Features.Bookings;
@@ -16,9 +17,9 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
 {
     [HttpPost]
     public Task<IActionResult> Create(CreateBookingRequest request, CancellationToken ct) =>
-        Execute(async (agencyId, userId) =>
+        Execute(async (agencyId, actor) =>
         {
-            var dto = await bookings.CreateDraftAsync(request, agencyId, userId, ct);
+            var dto = await bookings.CreateDraftAsync(request, agencyId, actor, ct);
             return CreatedAtAction(nameof(Get), new { id = dto.Id }, dto);
         });
 
@@ -37,25 +38,25 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
 
     [HttpPost("{id:guid}/re-price")]
     public Task<IActionResult> RePrice(Guid id, CancellationToken ct) =>
-        Execute(async (agencyId, _) => Ok(await bookings.RePriceAsync(id, agencyId, ct)));
+        Execute(async (agencyId, actor) => Ok(await bookings.RePriceAsync(id, agencyId, actor, ct)));
 
-    [HttpPost("{id:guid}/confirm")]
-    public Task<IActionResult> Confirm(Guid id, CancellationToken ct) =>
-        Execute(async (agencyId, _) => Ok(await bookings.ConfirmAsync(id, agencyId, ct)));
+    [HttpPost("{id:guid}/submit")]
+    public Task<IActionResult> Submit(Guid id, CancellationToken ct) =>
+        Execute(async (agencyId, actor) => Ok(await bookings.SubmitAsync(id, agencyId, actor, ct)));
 
     [HttpPost("{id:guid}/cancel")]
     public Task<IActionResult> Cancel(Guid id, CancellationToken ct) =>
-        Execute(async (agencyId, _) => Ok(await bookings.CancelAsync(id, agencyId, ct)));
+        Execute(async (agencyId, actor) => Ok(await bookings.CancelAsync(id, agencyId, actor, ct)));
 
     /// One funnel for agency scoping and the typed-exception → ProblemDetails map.
-    private async Task<IActionResult> Execute(Func<Guid, Guid, Task<IActionResult>> action)
+    private async Task<IActionResult> Execute(Func<Guid, BookingActor, Task<IActionResult>> action)
     {
         if (currentUser.AgencyId is not { } agencyId || currentUser.UserId is not { } userId)
             return Problem(title: "No agency context", statusCode: StatusCodes.Status403Forbidden);
 
         try
         {
-            return await action(agencyId, userId);
+            return await action(agencyId, new BookingActor(BookingActorType.Agency, userId));
         }
         catch (BookingNotFoundException ex)
         {
@@ -85,6 +86,12 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
         catch (InvalidBookingTransitionException ex)
         {
             return Problem(title: "Invalid state", detail: ex.Message,
+                statusCode: StatusCodes.Status409Conflict);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(title: "Concurrent update",
+                detail: "The booking was modified by someone else. Reload it and try again.",
                 statusCode: StatusCodes.Status409Conflict);
         }
     }

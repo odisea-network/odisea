@@ -10,18 +10,18 @@ namespace Odisea.IntegrationTests;
 /// The agency-side happy path over HTTP, reusable by every test that needs a booking.
 public static class AgencyFlow
 {
-    /// Two adults with everything a provider needs; the lead carries a passport when asked.
-    public static PassengerRequest[] TwoAdults(string? leadDocumentNumber = null) =>
+    /// Two adults with everything the provider needs; the lead's passport number can be overridden.
+    public static PassengerRequest[] TwoAdults(string leadDocumentNumber = "AB1234567") =>
     [
         new PassengerRequest("Ivan", "Petrov", new DateOnly(1985, 5, 1),
             Gender: Gender.Male, Nationality: "BG",
-            DocumentType: leadDocumentNumber is null ? null : TravelDocumentType.Passport,
-            DocumentNumber: leadDocumentNumber,
-            DocumentIssuingCountry: leadDocumentNumber is null ? null : "BG",
-            DocumentExpiryDate: leadDocumentNumber is null ? null : new DateOnly(2031, 1, 1),
+            DocumentType: TravelDocumentType.Passport, DocumentNumber: leadDocumentNumber,
+            DocumentIssuingCountry: "BG", DocumentExpiryDate: new DateOnly(2031, 1, 1),
             IsLead: true, Email: "ivan.petrov@example.com", Phone: "+359888123456"),
         new PassengerRequest("Maria", "Petrova", new DateOnly(1988, 7, 12),
-            Gender: Gender.Female, Nationality: "BG"),
+            Gender: Gender.Female, Nationality: "BG",
+            DocumentType: TravelDocumentType.IdCard, DocumentNumber: "6401234567",
+            DocumentIssuingCountry: "BG", DocumentExpiryDate: new DateOnly(2030, 6, 1)),
     ];
 
     public static async Task<(ProgramDetailDto Program, DepartureDto Departure)> FirstDepartureAsync(HttpClient agency)
@@ -59,7 +59,42 @@ public static class AgencyFlow
                 [.. passengers ?? TwoAdults()]),
             Json.Options);
         await response.ShouldBeAsync(HttpStatusCode.Created);
+        return await ReadBookingAsync(response);
+    }
 
+    public static async Task<BookingDto> RePriceAsync(HttpClient agency, Guid bookingId)
+    {
+        var response = await agency.PostAsync($"/api/v1/bookings/{bookingId}/re-price", null);
+        await response.ShouldBeAsync(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<RePriceResponse>(Json.Options);
+        Assert.NotNull(result);
+        return result.Booking;
+    }
+
+    public static Task<HttpResponseMessage> SubmitAsync(HttpClient agency, Guid bookingId) =>
+        agency.PostAsync($"/api/v1/bookings/{bookingId}/submit", null);
+
+    /// Draft → re-price → submit; the provider (mock) holds it and the booking awaits payment.
+    public static async Task<BookingDto> SubmittedBookingAsync(HttpClient agency, PassengerRequest[]? passengers = null)
+    {
+        var draft = await CreateDraftAsync(agency, passengers);
+        await RePriceAsync(agency, draft.Id);
+        var response = await SubmitAsync(agency, draft.Id);
+        await response.ShouldBeAsync(HttpStatusCode.OK);
+        var submitted = await ReadBookingAsync(response);
+        Assert.Equal("AwaitingPayment", submitted.Status);
+        return submitted;
+    }
+
+    public static async Task<BookingDto> GetAsync(HttpClient agency, Guid bookingId)
+    {
+        var booking = await agency.GetFromJsonAsync<BookingDto>($"/api/v1/bookings/{bookingId}", Json.Options);
+        Assert.NotNull(booking);
+        return booking;
+    }
+
+    private static async Task<BookingDto> ReadBookingAsync(HttpResponseMessage response)
+    {
         var booking = await response.Content.ReadFromJsonAsync<BookingDto>(Json.Options);
         Assert.NotNull(booking);
         return booking;

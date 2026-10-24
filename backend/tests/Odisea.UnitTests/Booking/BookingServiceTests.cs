@@ -17,8 +17,8 @@ using Xunit;
 
 namespace Odisea.UnitTests.Booking;
 
-/// Full lifecycle over the real mock provider, real token protector and
-/// real price calculator — only persistence and the two lookups are faked.
+/// The agency side over the real mock provider, real token protector and real price
+/// calculator — only persistence and the two lookups are faked.
 public class BookingServiceTests
 {
     private sealed class FakeClock : IClock
@@ -57,18 +57,20 @@ public class BookingServiceTests
     private readonly OfferTokenProtector _protector = new(TestDataProtection.Provider);
     private readonly FakeClock _clock = new();
     private readonly Guid _agencyId = Guid.NewGuid();
-    private readonly Guid _userId = Guid.NewGuid();
+    private readonly BookingActor _agent = new(BookingActorType.Agency, Guid.NewGuid());
     private readonly BookingTarget _target;
     private readonly MockReservationProvider _mock;
 
-    private static readonly PassengerRequest Ivan = new(
+    public static readonly PassengerRequest Ivan = new(
         "Ivan", "Petrov", new DateOnly(1990, 5, 1), Gender: Gender.Male, Nationality: "bg",
         DocumentType: TravelDocumentType.Passport, DocumentNumber: "ab1234567", DocumentIssuingCountry: "BG",
         DocumentExpiryDate: new DateOnly(2031, 1, 1), IsLead: true,
         Email: "ivan.petrov@example.com", Phone: "+359 888 123 456");
 
-    private static readonly PassengerRequest Maria = new(
-        "Maria", "Petrova", new DateOnly(1992, 7, 2), Gender: Gender.Female, Nationality: "BG");
+    public static readonly PassengerRequest Maria = new(
+        "Maria", "Petrova", new DateOnly(1992, 7, 2), Gender: Gender.Female, Nationality: "BG",
+        DocumentType: TravelDocumentType.IdCard, DocumentNumber: "6401234567", DocumentIssuingCountry: "BG",
+        DocumentExpiryDate: new DateOnly(2030, 6, 1));
 
     public BookingServiceTests()
     {
@@ -100,6 +102,7 @@ public class BookingServiceTests
         new FakeAgencyLookup(agencyActive),
         new FakeProgramLookup(resolvable ? _target : null),
         new FakeRefGenerator(),
+        Options.Create(new BookingOptions()),
         _clock);
 
     private async Task<string> ProtectedOfferTokenAsync(Guid? agencyId = null, Guid? hotelId = null, int adults = 2)
@@ -122,7 +125,14 @@ public class BookingServiceTests
             new CreateBookingRequest(_target.ProgramId, _target.DepartureId, _target.HotelId,
                 offerToken ?? await ProtectedOfferTokenAsync(),
                 [.. passengers.Length > 0 ? passengers : [Ivan, Maria]]),
-            _agencyId, _userId, CancellationToken.None);
+            _agencyId, _agent, CancellationToken.None);
+
+    private async Task<BookingDto> SubmittedAsync(BookingService service)
+    {
+        var draft = await CreateDraftAsync(service);
+        await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
+        return await service.SubmitAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
+    }
 
     [Fact]
     public async Task Draft_gets_ref_passengers_occupancy_and_history()
@@ -137,7 +147,9 @@ public class BookingServiceTests
         Assert.True(dto.Passengers[0].IsLead);
         Assert.Equal("Adult", dto.Passengers[0].PassengerType);
         Assert.Single(dto.History);
+        Assert.Equal("Agency", dto.History[0].Actor);
         Assert.Null(dto.SellPrice);
+        Assert.Equal(0m, dto.PaidAmount);
     }
 
     [Fact]
@@ -227,15 +239,13 @@ public class BookingServiceTests
     }
 
     [Fact]
-    public async Task Passengers_cannot_be_replaced_after_confirmation()
+    public async Task Passengers_are_frozen_once_submitted()
     {
         var service = Service();
-        var draft = await CreateDraftAsync(service);
-        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
-        await service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None);
+        var submitted = await SubmittedAsync(service);
 
         await Assert.ThrowsAsync<BookingStateException>(() => service.ReplacePassengersAsync(
-            draft.Id, _agencyId, new UpdatePassengersRequest([Ivan, Maria]), CancellationToken.None));
+            submitted.Id, _agencyId, new UpdatePassengersRequest([Ivan, Maria]), CancellationToken.None));
     }
 
     [Fact]
@@ -244,11 +254,12 @@ public class BookingServiceTests
         var service = Service();
         var draft = await CreateDraftAsync(service);
 
-        var result = await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        var result = await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
 
         Assert.Equal("PriceConfirmed", result.Booking.Status);
         Assert.False(result.PriceChanged); // first pricing — nothing to compare against
         Assert.NotNull(result.Booking.SellPrice);
+        Assert.Equal(result.Booking.SellPrice, result.Booking.BalanceDue);
         var stored = await _db.Bookings.SingleAsync();
         Assert.Contains("Markup", stored.BreakdownJson);
         Assert.Equal(Math.Round((decimal)stored.NetAmount! * 1.15m, 2), stored.SellAmount);
@@ -259,11 +270,11 @@ public class BookingServiceTests
     {
         var service = Service();
         var draft = await CreateDraftAsync(service);
-        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
 
         _mockOptions.RePriceDriftRatePercent = 100;
         _mockOptions.DriftPercent = 10m;
-        var second = await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        var second = await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
 
         Assert.True(second.PriceChanged);
         Assert.True(second.Booking.SellPrice > second.PreviousSellPrice);
@@ -277,74 +288,103 @@ public class BookingServiceTests
         _mockOptions.FailureRatePercent = 100;
 
         await Assert.ThrowsAsync<OfferUnavailableException>(
-            () => service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None));
+            () => service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None));
         Assert.Equal(BookingStatus.Draft, (await _db.Bookings.SingleAsync()).Status);
     }
 
     [Fact]
-    public async Task Confirm_books_at_the_provider_and_stores_the_reference()
+    public async Task Submit_hands_the_reservation_to_the_provider_and_starts_the_payment_clock()
     {
-        var service = Service();
-        var draft = await CreateDraftAsync(service);
-        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        var submitted = await SubmittedAsync(Service());
 
-        var confirmed = await service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None);
-
-        Assert.Equal("Confirmed", confirmed.Status);
-        Assert.StartsWith("MOCK-", confirmed.ProviderBookingRef);
+        Assert.Equal("AwaitingPayment", submitted.Status);
+        Assert.StartsWith("MOCK-", submitted.ProviderBookingRef);
+        Assert.Equal(_clock.UtcNow.AddDays(3), submitted.PaymentDueAt); // far departure → option window
         Assert.Equal(["-", "Draft", "PriceConfirmed", "PendingConfirmation"],
-            confirmed.History.Select(h => h.From).ToArray());
+            submitted.History.Select(h => h.From).ToArray());
+        Assert.Equal("Agency", submitted.History[2].Actor);  // PriceConfirmed → PendingConfirmation
+        Assert.Equal("System", submitted.History[^1].Actor); // PendingConfirmation → AwaitingPayment
+        Assert.Contains("payment due by 2026-10-12 12:00 UTC", submitted.History[^1].Note);
     }
 
     [Fact]
-    public async Task Confirm_requires_birth_date_gender_and_nationality_for_every_passenger()
+    public async Task Submit_requires_complete_passengers_and_leaves_the_price_confirmed()
     {
         var service = Service();
-        var draft = await CreateDraftAsync(service,
-            Ivan, new PassengerRequest("Nameless", "Traveller"));
-        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        var draft = await CreateDraftAsync(service, Ivan, new PassengerRequest("Nameless", "Traveller"));
+        await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
 
         var ex = await Assert.ThrowsAsync<BookingValidationException>(
-            () => service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None));
+            () => service.SubmitAsync(draft.Id, _agencyId, _agent, CancellationToken.None));
 
         Assert.Contains("Passenger 2", ex.Message);
         Assert.DoesNotContain("Nameless", ex.Message);
-        Assert.Equal(BookingStatus.PriceConfirmed, (await _db.Bookings.SingleAsync()).Status);
+        var stored = await _db.Bookings.Include(b => b.History).SingleAsync();
+        Assert.Equal(BookingStatus.PriceConfirmed, stored.Status);
+        Assert.Equal(2, stored.History.Count);
     }
 
     [Fact]
-    public async Task Confirm_fails_when_the_party_does_not_match_the_occupancy()
+    public async Task Submit_rejects_a_party_that_does_not_match_the_occupancy()
     {
         var service = Service();
         var draft = await CreateDraftAsync(service, Ivan);
-        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
 
-        var failed = await service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None);
-
-        Assert.Equal("Failed", failed.Status);
-        Assert.Contains("occupancy", failed.History[^1].Note);
+        var ex = await Assert.ThrowsAsync<BookingValidationException>(
+            () => service.SubmitAsync(draft.Id, _agencyId, _agent, CancellationToken.None));
+        Assert.Contains("occupancy", ex.Message);
     }
 
     [Fact]
-    public async Task Confirm_straight_from_draft_is_an_invalid_transition()
+    public async Task Submit_records_a_provider_refusal_as_failed()
+    {
+        var service = Service();
+        var draft = await CreateDraftAsync(service);
+        await service.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
+        _mockOptions.FailureRatePercent = 100;
+
+        var failed = await service.SubmitAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
+
+        Assert.Equal("Failed", failed.Status);
+        Assert.Contains("No availability", failed.History[^1].Note);
+        Assert.Null(failed.PaymentDueAt);
+    }
+
+    [Fact]
+    public async Task Submit_straight_from_draft_is_an_invalid_transition()
     {
         var service = Service();
         var draft = await CreateDraftAsync(service);
 
         await Assert.ThrowsAsync<InvalidBookingTransitionException>(
-            () => service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None));
+            () => service.SubmitAsync(draft.Id, _agencyId, _agent, CancellationToken.None));
     }
 
     [Fact]
-    public async Task Cancel_after_confirmation_cancels_at_the_provider_too()
+    public async Task Agency_can_withdraw_while_awaiting_payment()
     {
         var service = Service();
-        var draft = await CreateDraftAsync(service);
-        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
-        await service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None);
+        var submitted = await SubmittedAsync(service);
 
-        var cancelled = await service.CancelAsync(draft.Id, _agencyId, CancellationToken.None);
+        var cancelled = await service.CancelAsync(submitted.Id, _agencyId, _agent, CancellationToken.None);
+
         Assert.Equal("Cancelled", cancelled.Status);
+        Assert.Equal("Agency", cancelled.History[^1].Actor);
+    }
+
+    [Fact]
+    public async Task Agency_cannot_cancel_once_confirmed()
+    {
+        var service = Service();
+        var submitted = await SubmittedAsync(service);
+        var stored = await _db.Bookings.SingleAsync(b => b.Id == submitted.Id);
+        stored.TransitionTo(BookingStatus.Confirmed, new BookingActor(BookingActorType.Operator, Guid.NewGuid()), "paid", _clock.UtcNow);
+        _db.Add(stored.History[^1]);
+        await _db.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<BookingStateException>(
+            () => service.CancelAsync(submitted.Id, _agencyId, _agent, CancellationToken.None));
     }
 
     [Fact]
@@ -357,7 +397,7 @@ public class BookingServiceTests
         Assert.Null(await service.GetAsync(draft.Id, otherAgency, CancellationToken.None));
         Assert.Empty(await service.ListAsync(otherAgency, CancellationToken.None));
         await Assert.ThrowsAsync<BookingNotFoundException>(
-            () => service.RePriceAsync(draft.Id, otherAgency, CancellationToken.None));
+            () => service.RePriceAsync(draft.Id, otherAgency, _agent, CancellationToken.None));
     }
 
     [Fact]
