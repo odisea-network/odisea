@@ -4,9 +4,9 @@ The **single host** of the modular monolith. It owns cross-cutting HTTP concerns
 
 ## Responsibilities
 
-- `Program.cs` — composition root: Serilog, ProblemDetails, controller discovery from module assemblies (application parts), the six `Add<Name>Module(config)` calls, Swagger (with Bearer auth button), the `StartupMigrator` hosted service
+- `Program.cs` — composition root: Serilog, ProblemDetails, controller discovery from module assemblies (application parts), the six `Add<Name>Module(config)` calls, rate limiting (auth 10/min/IP, API keys 60/min/key), Swagger (Authorize with a JWT or an `X-Api-Key`), the `StartupMigrator` hosted service
 - `StartupMigrator` — `IHostedService` that migrates every module DbContext and runs the seeders before the server starts listening (a hosted service rather than code after `Build()`, so the same path runs under `WebApplicationFactory` in the integration tests)
-- `CurrentUser` — implements `ICurrentUser` from JWT claims for anything that needs the caller's identity
+- `CurrentUser` — implements `ICurrentUser` from the claims of either authentication scheme (JWT or API key; `IsApiClient` tells them apart) for anything that needs the caller's identity
 - `Controllers/HealthController` — `/health` (anonymous by design)
 - `Dockerfile` — multi-stage image used by `compose.yaml` (build context = repo root)
 - Configuration: `appsettings.json` (dev connection string, JWT issuer/audience), `appsettings.Development.json` (dev operator seed). **Secrets never live here** — `Jwt:Secret` comes from user-secrets (local) or environment (compose/prod)

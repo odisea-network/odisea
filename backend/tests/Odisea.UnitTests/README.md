@@ -6,7 +6,9 @@ Unit and architecture tests on EF InMemory. HTTP-level tests against real Postgr
 
 - **`Architecture/`** — the boundary police: NetArchTest rules asserting every module references other modules **only** through `PublicApi` (every ordered pair of modules). If this fails, the monolith is becoming a ball of mud — fix the dependency, don't weaken the test.
 - **`SharedKernel/`** — value-object invariants (`Money` currency safety, `DateRange` overlaps, `Pax`)
-- **`Agencies/`** — the security-critical auth behavior: lockout after 5 failures, lockout expiry, counter reset, anti-enumeration (identical errors), token claims per user type
+- **`Agencies/`** — the security-critical auth behavior: lockout after 5 failures, lockout expiry, counter reset, anti-enumeration (identical errors), token claims per user type, API-key issuance/hashing/revocation and the `OperatorAdmin` claim pin
+- **`Booking/`** — the state machine and submit-readiness rules, the agency and operator services over the real mock provider (submit, payments, admin confirmation gate, reject/expire/cancel), passenger type derivation, payment deadlines
+- **`Catalog/`, `Pricing/`, `Integrations/`, `Documents/`** — search with offer envelopes, the pricing engine, the mock provider, invoicing rules
 
 ## Conventions
 
