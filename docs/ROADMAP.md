@@ -17,8 +17,8 @@
 ## Cross-cutting: security baseline — issue #100
 
 Done: PBKDF2 hashing, lockout, anti-enumeration login, JWT validation, deny-by-default authorization, CodeQL + Dependabot, auth rate limiting (10/min/IP), security headers, strict CORS allowlist, HSTS outside dev, PII-free provider call logs, DataProtection-wrapped offer tokens (net cost never leaves the backend) with the key ring persisted in `agencies.data_protection_keys`, Cache-Control no-store on /api, dev-gated Swagger, CI-enforced net-leak guard over agency-facing DTOs.
-Done also: refresh-token rotation with reuse detection (#135 — 15-min access tokens, HttpOnly SameSite=Strict cookie, family revocation on replay).
-Open: audit log for sensitive operations, encrypt the persisted DataProtection key ring at rest (certificate) before production, pre-prod pen-test gate.
+Done also: refresh-token rotation with reuse detection (#135 — 15-min access tokens, HttpOnly SameSite=Strict cookie, family revocation on replay) · DataProtection key ring persisted in the database (#140) · passenger document numbers encrypted at rest and never logged (#142) · `OperatorAdmin` policy for money decisions, actor on every status change, optimistic concurrency on bookings (#144) · per-agency API keys for external systems with hashed storage, revocation and per-key rate limiting (#147).
+Open: audit log for sensitive operations, encrypt the persisted DataProtection key ring at rest (#153), pre-prod pen-test gate.
 
 ## Standing decisions
 
