@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Odisea.Modules.Integrations.PublicApi;
 
@@ -10,15 +12,17 @@ public class OfferTokenProtector : IOfferTokenProtector
     public OfferTokenProtector(IDataProtectionProvider provider) =>
         _protector = provider.CreateProtector("Odisea.Integrations.OfferToken");
 
-    public string Protect(string providerToken) => _protector.Protect(providerToken);
+    public string Protect(OfferEnvelope envelope) =>
+        _protector.Protect(JsonSerializer.Serialize(envelope));
 
-    public string Unprotect(string publicToken)
+    public OfferEnvelope Unprotect(string publicToken)
     {
         try
         {
-            return _protector.Unprotect(publicToken);
+            return JsonSerializer.Deserialize<OfferEnvelope>(_protector.Unprotect(publicToken))
+                ?? throw new InvalidOfferTokenException("protected");
         }
-        catch (System.Security.Cryptography.CryptographicException)
+        catch (Exception e) when (e is CryptographicException or JsonException)
         {
             throw new InvalidOfferTokenException("protected");
         }

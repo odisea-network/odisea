@@ -1,12 +1,15 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Modules.Booking.Domain;
 
 namespace Odisea.Modules.Booking.Infrastructure;
 
-public class BookingDbContext(DbContextOptions<BookingDbContext> options) : DbContext(options)
+public class BookingDbContext(DbContextOptions<BookingDbContext> options, IDataProtectionProvider dataProtection)
+    : DbContext(options)
 {
     public const string Schema = "booking";
     public const string RefSequence = "booking_ref_seq";
+    public const string DocumentProtectorPurpose = "Odisea.Booking.PassengerDocument";
 
     public DbSet<Domain.Booking> Bookings => Set<Domain.Booking>();
     public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
@@ -36,8 +39,25 @@ public class BookingDbContext(DbContextOptions<BookingDbContext> options) : DbCo
         booking.HasMany(b => b.History).WithOne().HasForeignKey(h => h.BookingId);
 
         var passenger = modelBuilder.Entity<BookingPassenger>();
+        passenger.Property(p => p.Title).HasMaxLength(10);
+        passenger.Property(p => p.Gender).HasConversion<string>().HasMaxLength(10);
         passenger.Property(p => p.FirstName).HasMaxLength(100);
         passenger.Property(p => p.LastName).HasMaxLength(100);
+        passenger.Property(p => p.Nationality).HasMaxLength(2);
+        passenger.Property(p => p.DocumentType).HasConversion<string>().HasMaxLength(10);
+        passenger.Property(p => p.DocumentIssuingCountry).HasMaxLength(2);
+        passenger.Property(p => p.Email).HasMaxLength(320);
+        passenger.Property(p => p.Phone).HasMaxLength(30);
+
+        // Document numbers are encrypted at rest. EF compares model (plaintext) values, so the
+        // non-deterministic ciphertext never causes spurious updates. The model is cached per
+        // context type, so the protector captured here belongs to the first instance built —
+        // which is fine because IDataProtectionProvider is a singleton.
+        // EF never passes null through a converter, hence the null-forgiving operator.
+        var documents = dataProtection.CreateProtector(DocumentProtectorPurpose);
+        passenger.Property(p => p.DocumentNumber)
+            .HasConversion(plain => documents.Protect(plain!), stored => documents.Unprotect(stored))
+            .HasMaxLength(512);
 
         var history = modelBuilder.Entity<BookingStatusHistory>();
         history.Property(h => h.FromStatus).HasMaxLength(25);

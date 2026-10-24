@@ -75,8 +75,11 @@ public class SearchService(
                 offer.RoomType, offer.Board,
                 breakdown.SellPrice.Amount, breakdown.SellPrice.Currency,
                 breakdown.AgencyCommission.Amount,
-                // Provider tokens can embed the net cost — never hand them out raw.
-                tokenProtector.Protect(offer.OfferToken),
+                // Provider tokens can embed the net cost — never hand them out raw. The envelope
+                // also pins the offer to this agency, hotel and occupancy, so Booking never has
+                // to trust those from the client.
+                tokenProtector.Protect(new OfferEnvelope(
+                    offer.OfferToken, agencyId, hotelId, request.Adults, request.Children)),
                 offer.OfferExpiresAt));
         }
 

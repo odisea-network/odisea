@@ -13,6 +13,8 @@ public class BookingStateMachineTests
         Ref = "ODI-2027-000001",
         AgencyId = Guid.NewGuid(),
         AgentUserId = Guid.NewGuid(),
+        Adults = 2,
+        Children = 0,
         ProgramId = Guid.NewGuid(),
         ProgramName = "P",
         DepartureId = Guid.NewGuid(),
