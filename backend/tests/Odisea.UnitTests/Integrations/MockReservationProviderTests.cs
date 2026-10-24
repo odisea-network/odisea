@@ -26,6 +26,13 @@ public class MockReservationProviderTests
         new Pax(2),
         hotels);
 
+    private static ProviderPassenger Adult(string firstName, string lastName, bool lead = false) => new(
+        firstName, lastName, new DateOnly(1990, 1, 1), ProviderPassengerType.Adult, ProviderGender.Male, "BG",
+        null, lead, null, null, null);
+
+    private static readonly ProviderPassenger[] TwoAdults =
+        [Adult("Test", "Agent", lead: true), Adult("Second", "Traveller")];
+
     [Fact]
     public async Task Search_is_deterministic()
     {
@@ -79,7 +86,7 @@ public class MockReservationProviderTests
         Assert.False(repriced.IsAvailable);
 
         var booking = await provider.BookAsync(
-            new ProviderBookingRequest(token, [new ProviderPassenger("Test", "Agent", null)], "ODI-X"),
+            new ProviderBookingRequest(token, TwoAdults, "ODI-X"),
             CancellationToken.None);
         Assert.False(booking.Success);
         Assert.NotNull(booking.FailureReason);
@@ -92,7 +99,7 @@ public class MockReservationProviderTests
         var search = await provider.SearchAsync(AntalyaSearch("MOCK-ANT-001"), CancellationToken.None);
 
         var booking = await provider.BookAsync(
-            new ProviderBookingRequest(search.Offers[0].OfferToken, [new ProviderPassenger("Test", "Agent", null)], "ODI-2027-000001"),
+            new ProviderBookingRequest(search.Offers[0].OfferToken, TwoAdults, "ODI-2027-000001"),
             CancellationToken.None);
 
         Assert.True(booking.Success);
@@ -103,6 +110,20 @@ public class MockReservationProviderTests
 
         var cancel = await provider.CancelAsync(booking.ProviderBookingRef!, CancellationToken.None);
         Assert.True(cancel.Success);
+    }
+
+    [Fact]
+    public async Task Book_rejects_a_party_that_does_not_match_the_priced_occupancy()
+    {
+        var provider = Create();
+        var search = await provider.SearchAsync(AntalyaSearch("MOCK-ANT-001"), CancellationToken.None);
+
+        var booking = await provider.BookAsync(
+            new ProviderBookingRequest(search.Offers[0].OfferToken, [Adult("Only", "One", lead: true)], "ODI-X"),
+            CancellationToken.None);
+
+        Assert.False(booking.Success);
+        Assert.Contains("occupancy", booking.FailureReason);
     }
 
     [Fact]

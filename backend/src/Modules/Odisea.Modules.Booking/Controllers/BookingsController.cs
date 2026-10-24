@@ -17,8 +17,10 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
     [HttpPost]
     public Task<IActionResult> Create(CreateBookingRequest request, CancellationToken ct) =>
         Execute(async (agencyId, userId) =>
-            CreatedAtAction(nameof(Get), new { id = Guid.Empty },
-                await bookings.CreateDraftAsync(request, agencyId, userId, ct)));
+        {
+            var dto = await bookings.CreateDraftAsync(request, agencyId, userId, ct);
+            return CreatedAtAction(nameof(Get), new { id = dto.Id }, dto);
+        });
 
     [HttpGet]
     public Task<IActionResult> List(CancellationToken ct) =>
@@ -28,6 +30,10 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
     public Task<IActionResult> Get(Guid id, CancellationToken ct) =>
         Execute(async (agencyId, _) =>
             await bookings.GetAsync(id, agencyId, ct) is { } dto ? Ok(dto) : NotFound());
+
+    [HttpPut("{id:guid}/passengers")]
+    public Task<IActionResult> ReplacePassengers(Guid id, UpdatePassengersRequest request, CancellationToken ct) =>
+        Execute(async (agencyId, _) => Ok(await bookings.ReplacePassengersAsync(id, agencyId, request, ct)));
 
     [HttpPost("{id:guid}/re-price")]
     public Task<IActionResult> RePrice(Guid id, CancellationToken ct) =>
@@ -51,6 +57,11 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
         {
             return await action(agencyId, userId);
         }
+        catch (BookingNotFoundException ex)
+        {
+            return Problem(title: "Booking not found", detail: ex.Message,
+                statusCode: StatusCodes.Status404NotFound);
+        }
         catch (BookingValidationException ex)
         {
             return Problem(title: "Booking rejected", detail: ex.Message,
@@ -64,6 +75,11 @@ public class BookingsController(BookingService bookings, ICurrentUser currentUse
         catch (OfferUnavailableException ex)
         {
             return Problem(title: "Offer unavailable", detail: ex.Message,
+                statusCode: StatusCodes.Status409Conflict);
+        }
+        catch (BookingStateException ex)
+        {
+            return Problem(title: "Invalid state", detail: ex.Message,
                 statusCode: StatusCodes.Status409Conflict);
         }
         catch (InvalidBookingTransitionException ex)

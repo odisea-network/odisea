@@ -65,7 +65,13 @@ public class MockReservationProvider(IOptions<MockProviderOptions> options, IClo
     public async Task<ProviderBookingResult> BookAsync(ProviderBookingRequest request, CancellationToken ct)
     {
         await SimulateLatencyAsync(ct);
-        Decode(request.OfferToken); // validates the token
+        var payload = Decode(request.OfferToken);
+
+        // Real systems reject a party that does not match the priced occupancy; so does the mock.
+        if (request.Passengers.Count != payload.Adults + payload.Children)
+            return new ProviderBookingResult(false, null,
+                $"Passenger count {request.Passengers.Count} does not match the offer occupancy " +
+                $"({payload.Adults} adults, {payload.Children} children).");
 
         if (Roll(request.OfferToken, "book") < _options.FailureRatePercent)
             return new ProviderBookingResult(false, null, "No availability at confirmation.");

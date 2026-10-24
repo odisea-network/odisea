@@ -28,6 +28,7 @@ public class SearchServiceTests
     private readonly CatalogDbContext _catalog;
     private readonly PricingDbContext _pricing;
     private readonly SearchService _service;
+    private readonly OfferTokenProtector _protector = new(TestDataProtection.Provider);
     private readonly Guid _agencyId = Guid.NewGuid();
 
     private CatalogProgram _program = null!;
@@ -48,7 +49,7 @@ public class SearchServiceTests
             _catalog,
             new ProviderRegistry([mock], integrations),
             new PriceCalculator(_pricing),
-            new OfferTokenProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()),
+            _protector,
             NullLogger<SearchService>.Instance);
     }
 
@@ -147,6 +148,23 @@ public class SearchServiceTests
             catch (ArgumentException) { /* invalid utf8 — good */ }
             Assert.False(decodable, "Offer token exposed provider payload");
         }
+    }
+
+    [Fact]
+    public async Task Offer_tokens_are_bound_to_the_agency_hotel_and_occupancy()
+    {
+        SeedProgram();
+        var response = await SearchAsync();
+
+        Assert.All(response.Offers, o =>
+        {
+            var envelope = _protector.Unprotect(o.OfferToken);
+            Assert.Equal(_agencyId, envelope.AgencyId);
+            Assert.Equal(o.HotelId, envelope.HotelId);
+            Assert.Equal(2, envelope.Adults);
+            Assert.Equal(0, envelope.Children);
+            Assert.NotEmpty(envelope.ProviderToken);
+        });
     }
 
     [Fact]

@@ -21,15 +21,24 @@ public interface IProviderRegistry
 }
 
 /// Provider offer tokens may embed sensitive state (net cost, availability
-/// internals). Before a token leaves the backend it MUST be protected with
-/// this service, and unprotected again when a client hands it back.
+/// internals). Before an offer leaves the backend it MUST be wrapped in an
+/// OfferEnvelope and protected with this service. When a client hands the token
+/// back, the envelope is recovered together with the agency, hotel and occupancy
+/// the offer was issued for — none of which the client can therefore forge.
 public interface IOfferTokenProtector
 {
-    string Protect(string providerToken);
+    string Protect(OfferEnvelope envelope);
 
     /// <exception cref="InvalidOfferTokenException">Tampered or foreign token.</exception>
-    string Unprotect(string publicToken);
+    OfferEnvelope Unprotect(string publicToken);
 }
+
+public sealed record OfferEnvelope(
+    string ProviderToken,
+    Guid AgencyId,
+    Guid HotelId,
+    int Adults,
+    int Children);
 
 public sealed record ProviderSearchRequest(
     string ExternalLocationCode,
@@ -52,7 +61,45 @@ public sealed record ProviderRePriceResult(
     Money? CurrentNetPrice,
     string? NewOfferToken);
 
-public sealed record ProviderPassenger(string FirstName, string LastName, DateOnly? BirthDate);
+/// Everything a reservation system may need to register a traveller. Booking
+/// guarantees the required fields are present; adapters pick what their system uses.
+public sealed record ProviderPassenger(
+    string FirstName,
+    string LastName,
+    DateOnly BirthDate,
+    ProviderPassengerType Type,
+    ProviderGender Gender,
+    string Nationality,
+    ProviderTravelDocument? Document,
+    bool IsLead,
+    string? Title,
+    string? Email,
+    string? Phone);
+
+public sealed record ProviderTravelDocument(
+    ProviderDocumentType Type,
+    string Number,
+    string IssuingCountry,
+    DateOnly ExpiryDate);
+
+public enum ProviderPassengerType
+{
+    Adult,
+    Child,
+    Infant,
+}
+
+public enum ProviderGender
+{
+    Male,
+    Female,
+}
+
+public enum ProviderDocumentType
+{
+    Passport,
+    IdCard,
+}
 
 public sealed record ProviderBookingRequest(
     string OfferToken,

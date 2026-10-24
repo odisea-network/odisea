@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Odisea.Modules.Agencies.PublicApi;
@@ -9,10 +8,10 @@ using Odisea.Modules.Catalog.PublicApi;
 using Odisea.Modules.Integrations.Adapters.Mock;
 using Odisea.Modules.Integrations.Features;
 using Odisea.Modules.Integrations.Infrastructure;
+using Odisea.Modules.Integrations.PublicApi;
 using Odisea.Modules.Pricing.Domain;
 using Odisea.Modules.Pricing.Features.Calculator;
 using Odisea.Modules.Pricing.Infrastructure;
-using Odisea.Modules.Integrations.PublicApi;
 using Odisea.SharedKernel;
 using Xunit;
 
@@ -55,17 +54,27 @@ public class BookingServiceTests
     private readonly BookingDbContext _db;
     private readonly PricingDbContext _pricing;
     private readonly MockProviderOptions _mockOptions = new();
-    private readonly OfferTokenProtector _protector = new(new EphemeralDataProtectionProvider());
+    private readonly OfferTokenProtector _protector = new(TestDataProtection.Provider);
     private readonly FakeClock _clock = new();
     private readonly Guid _agencyId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
     private readonly BookingTarget _target;
     private readonly MockReservationProvider _mock;
 
+    private static readonly PassengerRequest Ivan = new(
+        "Ivan", "Petrov", new DateOnly(1990, 5, 1), Gender: Gender.Male, Nationality: "bg",
+        DocumentType: TravelDocumentType.Passport, DocumentNumber: "ab1234567", DocumentIssuingCountry: "BG",
+        DocumentExpiryDate: new DateOnly(2031, 1, 1), IsLead: true,
+        Email: "ivan.petrov@example.com", Phone: "+359 888 123 456");
+
+    private static readonly PassengerRequest Maria = new(
+        "Maria", "Petrova", new DateOnly(1992, 7, 2), Gender: Gender.Female, Nationality: "BG");
+
     public BookingServiceTests()
     {
-        _db = new BookingDbContext(new DbContextOptionsBuilder<BookingDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        _db = new BookingDbContext(
+            new DbContextOptionsBuilder<BookingDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options,
+            TestDataProtection.Provider);
         _pricing = new PricingDbContext(new DbContextOptionsBuilder<PricingDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
         _pricing.PricingRules.Add(new PricingRule
@@ -93,35 +102,73 @@ public class BookingServiceTests
         new FakeRefGenerator(),
         _clock);
 
-    private async Task<string> ProtectedOfferTokenAsync()
+    private async Task<string> ProtectedOfferTokenAsync(Guid? agencyId = null, Guid? hotelId = null, int adults = 2)
     {
         var search = await _mock.SearchAsync(
             new ProviderSearchRequest("ANT",
                 new DateRange(new DateOnly(2027, 3, 30), new DateOnly(2027, 4, 6)),
-                new Pax(2), ["MOCK-ANT-001"]),
+                new Pax(adults), ["MOCK-ANT-001"]),
             CancellationToken.None);
-        return _protector.Protect(search.Offers[0].OfferToken);
+        return _protector.Protect(new OfferEnvelope(
+            search.Offers[0].OfferToken, agencyId ?? _agencyId, hotelId ?? _target.HotelId, adults, 0));
     }
 
-    private async Task<BookingDto> CreateDraftAsync(BookingService service) =>
+    private Task<BookingDto> CreateDraftAsync(BookingService service, params PassengerRequest[] passengers) =>
+        CreateDraftAsync(service, null, passengers);
+
+    private async Task<BookingDto> CreateDraftAsync(
+        BookingService service, string? offerToken, params PassengerRequest[] passengers) =>
         await service.CreateDraftAsync(
             new CreateBookingRequest(_target.ProgramId, _target.DepartureId, _target.HotelId,
-                await ProtectedOfferTokenAsync(),
-                [new PassengerRequest("Ivan", "Petrov", new DateOnly(1990, 5, 1)),
-                 new PassengerRequest("Maria", "Petrova", new DateOnly(1992, 7, 2))]),
+                offerToken ?? await ProtectedOfferTokenAsync(),
+                [.. passengers.Length > 0 ? passengers : [Ivan, Maria]]),
             _agencyId, _userId, CancellationToken.None);
 
     [Fact]
-    public async Task Draft_gets_ref_passengers_and_history()
+    public async Task Draft_gets_ref_passengers_occupancy_and_history()
     {
         var dto = await CreateDraftAsync(Service());
 
         Assert.Equal("ODI-2027-000001", dto.Ref);
         Assert.Equal("Draft", dto.Status);
+        Assert.Equal(2, dto.Adults);
+        Assert.Equal(0, dto.Children);
         Assert.Equal(2, dto.Passengers.Count);
-        Assert.True(dto.Passengers[0].IsLead); // first passenger becomes lead by default
+        Assert.True(dto.Passengers[0].IsLead);
+        Assert.Equal("Adult", dto.Passengers[0].PassengerType);
         Assert.Single(dto.History);
         Assert.Null(dto.SellPrice);
+    }
+
+    [Fact]
+    public async Task Country_codes_are_upper_cased_and_the_document_number_round_trips()
+    {
+        var dto = await CreateDraftAsync(Service());
+        var lead = dto.Passengers.Single(p => p.IsLead);
+
+        Assert.Equal("BG", lead.Nationality);
+        Assert.Equal("Passport", lead.DocumentType);
+        Assert.Equal("AB1234567", lead.DocumentNumber);
+
+        var stored = await _db.BookingPassengers.AsNoTracking().SingleAsync(p => p.IsLead);
+        Assert.Equal("AB1234567", stored.DocumentNumber);
+    }
+
+    [Fact]
+    public async Task First_passenger_leads_when_nobody_is_flagged()
+    {
+        var dto = await CreateDraftAsync(Service(),
+            new PassengerRequest("Anna", "Georgieva", new DateOnly(1980, 1, 1)),
+            new PassengerRequest("Boris", "Georgiev", new DateOnly(1979, 1, 1)));
+
+        Assert.Equal("Anna", dto.Passengers.Single(p => p.IsLead).FirstName);
+    }
+
+    [Fact]
+    public async Task Two_leads_are_rejected()
+    {
+        await Assert.ThrowsAsync<BookingValidationException>(() => CreateDraftAsync(Service(),
+            Ivan, Maria with { IsLead = true }));
     }
 
     [Fact]
@@ -141,12 +188,54 @@ public class BookingServiceTests
     [Fact]
     public async Task Tampered_offer_token_is_rejected()
     {
-        var service = Service();
         await Assert.ThrowsAsync<InvalidOfferTokenException>(
-            () => service.CreateDraftAsync(
-                new CreateBookingRequest(_target.ProgramId, _target.DepartureId, _target.HotelId,
-                    "tampered-token", [new PassengerRequest("A", "B", null)]),
-                _agencyId, _userId, CancellationToken.None));
+            () => CreateDraftAsync(Service(), "tampered-token", Ivan, Maria));
+    }
+
+    [Fact]
+    public async Task Offer_token_issued_to_another_agency_is_rejected()
+    {
+        var foreign = await ProtectedOfferTokenAsync(agencyId: Guid.NewGuid());
+        await Assert.ThrowsAsync<InvalidOfferTokenException>(
+            () => CreateDraftAsync(Service(), foreign, Ivan, Maria));
+    }
+
+    [Fact]
+    public async Task Offer_token_for_a_different_hotel_is_rejected()
+    {
+        var otherHotel = await ProtectedOfferTokenAsync(hotelId: Guid.NewGuid());
+        await Assert.ThrowsAsync<InvalidOfferTokenException>(
+            () => CreateDraftAsync(Service(), otherHotel, Ivan, Maria));
+    }
+
+    [Fact]
+    public async Task Passengers_can_be_replaced_while_the_price_is_not_final()
+    {
+        var service = Service();
+        var draft = await CreateDraftAsync(service);
+
+        var updated = await service.ReplacePassengersAsync(draft.Id, _agencyId,
+            new UpdatePassengersRequest([
+                new PassengerRequest("Georgi", "Dimitrov", new DateOnly(1985, 3, 3), IsLead: true),
+                new PassengerRequest("Elena", "Dimitrova", new DateOnly(1986, 4, 4)),
+            ]),
+            CancellationToken.None);
+
+        Assert.Equal(["Georgi", "Elena"], updated.Passengers.Select(p => p.FirstName).ToArray());
+        Assert.Equal(2, await _db.BookingPassengers.CountAsync());
+        Assert.Equal("Draft", updated.Status);
+    }
+
+    [Fact]
+    public async Task Passengers_cannot_be_replaced_after_confirmation()
+    {
+        var service = Service();
+        var draft = await CreateDraftAsync(service);
+        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+        await service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None);
+
+        await Assert.ThrowsAsync<BookingStateException>(() => service.ReplacePassengersAsync(
+            draft.Id, _agencyId, new UpdatePassengersRequest([Ivan, Maria]), CancellationToken.None));
     }
 
     [Fact]
@@ -208,6 +297,35 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task Confirm_requires_birth_date_gender_and_nationality_for_every_passenger()
+    {
+        var service = Service();
+        var draft = await CreateDraftAsync(service,
+            Ivan, new PassengerRequest("Nameless", "Traveller"));
+        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+
+        var ex = await Assert.ThrowsAsync<BookingValidationException>(
+            () => service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None));
+
+        Assert.Contains("Passenger 2", ex.Message);
+        Assert.DoesNotContain("Nameless", ex.Message);
+        Assert.Equal(BookingStatus.PriceConfirmed, (await _db.Bookings.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task Confirm_fails_when_the_party_does_not_match_the_occupancy()
+    {
+        var service = Service();
+        var draft = await CreateDraftAsync(service, Ivan);
+        await service.RePriceAsync(draft.Id, _agencyId, CancellationToken.None);
+
+        var failed = await service.ConfirmAsync(draft.Id, _agencyId, CancellationToken.None);
+
+        Assert.Equal("Failed", failed.Status);
+        Assert.Contains("occupancy", failed.History[^1].Note);
+    }
+
+    [Fact]
     public async Task Confirm_straight_from_draft_is_an_invalid_transition()
     {
         var service = Service();
@@ -238,7 +356,15 @@ public class BookingServiceTests
 
         Assert.Null(await service.GetAsync(draft.Id, otherAgency, CancellationToken.None));
         Assert.Empty(await service.ListAsync(otherAgency, CancellationToken.None));
-        await Assert.ThrowsAsync<BookingValidationException>(
+        await Assert.ThrowsAsync<BookingNotFoundException>(
             () => service.RePriceAsync(draft.Id, otherAgency, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Unknown_booking_is_not_found()
+    {
+        var service = Service();
+        await Assert.ThrowsAsync<BookingNotFoundException>(() => service.ReplacePassengersAsync(
+            Guid.NewGuid(), _agencyId, new UpdatePassengersRequest([Ivan]), CancellationToken.None));
     }
 }

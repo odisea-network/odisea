@@ -19,6 +19,11 @@ public class Booking : Entity
     public required Guid AgencyId { get; set; }
     public required Guid AgentUserId { get; set; }
 
+    // Occupancy the offer was searched and priced for (from the protected offer envelope,
+    // never from the client). The passenger list must match it before the provider is booked.
+    public required int Adults { get; set; }
+    public required int Children { get; set; }
+
     // Snapshots of the booked product — names survive later catalog edits.
     public required Guid ProgramId { get; set; }
     public required string ProgramName { get; set; }
@@ -80,6 +85,13 @@ public sealed class InvalidBookingTransitionException(BookingStatus from, Bookin
     : DomainException($"A booking cannot move from {from} to {to}.");
 
 public sealed class BookingValidationException(string message) : DomainException(message);
+
+/// Not found OR not owned by the caller's agency — the two are deliberately indistinguishable.
+public sealed class BookingNotFoundException() : DomainException("Booking not found.");
+
+/// The requested action is not available while the booking is in its current status.
+public sealed class BookingStateException(BookingStatus status, string action)
+    : DomainException($"Cannot {action} a booking in status {status}.");
 
 public sealed class OfferUnavailableException()
     : DomainException("The offer is no longer available at the provider.");

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
@@ -31,6 +32,8 @@ try
     builder.Services.AddHostedService<StartupMigrator>();
 
     builder.Services.AddControllers()
+        // Enums bind and render by name ("Passport"), which is what external API clients expect.
+        .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
         .AddApplicationPart(typeof(AgenciesModule).Assembly)
         .AddApplicationPart(typeof(CatalogModule).Assembly)
         .AddApplicationPart(typeof(PricingModule).Assembly)

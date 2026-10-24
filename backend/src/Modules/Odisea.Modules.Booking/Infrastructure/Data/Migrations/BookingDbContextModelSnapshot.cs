@@ -18,7 +18,7 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("booking")
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -31,6 +31,10 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<int>("Adults")
+                        .HasColumnType("integer")
+                        .HasColumnName("adults");
 
                     b.Property<Guid>("AgencyId")
                         .HasColumnType("uuid")
@@ -51,6 +55,10 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                     b.Property<DateOnly>("CheckOut")
                         .HasColumnType("date")
                         .HasColumnName("check_out");
+
+                    b.Property<int>("Children")
+                        .HasColumnType("integer")
+                        .HasColumnName("children");
 
                     b.Property<decimal?>("CommissionAmount")
                         .HasPrecision(18, 2)
@@ -162,11 +170,40 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateOnly?>("DocumentExpiryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("document_expiry_date");
+
+                    b.Property<string>("DocumentIssuingCountry")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("document_issuing_country");
+
+                    b.Property<string>("DocumentNumber")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("document_number");
+
+                    b.Property<string>("DocumentType")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("document_type");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("first_name");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("gender");
 
                     b.Property<bool>("IsLead")
                         .HasColumnType("boolean")
@@ -177,6 +214,25 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
+
+                    b.Property<string>("Nationality")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("nationality");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("phone");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("title");
 
                     b.HasKey("Id")
                         .HasName("pk_booking_passengers");
