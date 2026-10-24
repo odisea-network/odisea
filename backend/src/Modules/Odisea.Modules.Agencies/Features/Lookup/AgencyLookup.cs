@@ -24,4 +24,15 @@ public class AgencyLookup(AgenciesDbContext db) : IAgencyLookup
                 agency.Id, agency.LegalName, agency.Eik, agency.VatNumber,
                 agency.BillingAddress, agency.BillingCity, agency.Mol);
     }
+
+    public async Task<AgencyContractInfo?> GetContractInfoAsync(Guid agencyId, CancellationToken ct)
+    {
+        var agency = await db.Agencies.AsNoTracking().FirstOrDefaultAsync(a => a.Id == agencyId, ct);
+        return agency is null
+            ? null
+            : new AgencyContractInfo(
+                agency.Id, agency.Name, agency.Country, agency.Status.ToString(), agency.ContactEmail,
+                agency.CreditLimit, agency.LegalName, agency.Eik, agency.VatNumber,
+                agency.BillingAddress, agency.BillingCity, agency.Mol);
+    }
 }

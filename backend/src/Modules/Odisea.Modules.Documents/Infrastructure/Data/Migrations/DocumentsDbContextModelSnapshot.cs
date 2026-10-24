@@ -18,7 +18,7 @@ namespace Odisea.Modules.Documents.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("documents")
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -83,6 +83,92 @@ namespace Odisea.Modules.Documents.Infrastructure.Data.Migrations
                         .HasName("pk_company_profiles");
 
                     b.ToTable("company_profiles", "documents");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Documents.Domain.ContractTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AgencyUsable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("agency_usable");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("content_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<int>("FileSize")
+                        .HasColumnType("integer")
+                        .HasColumnName("file_size");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.PrimitiveCollection<string[]>("Placeholders")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("placeholders");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by_user_id");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_contract_templates");
+
+                    b.HasIndex("IsActive", "AgencyUsable")
+                        .HasDatabaseName("ix_contract_templates_is_active_agency_usable");
+
+                    b.HasIndex("Kind", "IsActive")
+                        .HasDatabaseName("ix_contract_templates_kind_is_active");
+
+                    b.ToTable("contract_templates", "documents");
                 });
 
             modelBuilder.Entity("Odisea.Modules.Documents.Domain.DocumentCounter", b =>
@@ -310,6 +396,111 @@ namespace Odisea.Modules.Documents.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_financial_documents_agency_id_issue_date");
 
                     b.ToTable("financial_documents", "documents");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Documents.Domain.GeneratedContract", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<Guid?>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<string>("BookingRef")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("booking_ref");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<int>("FileSize")
+                        .HasColumnType("integer")
+                        .HasColumnName("file_size");
+
+                    b.Property<bool>("GeneratedByAgency")
+                        .HasColumnType("boolean")
+                        .HasColumnName("generated_by_agency");
+
+                    b.Property<Guid>("GeneratedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("generated_by_user_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<DateTimeOffset?>("SharedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("shared_at");
+
+                    b.Property<bool>("SharedWithAgency")
+                        .HasColumnType("boolean")
+                        .HasColumnName("shared_with_agency");
+
+                    b.Property<Guid>("TemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("template_id");
+
+                    b.Property<string>("TemplateName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("template_name");
+
+                    b.Property<int>("TemplateVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("template_version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_generated_contracts");
+
+                    b.HasIndex("AgencyId")
+                        .HasDatabaseName("ix_generated_contracts_agency_id");
+
+                    b.HasIndex("BookingId")
+                        .HasDatabaseName("ix_generated_contracts_booking_id");
+
+                    b.HasIndex("TemplateId")
+                        .HasDatabaseName("ix_generated_contracts_template_id");
+
+                    b.ToTable("generated_contracts", "documents");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Documents.Domain.GeneratedContract", b =>
+                {
+                    b.HasOne("Odisea.Modules.Documents.Domain.ContractTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_generated_contracts_contract_templates_template_id");
                 });
 #pragma warning restore 612, 618
         }

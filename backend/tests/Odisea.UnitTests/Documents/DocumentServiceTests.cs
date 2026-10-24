@@ -24,6 +24,9 @@ public class DocumentServiceTests
         public BookingFinancialInfo? Info { get; set; }
         public Task<BookingFinancialInfo?> FindAsync(Guid bookingId, CancellationToken ct) =>
             Task.FromResult(Info?.Id == bookingId ? Info : null);
+
+        public Task<BookingContractInfo?> GetContractInfoAsync(Guid bookingId, CancellationToken ct) =>
+            Task.FromResult<BookingContractInfo?>(null);
     }
 
     private sealed class FakeAgencyLookup : IAgencyLookup
@@ -33,6 +36,9 @@ public class DocumentServiceTests
             Task.FromResult<AgencySnapshot?>(null);
         public Task<AgencyBillingInfo?> GetBillingInfoAsync(Guid agencyId, CancellationToken ct) =>
             Task.FromResult(Billing);
+
+        public Task<AgencyContractInfo?> GetContractInfoAsync(Guid agencyId, CancellationToken ct) =>
+            Task.FromResult<AgencyContractInfo?>(null);
     }
 
     private readonly DocumentsDbContext _db;
