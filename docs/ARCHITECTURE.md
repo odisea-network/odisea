@@ -114,6 +114,7 @@ Every slice must pass: `dotnet build` (warnings = errors) · `dotnet test` (unit
 
 ## Document map
 
+- [SYSTEM-OVERVIEW.md](SYSTEM-OVERVIEW.md) — the big picture in diagrams: tiers, module dependencies, request pipeline, reservation lifecycle, end-to-end sequence, schemas, endpoint map
 - [ROADMAP.md](ROADMAP.md) — phases, status, what's next
 - Per-project READMEs — purpose and relations of each project (`backend/src/**/README.md`, `backend/tests/**/README.md`)
 - Project board — https://github.com/orgs/odisea-network/projects/1 (source of truth for tasks)
