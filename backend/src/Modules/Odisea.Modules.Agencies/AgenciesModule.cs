@@ -85,6 +85,9 @@ public static class AgenciesModule
 
             options.AddPolicy(AuthPolicies.Operator,
                 p => p.RequireClaim(AuthClaims.UserType, AuthClaims.UserTypeOperator));
+            options.AddPolicy(AuthPolicies.OperatorAdmin,
+                p => p.RequireClaim(AuthClaims.UserType, AuthClaims.UserTypeOperator)
+                      .RequireClaim(AuthClaims.Role, AuthClaims.RoleOperatorAdmin));
             options.AddPolicy(AuthPolicies.Agency,
                 p => p.RequireClaim(AuthClaims.UserType, AuthClaims.UserTypeAgency));
         });
