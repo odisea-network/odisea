@@ -17,9 +17,17 @@ public static class AuthClaims
     public const string AgencyId = "agency_id";
     public const string Role = "role";
 
+    /// "api_key" when the caller authenticated with an agency API key; absent for user logins.
+    public const string AuthMethod = "auth_method";
+
     public const string UserTypeOperator = "operator";
     public const string UserTypeAgency = "agency";
 
     /// Must equal OperatorRole.Admin.ToString() — a unit test pins the two together.
     public const string RoleOperatorAdmin = "Admin";
+
+    /// The role an API key authenticates as. Not an AgencyUserRole: keys are machines, not people.
+    public const string RoleApiClient = "ApiClient";
+
+    public const string AuthMethodApiKey = "api_key";
 }

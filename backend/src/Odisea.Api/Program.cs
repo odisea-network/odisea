@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
 using Odisea.Api;
 using Odisea.Modules.Agencies;
+using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Booking;
 using Odisea.Modules.Catalog;
 using Odisea.Modules.Documents;
@@ -49,10 +52,25 @@ try
         .AddIntegrationsModule(builder.Configuration)
         .AddDocumentsModule(builder.Configuration);
 
-    // Brute-force protection on credential endpoints: 10 attempts/min per IP.
+    // Brute-force protection on credential endpoints: 10 attempts/min per IP, and a per-key
+    // budget for external API clients. The limiter runs before authentication, so the key
+    // partition is a hash of the presented header (never the raw key); unknown keys are
+    // throttled too, which also slows down key guessing. Portal (JWT) traffic is unlimited here.
+    var apiKeyPerMinute = builder.Configuration.GetValue("RateLimiting:ApiKeyPerMinute", 60);
     builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            context.Request.Headers.TryGetValue(ApiKeyAuthenticationDefaults.HeaderName, out var presentedKey)
+                ? RateLimitPartition.GetFixedWindowLimiter(
+                    "apikey:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(presentedKey.ToString()))),
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = apiKeyPerMinute,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                    })
+                : RateLimitPartition.GetNoLimiter("none"));
         options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
@@ -88,6 +106,28 @@ try
                     {
                         Type = ReferenceType.SecurityScheme,
                         Id = "Bearer",
+                    },
+                },
+                []
+            },
+        });
+        // A second requirement object means "either": external agencies use a key, portal users a token.
+        options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+        {
+            Name = ApiKeyAuthenticationDefaults.HeaderName,
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Header,
+            Description = "Per-agency API key for external partners (odk_live_…)",
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "ApiKey",
                     },
                 },
                 []

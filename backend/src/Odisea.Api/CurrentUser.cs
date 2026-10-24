@@ -16,4 +16,7 @@ public class CurrentUser(IHttpContextAccessor accessor) : ICurrentUser
         Guid.TryParse(Principal?.FindFirst(AuthClaims.AgencyId)?.Value, out var id) ? id : null;
 
     public string? Role => Principal?.FindFirst(AuthClaims.Role)?.Value;
+
+    public bool IsApiClient =>
+        Principal?.FindFirst(AuthClaims.AuthMethod)?.Value == AuthClaims.AuthMethodApiKey;
 }

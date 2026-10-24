@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Odisea.Modules.Agencies.Domain;
+using Odisea.Modules.Agencies.Features.ApiKeys;
 using Odisea.Modules.Agencies.Features.Auth;
 using Odisea.Modules.Agencies.Infrastructure;
 using Odisea.Modules.Agencies.PublicApi;
@@ -50,7 +51,25 @@ public static class AgenciesModule
             .SetApplicationName("Odisea")
             .PersistKeysToDbContext<AgenciesDbContext>();
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+        services.AddScoped<ApiKeyService>();
+
+        // Two ways in, one identity shape. The default scheme is a selector: a request carrying
+        // X-Api-Key is authenticated by the API-key handler (external agencies), anything else
+        // by JWT bearer (portal users). Either way HttpContext.User ends up with user_type and
+        // agency_id, so CurrentUser and every policy work unchanged. Header present → key wins.
+        services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = ApiKeyAuthenticationDefaults.SelectorScheme;
+                options.DefaultChallengeScheme = ApiKeyAuthenticationDefaults.SelectorScheme;
+            })
+            .AddPolicyScheme(ApiKeyAuthenticationDefaults.SelectorScheme, "JWT bearer or API key", options =>
+                options.ForwardDefaultSelector = context =>
+                    context.Request.Headers.ContainsKey(ApiKeyAuthenticationDefaults.HeaderName)
+                        ? ApiKeyAuthenticationDefaults.Scheme
+                        : JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer()
+            .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+                ApiKeyAuthenticationDefaults.Scheme, null);
 
         // Bound lazily from the validated JwtOptions rather than read from IConfiguration here:
         // configuration applied after registration (e.g. WebApplicationFactory overrides) must
