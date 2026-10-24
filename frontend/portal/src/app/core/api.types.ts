@@ -167,3 +167,91 @@ export interface ProblemDetails {
   detail?: string;
   status?: number;
 }
+
+// --- Operator-only shapes (served by /api/v1/admin/** and /api/v1/agencies) ---
+
+export interface AgencyDto {
+  id: string;
+  name: string;
+  country: string;
+  status: string;
+  creditLimit: number;
+  contactEmail: string | null;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+export interface OperatorBookingSummary {
+  id: string;
+  ref: string;
+  status: BookingStatus | string;
+  agencyId: string;
+  programName: string;
+  hotelName: string;
+  checkIn: string;
+  checkOut: string;
+  adults: number;
+  children: number;
+  sellAmount: number | null;
+  paidAmount: number;
+  balanceDue: number;
+  currency: string;
+  paymentDueAt: string | null;
+  createdAt: string;
+}
+
+export interface OperatorStatusHistory {
+  at: string;
+  from: string;
+  to: string;
+  note: string | null;
+  actorType: string;
+  actorUserId: string | null;
+}
+
+export type PaymentMethod = 'BankTransfer' | 'Card' | 'Cash' | 'Other';
+
+export interface OperatorPayment {
+  id: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod | string;
+  reference: string | null;
+  receivedOn: string;
+  recordedByUserId: string;
+  note: string | null;
+  recordedAt: string;
+  voidedAt: string | null;
+  voidedByUserId: string | null;
+  voidReason: string | null;
+}
+
+export interface OperatorBooking extends OperatorBookingSummary {
+  agentUserId: string;
+  programId: string;
+  departureId: string;
+  hotelId: string;
+  providerCode: string;
+  providerBookingRef: string | null;
+  netAmount: number | null;
+  commissionAmount: number | null;
+  /** The pricing breakdown persisted at re-price time, verbatim (PascalCase keys). */
+  breakdown: unknown;
+  passengers: PassengerDto[];
+  payments: OperatorPayment[];
+  history: OperatorStatusHistory[];
+}
+
+export interface RecordPaymentRequest {
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  receivedOn: string;
+  reference: string | null;
+  note: string | null;
+}

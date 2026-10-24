@@ -17,7 +17,11 @@ src/app/
                passenger form with travel documents and one lead -> draft -> re-price with drift
                warning -> submit -> awaiting payment), bookings (list with paid/due and payment
                deadline, history with actors, cancel while unpaid), documents (фактури + PDF download)
-    placeholder.ts for admin routes whose API already exists but UI doesn't yet
+    admin/     bookings oversight over /api/v1/admin/bookings: filtered, paged list across agencies;
+               detail with net cost, price breakdown, passengers, payments and the actor trail;
+               record payment, confirm, reject, expire, cancel, void payment (booking-actions.ts
+               mirrors the API's state + role rules so a button only shows when the call can succeed)
+    placeholder.ts for the remaining admin routes whose API already exists but UI doesn't yet
 ```
 
 Routing: `/login`, `/agency/**` (agencyGuard), `/admin/**` (adminGuard), lazy `loadComponent` everywhere, route `data.title` bound via component input binding.
@@ -36,13 +40,17 @@ Dev login: `agent@odisea.local` / `DevOnly-Odisea-Agent-2026!` (agency) · `admi
 ## Verify
 
 ```bash
-npm test                  # vitest (auth, branding, guards, passenger validation, wizard rules, app)
+npm test                  # vitest (auth, branding, guards, passenger validation, wizard rules, operator actions, app)
 npx ng build              # production build, budgets enforced
 ```
 
 ## White-label branding
 
 One build serves every operator deployment. At startup `BrandingService` loads `GET /api/v1/branding` (anonymous, so the login page is branded too), writes the primary colour into `--accent` and the accent colour into `--accent-2`, sets the document title and favicon, and exposes the name, logo and support contact to the shell and login page. Operators change all of it through the API; nothing brand-specific is compiled in. If the API is unreachable the portal falls back to neutral defaults.
+
+## Operator back-office
+
+`/admin/bookings` is the first real admin screen. The list is served filtered and paged by the API (status, agency, check-in range). The detail page shows what agencies never see — net cost, the stored pricing breakdown, agency commission — plus payments and every status change with its actor. Actions follow the backend's rules exactly: any operator records payments, rejects, or expires a reservation past its deadline; confirming (only once the balance due is zero), cancelling and voiding a payment appear only for users with role `Admin`, and the API enforces the same with the `OperatorAdmin` policy, so hiding a button is a courtesy, not the control.
 
 ## Security notes
 
