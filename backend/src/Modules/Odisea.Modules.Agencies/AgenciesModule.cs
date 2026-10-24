@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Odisea.Modules.Agencies.Domain;
 using Odisea.Modules.Agencies.Features.ApiKeys;
 using Odisea.Modules.Agencies.Features.Auth;
+using Odisea.Modules.Agencies.Features.Branding;
 using Odisea.Modules.Agencies.Infrastructure;
 using Odisea.Modules.Agencies.PublicApi;
 
@@ -52,6 +53,7 @@ public static class AgenciesModule
             .PersistKeysToDbContext<AgenciesDbContext>();
 
         services.AddScoped<ApiKeyService>();
+        services.AddScoped<BrandingService>();
 
         // Two ways in, one identity shape. The default scheme is a selector: a request carrying
         // X-Api-Key is authenticated by the API-key handler (external agencies), anything else
