@@ -16,9 +16,9 @@
 
 ## Cross-cutting: security baseline — issue #100
 
-Done: PBKDF2 hashing, lockout, anti-enumeration login, JWT validation, deny-by-default authorization, CodeQL + Dependabot, auth rate limiting (10/min/IP), security headers, strict CORS allowlist, HSTS outside dev, PII-free provider call logs, DataProtection-wrapped offer tokens (net cost never leaves the backend), Cache-Control no-store on /api, dev-gated Swagger, CI-enforced net-leak guard over agency-facing DTOs.
+Done: PBKDF2 hashing, lockout, anti-enumeration login, JWT validation, deny-by-default authorization, CodeQL + Dependabot, auth rate limiting (10/min/IP), security headers, strict CORS allowlist, HSTS outside dev, PII-free provider call logs, DataProtection-wrapped offer tokens (net cost never leaves the backend) with the key ring persisted in `agencies.data_protection_keys`, Cache-Control no-store on /api, dev-gated Swagger, CI-enforced net-leak guard over agency-facing DTOs.
 Done also: refresh-token rotation with reuse detection (#135 — 15-min access tokens, HttpOnly SameSite=Strict cookie, family revocation on replay).
-Open: audit log for sensitive operations, persist DataProtection keys for production, pre-prod pen-test gate.
+Open: audit log for sensitive operations, encrypt the persisted DataProtection key ring at rest (certificate) before production, pre-prod pen-test gate.
 
 ## Standing decisions
 
