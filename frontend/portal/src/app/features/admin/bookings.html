@@ -1,0 +1,77 @@
+<h2>Bookings</h2>
+
+<section class="filters card">
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" [ngModel]="status()" (ngModelChange)="filter(status, $event)">
+      <option value="">All</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="agency">Agency</label>
+    <select id="agency" [ngModel]="agencyId()" (ngModelChange)="filter(agencyId, $event)">
+      <option value="">All</option>
+      @for (a of agencies.value(); track a.id) {
+        <option [value]="a.id">{{ a.name }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="from">Check-in from</label>
+    <input id="from" type="date" [ngModel]="from()" (ngModelChange)="filter(from, $event)" />
+  </div>
+  <div class="field">
+    <label for="to">Check-in to</label>
+    <input id="to" type="date" [ngModel]="to()" (ngModelChange)="filter(to, $event)" />
+  </div>
+</section>
+
+@if (bookings.error()) {
+  <p class="error" role="alert">Could not load bookings — try reloading.</p>
+} @else if (bookings.isLoading() && !bookings.hasValue()) {
+  <p>Loading…</p>
+} @else if (bookings.value(); as result) {
+  <table class="card">
+    <thead>
+      <tr>
+        <th>Ref</th><th>Agency</th><th>Program / hotel</th><th>Check-in</th><th>Pax</th>
+        <th class="num">Sell</th><th class="num">Paid / due</th><th>Status</th><th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (b of result.items; track b.id) {
+        <tr class="clickable" (click)="open(b)">
+          <td class="strong">{{ b.ref }}</td>
+          <td>{{ agencyName(b.agencyId) }}</td>
+          <td>{{ b.programName }}<br /><span class="muted">{{ b.hotelName }}</span></td>
+          <td>{{ fmtDate(b.checkIn) }} – {{ fmtDate(b.checkOut) }}</td>
+          <td>{{ b.adults }} + {{ b.children }}</td>
+          <td class="num">{{ fmtMoney(b.sellAmount, b.currency) }}</td>
+          <td class="num">
+            {{ fmtMoney(b.paidAmount, b.currency) }}
+            @if ((b.status === 'AwaitingPayment' || b.status === 'Confirmed') && b.balanceDue > 0) {
+              <br /><span class="muted">due {{ fmtMoney(b.balanceDue, b.currency) }}</span>
+            }
+          </td>
+          <td>
+            <span class="chip" [class]="'chip s-' + b.status">{{ b.status }}</span>
+            @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
+              <br /><span class="muted">by {{ fmtDateTime(b.paymentDueAt) }}</span>
+            }
+          </td>
+          <td class="muted">{{ fmtDateTime(b.createdAt) }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="9">No bookings match these filters.</td></tr>
+      }
+    </tbody>
+  </table>
+  <div class="pager">
+    <span class="muted">{{ result.totalCount }} booking(s) · page {{ result.page }} of {{ pageCount() }}</span>
+    <button type="button" class="ghost" (click)="page.set(page() - 1)" [disabled]="page() <= 1">‹ Previous</button>
+    <button type="button" class="ghost" (click)="page.set(page() + 1)" [disabled]="page() >= pageCount()">Next ›</button>
+  </div>
+}

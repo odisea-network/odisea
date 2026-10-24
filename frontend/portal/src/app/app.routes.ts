@@ -36,8 +36,16 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./layout/admin-shell').then(m => m.AdminShell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'agencies' },
-      ...['agencies', 'programs', 'pricing', 'bookings', 'documents'].map(section => ({
+      { path: '', pathMatch: 'full', redirectTo: 'bookings' },
+      {
+        path: 'bookings',
+        loadComponent: () => import('./features/admin/bookings').then(m => m.AdminBookings),
+      },
+      {
+        path: 'bookings/:id',
+        loadComponent: () => import('./features/admin/booking-detail').then(m => m.AdminBookingDetail),
+      },
+      ...['agencies', 'programs', 'pricing', 'documents'].map(section => ({
         path: section,
         loadComponent: () => import('./features/placeholder').then(m => m.Placeholder),
         data: { title: section[0].toUpperCase() + section.slice(1) },

@@ -12,7 +12,7 @@ A **B2B travel platform** for a tour operator (Paradise Travel). The operator co
 flowchart TB
     subgraph T1["1 · Clients"]
         agency["Angular portal — agency area: search, live prices, booking wizard, bookings, documents"]
-        admin["Angular portal — admin area (planned): agencies, programs, pricing rules, bookings oversight"]
+        admin["Angular portal — admin area: bookings oversight (live); agencies, programs, pricing, documents (planned)"]
         partner["External agency systems — same REST API with X-Api-Key"]
     end
     subgraph T2["2 · Odisea Backend — .NET modular monolith (OUR system)"]
@@ -99,7 +99,7 @@ Cancelled          Cancelled            ▼                                 │ 
 
 ## Frontend
 
-One Angular 21 app (`frontend/portal`) shipped as a **white-label build**: standalone components, signals, strict templates. `core/` (auth, interceptor, guards, branding) · `layout/` (branded shell, agency + admin nav) · `features/{auth,agency,admin}`. Routes `/login`, `/agency/**`, `/admin/**`, lazy-loaded. At startup the portal loads `GET /api/v1/branding` and dresses itself (colours into CSS tokens, name, logo, favicon, support contact, legal footer), so one build serves every operator deployment. The agency area follows the reservation contract end to end: occupancy-sized passenger form with travel documents and one lead → draft → re-price with drift warning → submit → awaiting payment, with payment status and the actor trail in the bookings list. The admin area is still placeholders over the live operator API.
+One Angular 21 app (`frontend/portal`) shipped as a **white-label build**: standalone components, signals, strict templates. `core/` (auth, interceptor, guards, branding) · `layout/` (branded shell, agency + admin nav) · `features/{auth,agency,admin}`. Routes `/login`, `/agency/**`, `/admin/**`, lazy-loaded. At startup the portal loads `GET /api/v1/branding` and dresses itself (colours into CSS tokens, name, logo, favicon, support contact, legal footer), so one build serves every operator deployment. The agency area follows the reservation contract end to end: occupancy-sized passenger form with travel documents and one lead → draft → re-price with drift warning → submit → awaiting payment, with payment status and the actor trail in the bookings list. The admin area starts with bookings oversight (`/admin/bookings`): filtered, paged list across agencies, detail with net cost, breakdown, passengers, payments and the actor trail, and the operator actions (record payment, confirm, reject, expire, cancel, void) gated in the UI the same way the `OperatorAdmin` policy gates them in the API. Agencies, catalog, pricing and documents admin screens are still placeholders (#161–#164).
 
 ## Dev & verification workflow
 
