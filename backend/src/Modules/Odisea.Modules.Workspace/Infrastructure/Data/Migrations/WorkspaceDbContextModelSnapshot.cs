@@ -184,6 +184,187 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
                     b.ToTable("external_reservation_events", "workspace");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.InquiryForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccessKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("access_key");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.PrimitiveCollection<string[]>("AllowedOrigins")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("allowed_origins");
+
+                    b.Property<string>("AutoReplyBody")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("auto_reply_body");
+
+                    b.Property<bool>("AutoReplyEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("auto_reply_enabled");
+
+                    b.Property<string>("AutoReplySubject")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("auto_reply_subject");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("EmailField")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("email_field");
+
+                    b.Property<string>("HoneypotField")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("honeypot_field");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NameField")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name_field");
+
+                    b.PrimitiveCollection<string[]>("NotifyEmails")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("notify_emails");
+
+                    b.Property<int>("SpamCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("spam_count");
+
+                    b.Property<int>("SubmissionCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("submission_count");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inquiry_forms");
+
+                    b.HasIndex("AccessKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inquiry_forms_access_key");
+
+                    b.HasIndex("AgencyId")
+                        .HasDatabaseName("ix_inquiry_forms_agency_id");
+
+                    b.ToTable("inquiry_forms", "workspace");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.InquirySubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CustomerEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("customer_email");
+
+                    b.Property<string>("CustomerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("customer_name");
+
+                    b.Property<string>("Fields")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("fields");
+
+                    b.Property<Guid>("FormId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("form_id");
+
+                    b.Property<DateTimeOffset?>("HandledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("handled_at");
+
+                    b.Property<Guid?>("HandledByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("handled_by_user_id");
+
+                    b.Property<string>("InternalNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("internal_note");
+
+                    b.Property<string>("IpHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("ip_hash");
+
+                    b.Property<string>("Origin")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("origin");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("user_agent");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inquiry_submissions");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_inquiry_submissions_created_at");
+
+                    b.HasIndex("FormId")
+                        .HasDatabaseName("ix_inquiry_submissions_form_id");
+
+                    b.HasIndex("AgencyId", "Status", "CreatedAt")
+                        .HasDatabaseName("ix_inquiry_submissions_agency_id_status_created_at");
+
+                    b.ToTable("inquiry_submissions", "workspace");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Workspace.Domain.ExternalReservationEvent", b =>
                 {
                     b.HasOne("Odisea.Modules.Workspace.Domain.ExternalReservation", null)
@@ -192,6 +373,16 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_external_reservation_events_external_reservations_reservati");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.InquirySubmission", b =>
+                {
+                    b.HasOne("Odisea.Modules.Workspace.Domain.InquiryForm", null)
+                        .WithMany()
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inquiry_submissions_inquiry_forms_form_id");
                 });
 
             modelBuilder.Entity("Odisea.Modules.Workspace.Domain.ExternalReservation", b =>

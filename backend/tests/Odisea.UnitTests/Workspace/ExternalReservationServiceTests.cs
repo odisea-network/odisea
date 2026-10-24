@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Workspace.Domain;
 using Odisea.Modules.Workspace.Features.ExternalReservations;
+using Odisea.Modules.Workspace.Features.Usage;
 using Odisea.Modules.Workspace.Infrastructure;
 using Odisea.SharedKernel;
 using Xunit;
@@ -221,13 +222,14 @@ public class ExternalReservationServiceTests
         _clock.UtcNow = new DateTimeOffset(2026, 11, 2, 0, 0, 0, TimeSpan.Zero);
         await CreateAsync("A-3");
 
-        var october = await _service.UsageAsync("2026-10", CancellationToken.None);
-        var current = await _service.UsageAsync(null, CancellationToken.None);
+        var usage = new WorkspaceUsageService(_db, _clock);
+        var october = await usage.UsageAsync("2026-10", CancellationToken.None);
+        var current = await usage.UsageAsync(null, CancellationToken.None);
 
         Assert.Equal([(_agencyId, 2), (_otherAgencyId, 1)], october.Select(u => (u.AgencyId, u.ExternalReservations)));
         Assert.All(october, u => Assert.Equal("2026-10", u.Month));
         Assert.Equal([(_agencyId, 1)], current.Select(u => (u.AgencyId, u.ExternalReservations)));
-        await Assert.ThrowsAsync<WorkspaceValidationException>(() => _service.UsageAsync("October", CancellationToken.None));
+        await Assert.ThrowsAsync<WorkspaceValidationException>(() => usage.UsageAsync("October", CancellationToken.None));
     }
 
     [Fact]

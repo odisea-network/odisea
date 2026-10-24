@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Workspace.Domain;
 using Odisea.Modules.Workspace.Features.ExternalReservations;
+using Odisea.Modules.Workspace.Features.Usage;
 
 namespace Odisea.Modules.Workspace.Controllers;
 
@@ -11,7 +12,7 @@ namespace Odisea.Modules.Workspace.Controllers;
 [ApiController]
 [Route("api/v1/admin/workspace")]
 [Authorize(Policy = AuthPolicies.Operator)]
-public class AdminWorkspaceController(ExternalReservationService reservations) : ControllerBase
+public class AdminWorkspaceController(ExternalReservationService reservations, WorkspaceUsageService usage) : ControllerBase
 {
     /// Counts per agency for a month (yyyy-MM, default: the current month).
     [HttpGet("usage")]
@@ -19,7 +20,7 @@ public class AdminWorkspaceController(ExternalReservationService reservations) :
     {
         try
         {
-            return Ok(await reservations.UsageAsync(month, ct));
+            return Ok(await usage.UsageAsync(month, ct));
         }
         catch (WorkspaceValidationException ex)
         {

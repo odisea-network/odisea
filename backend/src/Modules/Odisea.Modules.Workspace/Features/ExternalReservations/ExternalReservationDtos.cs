@@ -98,9 +98,6 @@ public sealed record PublicTrackingDto(
 
 public sealed record PublicEventDto(ExternalEventKind Kind, string? ToStatus, string? Note, DateTimeOffset At);
 
-/// Operator oversight: who records how much (billing input).
-public sealed record WorkspaceUsageDto(Guid AgencyId, string Month, int ExternalReservations);
-
 public static class ExternalReservationMapping
 {
     public static ExternalReservationSummaryDto ToSummaryDto(this ExternalReservation r) => new(

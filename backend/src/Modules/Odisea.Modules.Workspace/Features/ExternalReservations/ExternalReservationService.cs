@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -163,17 +162,6 @@ public sealed class ExternalReservationService(
 
     // ----- operator oversight -----
 
-    public async Task<List<WorkspaceUsageDto>> UsageAsync(string? month, CancellationToken ct)
-    {
-        var (start, end, label) = MonthRange(month);
-        var rows = await db.ExternalReservations.AsNoTracking()
-            .Where(r => r.CreatedAt >= start && r.CreatedAt < end)
-            .GroupBy(r => r.AgencyId)
-            .Select(g => new { AgencyId = g.Key, Count = g.Count() })
-            .ToListAsync(ct);
-        return rows.OrderByDescending(r => r.Count).Select(r => new WorkspaceUsageDto(r.AgencyId, label, r.Count)).ToList();
-    }
-
     public async Task<PagedResult<ExternalReservationSummaryDto>> ListForOperatorAsync(
         Guid? agencyId, int page, int pageSize, CancellationToken ct)
     {
@@ -255,24 +243,5 @@ public sealed class ExternalReservationService(
         if (clean is { Length: > 40 })
             throw new WorkspaceValidationException("A status is limited to 40 characters.");
         return clean;
-    }
-
-    private (DateTimeOffset Start, DateTimeOffset End, string Label) MonthRange(string? month)
-    {
-        DateTimeOffset start;
-        if (string.IsNullOrWhiteSpace(month))
-        {
-            var now = clock.UtcNow;
-            start = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
-        }
-        else if (DateTime.TryParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-        {
-            start = new DateTimeOffset(parsed.Year, parsed.Month, 1, 0, 0, 0, TimeSpan.Zero);
-        }
-        else
-        {
-            throw new WorkspaceValidationException("month must be yyyy-MM.");
-        }
-        return (start, start.AddMonths(1), start.ToString("yyyy-MM", CultureInfo.InvariantCulture));
     }
 }

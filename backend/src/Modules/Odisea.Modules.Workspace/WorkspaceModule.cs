@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Odisea.Modules.Workspace.Features.ExternalReservations;
+using Odisea.Modules.Workspace.Features.Inquiries;
+using Odisea.Modules.Workspace.Features.Usage;
 using Odisea.Modules.Workspace.Infrastructure;
 
 namespace Odisea.Modules.Workspace;
@@ -23,6 +25,8 @@ public static class WorkspaceModule
             .UseSnakeCaseNamingConvention());
 
         services.AddScoped<ExternalReservationService>();
+        services.AddScoped<InquiryFormService>();
+        services.AddScoped<WorkspaceUsageService>();
         return services;
     }
 }

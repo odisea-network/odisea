@@ -6,6 +6,7 @@ using Odisea.Modules.Agencies.Features.Plans;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Workspace.Domain;
 using Odisea.Modules.Workspace.Features.ExternalReservations;
+using Odisea.Modules.Workspace.Features.Usage;
 
 namespace Odisea.IntegrationTests;
 
