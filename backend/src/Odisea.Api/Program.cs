@@ -144,3 +144,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Exposes the entry-point type to WebApplicationFactory<Program> in Odisea.IntegrationTests.
+public partial class Program;

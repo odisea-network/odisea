@@ -1,6 +1,6 @@
 # Odisea Backend
 
-.NET 10 **modular monolith**. One deployable host, five modules with enforced boundaries, one PostgreSQL database with a schema per module. See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for the full picture.
+.NET 10 **modular monolith**. One deployable host, six modules with enforced boundaries, one PostgreSQL database with a schema per module. See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for the full picture.
 
 ## Projects
 
@@ -14,7 +14,8 @@
 | [src/Modules/Odisea.Modules.Booking](src/Modules/Odisea.Modules.Booking/README.md) | Bookings, passengers, status state machine, documents |
 | [src/Modules/Odisea.Modules.Integrations](src/Modules/Odisea.Modules.Integrations/README.md) | Provider contract + adapters for external reservation systems |
 | [src/Modules/Odisea.Modules.Documents](src/Modules/Odisea.Modules.Documents/README.md) | Bulgarian tax documents: фактури, известия, PDFs (ЗДДС/ЗСч) |
-| [tests/Odisea.UnitTests](tests/Odisea.UnitTests/README.md) | Unit + architecture tests |
+| [tests/Odisea.UnitTests](tests/Odisea.UnitTests/README.md) | Unit + architecture tests (EF InMemory, NetArchTest) |
+| [tests/Odisea.IntegrationTests](tests/Odisea.IntegrationTests/README.md) | HTTP tests over the real host against Postgres (`WebApplicationFactory`) |
 
 ## Run it
 
@@ -31,7 +32,7 @@ dotnet run --project src/Odisea.Api            # migrates, seeds, listens on htt
 
 ```bash
 dotnet build Odisea.slnx     # warnings are errors
-dotnet test Odisea.slnx      # includes module-boundary architecture tests
+dotnet test Odisea.slnx      # unit + architecture + integration tests (the latter need the compose db)
 ```
 
 ## Add a migration (per module)

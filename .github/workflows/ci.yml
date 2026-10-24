@@ -12,6 +12,23 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: odisea
+          POSTGRES_PASSWORD: odisea
+          POSTGRES_DB: odisea
+        ports:
+          # 5433 keeps parity with compose.yaml, so the default test connection string works in both places.
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U odisea -d odisea"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      ODISEA_TEST_CONNECTION: "Host=localhost;Port=5433;Database=odisea_test;Username=odisea;Password=odisea"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v6
