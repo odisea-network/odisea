@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Odisea.Modules.Agencies.Domain;
 using Odisea.Modules.Agencies.Features.Auth;
@@ -39,10 +40,15 @@ public static class AgenciesModule
         services.AddScoped<AuthService>();
         services.AddScoped<IAgencyLookup, Features.Lookup.AgencyLookup>();
 
-        var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+
+        // Bound lazily from the validated JwtOptions rather than read from IConfiguration here:
+        // configuration applied after registration (e.g. WebApplicationFactory overrides) must
+        // reach the bearer handler too, and the secret is validated once, on start.
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IOptions<JwtOptions>>((options, jwtOptions) =>
             {
+                var jwt = jwtOptions.Value;
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
