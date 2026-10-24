@@ -95,8 +95,8 @@ flowchart LR
     CL --> AZ{"Policy on the<br/>controller / action"}
     AZ -->|"Agency<br/>user_type = agency"| A["Agency surface<br/>/search, /catalog/programs,<br/>/bookings, /agency/documents"]
     AZ -->|"Operator<br/>user_type = operator"| O["Operator surface<br/>/agencies, /agencies/:id/users, /agencies/:id/api-keys,<br/>/destinations, /hotels, /programs,<br/>/pricing-rules, /exchange-rates,<br/>/documents, /company-profile, /admin/bookings"]
-    AZ -->|"OperatorAdmin<br/>user_type = operator and role = Admin"| OA["Money decisions<br/>confirm a paid reservation,<br/>cancel it, void a payment"]
-    AZ -->|AllowAnonymous| AN["/auth/login, /auth/refresh,<br/>/auth/logout, /health"]
+    AZ -->|"OperatorAdmin<br/>user_type = operator and role = Admin"| OA["Admin decisions<br/>confirm a paid reservation,<br/>cancel it, void a payment,<br/>operator branding"]
+    AZ -->|AllowAnonymous| AN["/auth/login, /auth/refresh,<br/>/auth/logout, /health,<br/>/branding, /branding/logo"]
 ```
 
 Two facts hold everywhere: the agency id always comes from the `agency_id` claim, never from the request, and the provider's net cost is only ever carried by `Operator*` DTOs (a guard test scans every other DTO).
@@ -241,10 +241,10 @@ Conventions everywhere: snake_case names, enums stored as strings, version-7 GUI
 
 | Audience | Endpoints | Notes |
 |---|---|---|
-| Anonymous | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /health` | auth endpoints rate limited 10/min per IP |
+| Anonymous | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /health`, `GET /api/v1/branding`, `GET /api/v1/branding/logo` | auth endpoints rate limited 10/min per IP; branding reads are public and cacheable |
 | Agency (portal user or API key) | `GET /api/v1/catalog/programs`, `GET /api/v1/catalog/programs/{id}`, `POST /api/v1/search`, `POST/GET /api/v1/bookings`, `GET /api/v1/bookings/{id}`, `PUT /api/v1/bookings/{id}/passengers`, `POST /api/v1/bookings/{id}/re-price`, `POST /api/v1/bookings/{id}/submit`, `POST /api/v1/bookings/{id}/cancel`, `GET /api/v1/agency/documents[/{id}[/pdf]]` | scoped by the `agency_id` claim; keys additionally limited to 60/min |
 | Operator | `/api/v1/agencies` (+ `/{id}/users`, `/{id}/api-keys`, `/{id}/billing`), `/api/v1/destinations`, `/api/v1/hotels`, `/api/v1/programs`, `/api/v1/pricing-rules`, `/api/v1/exchange-rates`, `/api/v1/documents` (invoices, credit notes, annul, pdf), `/api/v1/company-profile`, `GET /api/v1/admin/bookings[/{id}]`, `POST /api/v1/admin/bookings/{id}/reject`, `/expire`, `/payments` | back-office; sees net cost and breakdown |
-| Operator admin | `POST /api/v1/admin/bookings/{id}/confirm`, `/cancel`, `/payments/{paymentId}/void` | irreversible money decisions |
+| Operator admin | `POST /api/v1/admin/bookings/{id}/confirm`, `/cancel`, `/payments/{paymentId}/void`, `PUT /api/v1/branding`, `PUT/DELETE /api/v1/branding/logo` | irreversible money decisions, white-label branding |
 
 ## 8. How a change ships
 
