@@ -5,7 +5,7 @@
 ## Owns
 
 - **The contract (`PublicApi`):** `IReservationProvider` — search, re-price, book, cancel, status; `IProviderRegistry` — resolve adapter by provider code (case-insensitive), always wrapped in the call-logging decorator. (`IProviderContentSource` for catalog sync arrives with the first real adapter — not speculated earlier.)
-- **The opaque token rule:** `ProviderOfferToken` carries provider-specific state through search → re-price → book. Only the issuing adapter can parse it. Provider internals never leak past this module.
+- **The opaque token rule:** the provider offer token carries provider-specific state through search → re-price → book. Only the issuing adapter can parse it, and `IOfferTokenProtector` wraps it with DataProtection before it reaches a client (the key ring is persisted by the Agencies module). Provider internals never leak past this module.
 - **Mock adapter** (first-class citizen): deterministic seeded inventory, configurable latency, N% availability failures, M% re-price drift — so booking-flow edge cases are genuinely exercised long before real credentials exist
 - **Adapter hygiene:** one `HttpClient` per adapter via `IHttpClientFactory` + resilience (retry/timeout); every call logged to `integrations.provider_call_logs` (duration, status, **redacted** payloads — no PII, no credentials); provider credentials in config/user-secrets, never plaintext in the DB
 - **Persistence:** `IntegrationsDbContext` → schema `integrations` (call logs only; adapters are stateless)

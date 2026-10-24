@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -39,6 +40,15 @@ public static class AgenciesModule
         services.AddScoped<RefreshTokenService>();
         services.AddScoped<AuthService>();
         services.AddScoped<IAgencyLookup, Features.Lookup.AgencyLookup>();
+
+        // Security plumbing lives here. The key ring is persisted in agencies.data_protection_keys
+        // so protected payloads (offer tokens, encrypted passenger documents) survive restarts
+        // and are shared across instances. Keys are not encrypted at rest yet — add
+        // ProtectKeysWithCertificate before production. Other modules consume
+        // IDataProtectionProvider as a framework service.
+        services.AddDataProtection()
+            .SetApplicationName("Odisea")
+            .PersistKeysToDbContext<AgenciesDbContext>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
 
