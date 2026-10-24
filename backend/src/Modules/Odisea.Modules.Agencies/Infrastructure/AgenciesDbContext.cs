@@ -15,6 +15,7 @@ public class AgenciesDbContext(DbContextOptions<AgenciesDbContext> options)
     public DbSet<CommissionLevel> CommissionLevels => Set<CommissionLevel>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AgencyApiKey> AgencyApiKeys => Set<AgencyApiKey>();
+    public DbSet<OperatorBranding> OperatorBranding => Set<OperatorBranding>();
 
     /// The DataProtection key ring (agencies.data_protection_keys). Offer tokens and
     /// encrypted passenger documents are unreadable without these rows — never truncate.

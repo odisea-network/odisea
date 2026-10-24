@@ -30,3 +30,11 @@ Partner agencies that integrate directly (no portal login) authenticate with a p
 - **Authenticating:** the default authentication scheme is a selector — a request with `X-Api-Key` goes to the `ApiKey` handler, anything else to JWT bearer (header wins). A valid, unrevoked, unexpired key of an active agency yields the same identity shape as an agency login (`user_type=agency`, `agency_id`, `sub` = key id, `role=ApiClient`, `auth_method=api_key`), so every agency-scoped endpoint and policy works unchanged, operator endpoints stay unreachable, and the auth endpoints issue no session. Rejections are a uniform 401 with `WWW-Authenticate: ApiKey`.
 - **Trail:** `ICurrentUser.IsApiClient` lets Booking record the `ApiClient` actor; `LastUsedAt` is written at most every five minutes.
 - **Rate limit:** `RateLimiting:ApiKeyPerMinute` (default 60) per presented key, partitioned by a hash of the header because the limiter runs before authentication — unknown keys are throttled too.
+
+## Operator branding (white-label portal)
+
+Each tour operator runs its own Odisea deployment and dresses the shared portal build through the API, so a brand change is never a release.
+
+- **One row** (`agencies.operator_branding`, fixed id): display name, primary and accent colours (`#rrggbb`), support email/phone, legal footer, and a raster logo (PNG/JPEG/WebP, max 512 KB, type detected from the bytes — SVG is excluded because it can carry scripts) stored with its SHA-256 hash.
+- **Reads are anonymous and cacheable:** `GET /api/v1/branding` (`Cache-Control: public, max-age=300`; defaults until branded) and `GET /api/v1/branding/logo` (ETag, 304 on `If-None-Match`, a day of caching; the DTO's `logoVersion` is the cache-busting key). The login page needs both before any token exists, so nothing confidential belongs in them.
+- **Writes are OperatorAdmin:** `PUT /api/v1/branding`, `PUT /api/v1/branding/logo` (multipart field `file`), `DELETE /api/v1/branding/logo`.
