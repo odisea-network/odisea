@@ -38,3 +38,13 @@ Each tour operator runs its own Odisea deployment and dresses the shared portal 
 - **One row** (`agencies.operator_branding`, fixed id): display name, primary and accent colours (`#rrggbb`), support email/phone, legal footer, and a raster logo (PNG/JPEG/WebP, max 512 KB, type detected from the bytes — SVG is excluded because it can carry scripts) stored with its SHA-256 hash.
 - **Reads are anonymous and cacheable:** `GET /api/v1/branding` (`Cache-Control: public, max-age=300`; defaults until branded) and `GET /api/v1/branding/logo` (ETag, 304 on `If-None-Match`, a day of caching; the DTO's `logoVersion` is the cache-busting key). The login page needs both before any token exists, so nothing confidential belongs in them.
 - **Writes are OperatorAdmin:** `PUT /api/v1/branding`, `PUT /api/v1/branding/logo` (multipart field `file`), `DELETE /api/v1/branding/logo`.
+
+## Plans and feature entitlements
+
+Every agency has a commercial `Plan`: **Core** (search and book the operator's packages — what every partner gets) or **Workspace** (the first paid add-on: the agency's own tools inside Odisea — external reservations with public tracking, inquiry forms, e-mail notifications). `PlanFeatures.For(plan)` is the single place that says what a plan unlocks; modules gate on `AgencyFeature`, never on plan names.
+
+- Operator admins set it: `PUT /api/v1/agencies/{id}/plan {plan}` (the tier is money, so `OperatorAdmin`). New agencies start on Core; the demo agency is seeded on Workspace.
+- Agencies read their own: `GET /api/v1/agency/plan` → plan, active flag, features — the portal uses it to show or upsell features.
+- Other modules: `IAgencyEntitlements.GetAsync` / `RequireAsync(agencyId, feature)` (PublicApi). `RequireAsync` throws `FeatureNotInPlanException` (map to 403 with `ProblemTypes.FeatureNotInPlan`) or `AgencySuspendedException` (403, `ProblemTypes.AgencySuspended`), so every module answers the same way.
+
+Billing itself (prices, invoices for the subscription) is not modelled; usage counters live with the features (Workspace module).

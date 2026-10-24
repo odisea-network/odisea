@@ -11,6 +11,7 @@ public class AgencyConfiguration : IEntityTypeConfiguration<Agency>
         builder.Property(a => a.Name).HasMaxLength(200);
         builder.Property(a => a.Country).HasMaxLength(2);
         builder.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(a => a.Plan).HasConversion<string>().HasMaxLength(20);
         builder.Property(a => a.CreditLimit).HasPrecision(18, 2);
         builder.Property(a => a.ContactEmail).HasMaxLength(320);
         builder.Property(a => a.LegalName).HasMaxLength(200);

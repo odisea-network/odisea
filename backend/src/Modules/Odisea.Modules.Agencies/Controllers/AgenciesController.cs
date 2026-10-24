@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Odisea.Modules.Agencies.Domain;
 using Odisea.Modules.Agencies.Features.Agencies;
+using Odisea.Modules.Agencies.Features.Plans;
 using Odisea.Modules.Agencies.Infrastructure;
 using Odisea.Modules.Agencies.PublicApi;
 
@@ -55,6 +57,22 @@ public class AgenciesController(AgenciesDbContext db) : ControllerBase
         agency.BillingCity = request.City;
         agency.Mol = request.Mol;
 
+        await db.SaveChangesAsync(ct);
+        return Ok(agency.ToDto());
+    }
+
+    /// The commercial tier is money: only operator admins change it.
+    [HttpPut("{id:guid}/plan")]
+    [Authorize(Policy = AuthPolicies.OperatorAdmin)]
+    public async Task<ActionResult<AgencyDto>> SetPlan(Guid id, SetAgencyPlanRequest request, CancellationToken ct)
+    {
+        var agency = await db.Agencies.FindAsync([id], ct);
+        if (agency is null)
+            return NotFound();
+        if (!Enum.IsDefined(request.Plan))
+            return Problem(title: "Unknown plan", statusCode: StatusCodes.Status422UnprocessableEntity);
+
+        agency.Plan = request.Plan;
         await db.SaveChangesAsync(ct);
         return Ok(agency.ToDto());
     }

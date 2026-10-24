@@ -111,6 +111,8 @@ public static class DevDemoSeeder
             {
                 Name = "Blue Horizon Travel",
                 Country = "BG",
+                // Workspace so the demo agency can use every agency feature out of the box.
+                Plan = AgencyPlan.Workspace,
                 CreditLimit = 50_000m,
                 ContactEmail = "office@bluehorizon.example",
                 // Demo billing requisites so invoices are issuable out of the box.
