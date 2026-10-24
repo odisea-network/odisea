@@ -9,6 +9,7 @@
     <Project Path="src/Modules/Odisea.Modules.Catalog/Odisea.Modules.Catalog.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Documents/Odisea.Modules.Documents.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Integrations/Odisea.Modules.Integrations.csproj" />
+    <Project Path="src/Modules/Odisea.Modules.Notifications/Odisea.Modules.Notifications.csproj" />
     <Project Path="src/Modules/Odisea.Modules.Pricing/Odisea.Modules.Pricing.csproj" />
   </Folder>
   <Folder Name="/tests/">

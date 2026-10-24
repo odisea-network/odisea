@@ -35,6 +35,7 @@ flowchart TB
         s4[(booking)]
         s5[(integrations)]
         s6[(documents)]
+        s7[(notifications)]
     end
 
     subgraph Providers["External reservation systems (tier 3)"]
@@ -214,6 +215,11 @@ flowchart TB
         d1[financial_documents]
         d2["document_counters<br/>(gapless numbering)"]
         d3[company_profiles]
+        d4[contract_templates]
+        d5[generated_contracts]
+    end
+    subgraph notifications
+        n1["email_messages<br/>(outbox: status, attempts, next_attempt_at)"]
     end
 
     a2 --> a1
@@ -243,7 +249,7 @@ Conventions everywhere: snake_case names, enums stored as strings, version-7 GUI
 |---|---|---|
 | Anonymous | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /health`, `GET /api/v1/branding`, `GET /api/v1/branding/logo` | auth endpoints rate limited 10/min per IP; branding reads are public and cacheable |
 | Agency (portal user or API key) | `GET /api/v1/catalog/programs`, `GET /api/v1/catalog/programs/{id}`, `POST /api/v1/search`, `POST/GET /api/v1/bookings`, `GET /api/v1/bookings/{id}`, `PUT /api/v1/bookings/{id}/passengers`, `POST /api/v1/bookings/{id}/re-price`, `POST /api/v1/bookings/{id}/submit`, `POST /api/v1/bookings/{id}/cancel`, `GET /api/v1/agency/documents[/{id}[/pdf]]`, `GET /api/v1/agency/contract-templates`, `GET/POST /api/v1/agency/contracts`, `GET /api/v1/agency/contracts/{id}/file` | scoped by the `agency_id` claim; keys additionally limited to 60/min |
-| Operator | `/api/v1/agencies` (+ `/{id}/users`, `/{id}/api-keys`, `/{id}/billing`), `/api/v1/destinations`, `/api/v1/hotels`, `/api/v1/programs`, `/api/v1/pricing-rules`, `/api/v1/exchange-rates`, `/api/v1/documents` (invoices, credit notes, annul, pdf), `/api/v1/company-profile`, `/api/v1/contract-templates` (upload/replace/delete are admin-only), `/api/v1/contracts` (generate, data preview, file, share), `GET /api/v1/admin/bookings[/{id}]`, `POST /api/v1/admin/bookings/{id}/reject`, `/expire`, `/payments` | back-office; sees net cost and breakdown |
+| Operator | `/api/v1/agencies` (+ `/{id}/users`, `/{id}/api-keys`, `/{id}/billing`), `/api/v1/destinations`, `/api/v1/hotels`, `/api/v1/programs`, `/api/v1/pricing-rules`, `/api/v1/exchange-rates`, `/api/v1/documents` (invoices, credit notes, annul, pdf), `/api/v1/company-profile`, `/api/v1/contract-templates` (upload/replace/delete are admin-only), `/api/v1/contracts` (generate, data preview, file, share), `/api/v1/admin/emails` (outbox; retry, cancel, dispatch, test are admin-only), `GET /api/v1/admin/bookings[/{id}]`, `POST /api/v1/admin/bookings/{id}/reject`, `/expire`, `/payments` | back-office; sees net cost and breakdown |
 | Operator admin | `POST /api/v1/admin/bookings/{id}/confirm`, `/cancel`, `/payments/{paymentId}/void`, `PUT /api/v1/branding`, `PUT/DELETE /api/v1/branding/logo` | irreversible money decisions, white-label branding |
 
 ## 8. How a change ships

@@ -10,6 +10,7 @@ using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Booking;
 using Odisea.Modules.Catalog;
 using Odisea.Modules.Documents;
+using Odisea.Modules.Notifications;
 using Odisea.Modules.Integrations;
 using Odisea.Modules.Pricing;
 using Odisea.SharedKernel;
@@ -42,7 +43,8 @@ try
         .AddApplicationPart(typeof(PricingModule).Assembly)
         .AddApplicationPart(typeof(BookingModule).Assembly)
         .AddApplicationPart(typeof(IntegrationsModule).Assembly)
-        .AddApplicationPart(typeof(DocumentsModule).Assembly);
+        .AddApplicationPart(typeof(DocumentsModule).Assembly)
+        .AddApplicationPart(typeof(NotificationsModule).Assembly);
 
     builder.Services
         .AddAgenciesModule(builder.Configuration)
@@ -50,7 +52,8 @@ try
         .AddPricingModule(builder.Configuration)
         .AddBookingModule(builder.Configuration)
         .AddIntegrationsModule(builder.Configuration)
-        .AddDocumentsModule(builder.Configuration);
+        .AddDocumentsModule(builder.Configuration)
+        .AddNotificationsModule(builder.Configuration);
 
     // Brute-force protection on credential endpoints: 10 attempts/min per IP, and a per-key
     // budget for external API clients. The limiter runs before authentication, so the key

@@ -13,7 +13,8 @@
 | [src/Modules/Odisea.Modules.Pricing](src/Modules/Odisea.Modules.Pricing/README.md) | Pricing rules, exchange rates, the pricing engine |
 | [src/Modules/Odisea.Modules.Booking](src/Modules/Odisea.Modules.Booking/README.md) | Bookings, passengers, status state machine, documents |
 | [src/Modules/Odisea.Modules.Integrations](src/Modules/Odisea.Modules.Integrations/README.md) | Provider contract + adapters for external reservation systems |
-| [src/Modules/Odisea.Modules.Documents](src/Modules/Odisea.Modules.Documents/README.md) | Bulgarian tax documents: фактури, известия, PDFs (ЗДДС/ЗСч) |
+| [src/Modules/Odisea.Modules.Documents](src/Modules/Odisea.Modules.Documents/README.md) | Bulgarian tax documents: фактури, известия, PDFs (ЗДДС/ЗСч); contracts from Word templates |
+| [src/Modules/Odisea.Modules.Notifications](src/Modules/Odisea.Modules.Notifications/README.md) | Transactional e-mail outbox + SMTP dispatcher |
 | [tests/Odisea.UnitTests](tests/Odisea.UnitTests/README.md) | Unit + architecture tests (EF InMemory, NetArchTest) |
 | [tests/Odisea.IntegrationTests](tests/Odisea.IntegrationTests/README.md) | HTTP tests over the real host against Postgres (`WebApplicationFactory`) |
 
