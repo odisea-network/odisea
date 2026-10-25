@@ -1,77 +1,97 @@
-<h2>Bookings</h2>
+<ui-page-header title="Bookings" sub="Every agency, every status" />
 
-<section class="filters card">
-  <div class="field">
-    <label for="status">Status</label>
-    <select id="status" [ngModel]="status()" (ngModelChange)="filter(status, $event)">
-      <option value="">All</option>
+<ui-card flush>
+  <div class="toolbar">
+    <select uiInput size="sm" class="toolbar__select" aria-label="Status" [ngModel]="status()" (ngModelChange)="filter(status, $event)">
+      <option value="">All statuses</option>
       @for (s of statuses; track s) {
-        <option [value]="s">{{ s }}</option>
+        <option [value]="s">{{ statusLabel(s) }}</option>
       }
     </select>
-  </div>
-  <div class="field">
-    <label for="agency">Agency</label>
-    <select id="agency" [ngModel]="agencyId()" (ngModelChange)="filter(agencyId, $event)">
-      <option value="">All</option>
+    <select uiInput size="sm" class="toolbar__select" aria-label="Agency" [ngModel]="agencyId()" (ngModelChange)="filter(agencyId, $event)">
+      <option value="">All agencies</option>
       @for (a of agencies.value(); track a.id) {
         <option [value]="a.id">{{ a.name }}</option>
       }
     </select>
+    <label class="toolbar__range">
+      <span class="small muted">Check-in</span>
+      <input uiInput size="sm" type="date" aria-label="Check-in from" [ngModel]="from()" (ngModelChange)="filter(from, $event)" />
+      <span class="small muted">–</span>
+      <input uiInput size="sm" type="date" aria-label="Check-in to" [ngModel]="to()" (ngModelChange)="filter(to, $event)" />
+    </label>
+    @if (hasFilters()) {
+      <button type="button" uiButton="ghost" size="sm" (click)="clearFilters()">Clear</button>
+    }
+    <div class="grow"></div>
+    @if (bookings.value(); as result) {
+      <span class="small muted num">{{ result.totalCount }} {{ result.totalCount === 1 ? 'booking' : 'bookings' }}</span>
+    }
   </div>
-  <div class="field">
-    <label for="from">Check-in from</label>
-    <input id="from" type="date" [ngModel]="from()" (ngModelChange)="filter(from, $event)" />
-  </div>
-  <div class="field">
-    <label for="to">Check-in to</label>
-    <input id="to" type="date" [ngModel]="to()" (ngModelChange)="filter(to, $event)" />
-  </div>
-</section>
 
-@if (bookings.error()) {
-  <p class="error" role="alert">Could not load bookings — try reloading.</p>
-} @else if (bookings.isLoading() && !bookings.hasValue()) {
-  <p>Loading…</p>
-} @else if (bookings.value(); as result) {
-  <table class="card">
-    <thead>
-      <tr>
-        <th>Ref</th><th>Agency</th><th>Program / hotel</th><th>Check-in</th><th>Pax</th>
-        <th class="num">Sell</th><th class="num">Paid / due</th><th>Status</th><th>Created</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (b of result.items; track b.id) {
-        <tr class="clickable" (click)="open(b)">
-          <td class="strong">{{ b.ref }}</td>
-          <td>{{ agencyName(b.agencyId) }}</td>
-          <td>{{ b.programName }}<br /><span class="muted">{{ b.hotelName }}</span></td>
-          <td>{{ fmtDate(b.checkIn) }} – {{ fmtDate(b.checkOut) }}</td>
-          <td>{{ b.adults }} + {{ b.children }}</td>
-          <td class="num">{{ fmtMoney(b.sellAmount, b.currency) }}</td>
-          <td class="num">
-            {{ fmtMoney(b.paidAmount, b.currency) }}
-            @if ((b.status === 'AwaitingPayment' || b.status === 'Confirmed') && b.balanceDue > 0) {
-              <br /><span class="muted">due {{ fmtMoney(b.balanceDue, b.currency) }}</span>
+  @if (bookings.error()) {
+    <div class="pad">
+      <ui-empty-state tone="error" icon="refresh" title="Couldn't load bookings" description="Check your connection and try again.">
+        <button type="button" uiButton size="sm" (click)="bookings.reload()">Retry</button>
+      </ui-empty-state>
+    </div>
+  } @else if (bookings.isLoading() && !bookings.hasValue()) {
+    <div class="pad"><ui-skeleton [lines]="6" /></div>
+  } @else if (bookings.value(); as result) {
+    @if (result.items.length === 0) {
+      <div class="pad">
+        <ui-empty-state icon="bookings" title="No bookings match these filters">
+          @if (hasFilters()) {
+            <button type="button" uiButton size="sm" (click)="clearFilters()">Clear filters</button>
+          }
+        </ui-empty-state>
+      </div>
+    } @else {
+      <div class="tw" [class.tw--stale]="bookings.isLoading()">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Agency</th>
+              <th>Hotel · program</th>
+              <th>Check-in</th>
+              <th class="r">Pax</th>
+              <th class="r">Sell</th>
+              <th class="r">Paid / due</th>
+              <th>Status · deadline</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of result.items; track b.id) {
+              <tr class="clickable" (click)="open(b)">
+                <td><a class="ref" [routerLink]="['/admin/bookings', b.id]" (click)="$event.stopPropagation()">{{ b.ref }}</a></td>
+                <td>{{ agencyName(b.agencyId) }}</td>
+                <td>{{ b.hotelName }}<div class="sub-line">{{ b.programName }}</div></td>
+                <td class="num">{{ b.checkIn | odDate }} – {{ b.checkOut | odDate }}</td>
+                <td class="r num">{{ b.adults }}@if (b.children > 0) { + {{ b.children }}}</td>
+                <td class="r m">{{ b.sellAmount | money: b.currency }}</td>
+                <td class="r">
+                  <div class="m">{{ b.paidAmount | money: b.currency }}</div>
+                  @if ((b.status === 'AwaitingPayment' || b.status === 'Confirmed') && b.balanceDue > 0) {
+                    <div class="m small strong">due {{ b.balanceDue | money: b.currency }}</div>
+                  }
+                </td>
+                <td>
+                  <div class="status">
+                    <ui-status-chip [status]="b.status" />
+                    @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
+                      <ui-deadline [at]="b.paymentDueAt" />
+                    }
+                  </div>
+                </td>
+                <td class="muted num">{{ b.createdAt | odDate }}</td>
+              </tr>
             }
-          </td>
-          <td>
-            <span class="chip" [class]="'chip s-' + b.status">{{ b.status }}</span>
-            @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
-              <br /><span class="muted">by {{ fmtDateTime(b.paymentDueAt) }}</span>
-            }
-          </td>
-          <td class="muted">{{ fmtDateTime(b.createdAt) }}</td>
-        </tr>
-      } @empty {
-        <tr><td colspan="9">No bookings match these filters.</td></tr>
-      }
-    </tbody>
-  </table>
-  <div class="pager">
-    <span class="muted">{{ result.totalCount }} booking(s) · page {{ result.page }} of {{ pageCount() }}</span>
-    <button type="button" class="ghost" (click)="page.set(page() - 1)" [disabled]="page() <= 1">‹ Previous</button>
-    <button type="button" class="ghost" (click)="page.set(page() + 1)" [disabled]="page() >= pageCount()">Next ›</button>
-  </div>
-}
+          </tbody>
+        </table>
+      </div>
+      <ui-pager [page]="result.page" [pageSize]="result.pageSize" [total]="result.totalCount" (pageChange)="page.set($event)" />
+    }
+  }
+</ui-card>

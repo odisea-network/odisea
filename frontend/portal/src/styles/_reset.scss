@@ -1,0 +1,77 @@
+@use 'mixins' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.003em;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  // The "stage": a neutral ground with two soft brand washes in the corners.
+  background:
+    radial-gradient(
+      1000px 560px at 6% -8%,
+      color-mix(in oklab, var(--primary) 13%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      820px 520px at 102% 2%,
+      color-mix(in oklab, var(--accent) 11%, transparent),
+      transparent 60%
+    ),
+    var(--stage);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+a {
+  color: var(--primary-ink);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  @include focus-ring;
+}
+
+::placeholder {
+  color: #7a818c;
+}

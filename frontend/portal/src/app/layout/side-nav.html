@@ -1,0 +1,52 @@
+<div class="brand">
+  @if (brand.logoSrc(); as logo) {
+    <img class="brand__logo" [src]="logo" alt="" />
+  } @else {
+    <span class="brand__mark" aria-hidden="true">{{ brand.initial() }}</span>
+  }
+  <div class="brand__text">
+    <span class="brand__name">{{ brand.branding().displayName }}</span>
+    <span class="brand__area">{{ area() }}</span>
+  </div>
+</div>
+
+@if (primaryAction(); as action) {
+  <a uiButton="primary" block [routerLink]="action.link" class="side__cta">
+    <ui-icon [name]="action.icon" />{{ action.label }}
+  </a>
+}
+
+@for (group of groups(); track $index) {
+  @if (group.label) {
+    <div class="side__section">{{ group.label }}</div>
+  }
+  @for (item of group.items; track item.link) {
+    <a
+      class="side__link"
+      [routerLink]="item.link"
+      routerLinkActive="side__link--on"
+      ariaCurrentWhenActive="page"
+      [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+    >
+      <ui-icon [name]="item.icon" />
+      <span class="side__label">{{ item.label }}</span>
+      @if (item.count !== undefined && item.count !== null) {
+        <span class="side__count">{{ item.count }}</span>
+      }
+    </a>
+  }
+}
+
+<div class="side__spacer"></div>
+<ng-content />
+
+<div class="side__me">
+  <span class="side__avatar" aria-hidden="true">{{ initials() }}</span>
+  <span class="side__who">
+    <span class="side__name">{{ auth.user()?.fullName }}</span>
+    <span class="side__role">{{ role() }}</span>
+  </span>
+  <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Sign out" (click)="signOut.emit()">
+    <ui-icon name="logout" />
+  </button>
+</div>

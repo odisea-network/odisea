@@ -1,51 +1,58 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, input, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { OperatorBooking, OperatorPayment, PaymentMethod, RecordPaymentRequest } from '../../core/api.types';
+import {
+  AgencyDto, OperatorBooking, OperatorPayment, PaymentMethod, RecordPaymentRequest,
+} from '../../core/api.types';
 import { AuthService } from '../../core/auth.service';
-import { formatDate, formatDateTime, formatMoney } from '../../core/format';
+import { historyTimeline } from '../../core/booking-history';
+import { formatDateTime, formatMoney } from '../../core/format';
 import { problemMessage } from '../../core/problem';
+import { OdDatePipe, OdDateTimePipe } from '../../shared/pipes/date.pipe';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import {
+  Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Field, Icon, IconName, InputDirective,
+  Masked, PageHeader, Pill, Progress, SegmentOption, Segmented, Skeleton, StatusChip, Timeline, ToastService,
+  bookingStatusLabel,
+} from '../../shared/ui';
 import { operatorActions, parseBreakdown } from './booking-actions';
+
+const PAYMENT_METHODS: SegmentOption[] = [
+  { value: 'BankTransfer', label: 'Bank transfer' },
+  { value: 'Card', label: 'Card' },
+  { value: 'Cash', label: 'Cash' },
+  { value: 'Other', label: 'Other' },
+];
+
+const METHOD_LABELS: Record<string, string> = {
+  BankTransfer: 'Bank transfer', Card: 'Card', Cash: 'Cash', Other: 'Other',
+};
+
+interface NextStep {
+  icon: IconName;
+  tone: 'warn' | 'ok' | 'info' | 'neutral';
+  title: string;
+  sub: string;
+  action?: { label: string; run: () => void; disabledReason: string | null };
+}
 
 /** One reservation from the operator's side: the net side, the money and the decisions. */
 @Component({
   selector: 'app-admin-booking-detail',
-  imports: [FormsModule, RouterLink],
+  imports: [
+    FormsModule, MoneyPipe, OdDatePipe, OdDateTimePipe,
+    Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, Masked, PageHeader, Pill,
+    Progress, Segmented, Skeleton, StatusChip, Timeline,
+  ],
   templateUrl: './booking-detail.html',
-  styles: `
-    .head { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
-    .head h2 { margin: 0; }
-    .chip { padding: .2rem .55rem; border-radius: 1rem; font-size: .75rem; font-weight: 600; background: var(--surface-2); }
-    .chip.s-Confirmed { background: #e2f4e5; color: #1b6e2a; }
-    .chip.s-AwaitingPayment { background: #fff4e0; color: #8a5a00; }
-    .chip.s-Cancelled, .chip.s-Failed, .chip.s-Rejected, .chip.s-Expired { background: #fbe4e4; color: #a32020; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; margin-top: 1rem; }
-    .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; }
-    .card h3 { margin-top: 0; }
-    dl { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: 0; }
-    dt { color: var(--text-muted); font-size: .85rem; }
-    dd { margin: 0; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid var(--border); font-size: .9rem; }
-    th.num, td.num { text-align: right; }
-    .void { text-decoration: line-through; color: var(--text-muted); }
-    .strong { font-weight: 700; }
-    .muted { color: var(--text-muted); font-size: .85rem; }
-    .actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
-    .danger { background: var(--danger); }
-    form.payment { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .6rem; align-items: end; }
-    .field { display: flex; flex-direction: column; gap: .25rem; }
-    .field label { font-size: .75rem; font-weight: 600; color: var(--text-muted); }
-    select { padding: .5rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--surface-1); font: inherit; }
-    .error { color: var(--danger); }
-    .ok { color: #1b6e2a; }
-  `,
+  styleUrl: './booking-detail.scss',
 })
 export class AdminBookingDetail {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly dialogs = inject(DialogService);
+  private readonly toasts = inject(ToastService);
 
   /** Bound from the route parameter by withComponentInputBinding(). */
   readonly id = input.required<string>();
@@ -53,7 +60,7 @@ export class AdminBookingDetail {
   readonly booking = signal<OperatorBooking | null>(null);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  readonly notice = signal<string | null>(null);
+  readonly payOpen = signal(false);
 
   readonly loaded = resource({
     params: () => ({ id: this.id() }),
@@ -67,12 +74,67 @@ export class AdminBookingDetail {
     },
   });
 
+  readonly agency = resource({
+    params: () => {
+      const agencyId = this.booking()?.agencyId;
+      return agencyId ? { agencyId } : undefined;
+    },
+    loader: ({ params }) => firstValueFrom(this.http.get<AgencyDto>(`/api/v1/agencies/${params.agencyId}`)),
+  });
+
   readonly isAdmin = computed(() => this.auth.user()?.role === 'Admin');
   readonly actions = computed(() => {
     const b = this.booking();
     return b ? operatorActions(b, this.isAdmin(), new Date()) : null;
   });
   readonly breakdown = computed(() => parseBreakdown(this.booking()?.breakdown));
+  readonly timeline = computed(() => historyTimeline(
+    (this.booking()?.history ?? []).map(h => ({ ...h, actor: h.actorType }))));
+
+  readonly subtitle = computed(() => {
+    const b = this.booking();
+    if (!b) return null;
+    const agency = this.agency.value()?.name ?? 'Agency';
+    const pax = `${b.adults} ${b.adults === 1 ? 'adult' : 'adults'}${b.children ? `, ${b.children} ${b.children === 1 ? 'child' : 'children'}` : ''}`;
+    return `${agency} · ${b.hotelName} · ${b.programName} · ${pax} · created ${formatDateTime(b.createdAt)}`;
+  });
+
+  /** What the operator should do next, and why the button is locked if it is. */
+  readonly next = computed<NextStep | null>(() => {
+    const b = this.booking();
+    const a = this.actions();
+    if (!b || !a) return null;
+    const money = (amount: number) => formatMoney(amount, b.currency);
+    switch (b.status) {
+      case 'AwaitingPayment':
+        if (b.balanceDue > 0) {
+          return {
+            icon: 'card', tone: 'warn',
+            title: `Collect ${money(b.balanceDue)}${b.paymentDueAt ? ` before ${formatDateTime(b.paymentDueAt)}` : ''}`,
+            sub: b.paidAmount > 0 ? `${money(b.paidAmount)} received so far. Record the rest when it arrives.` : 'Nothing received yet. Record the payment when it arrives.',
+            action: { label: 'Record payment', run: () => this.payOpen.set(true), disabledReason: null },
+          };
+        }
+        return {
+          icon: 'check-circle', tone: 'ok',
+          title: 'Fully paid — ready to confirm',
+          sub: 'Confirming makes the booking final and notifies the agency.',
+          action: {
+            label: 'Confirm booking', run: () => void this.confirm(),
+            disabledReason: a.confirm ? null : 'Requires an operator admin',
+          },
+        };
+      case 'Confirmed':
+        return { icon: 'check-circle', tone: 'ok', title: 'Confirmed', sub: 'Paid in full and final. Invoices are issued from Documents.' };
+      case 'PendingConfirmation':
+        return { icon: 'hourglass', tone: 'info', title: 'Waiting for the supplier', sub: 'The hold request is in flight; the agency will see the payment deadline once it lands.' };
+      case 'Draft':
+      case 'PriceConfirmed':
+        return { icon: 'pencil', tone: 'neutral', title: 'Not submitted yet', sub: 'The agency has not sent this booking to the supplier.' };
+      default:
+        return { icon: 'slash-circle', tone: 'neutral', title: `Closed · ${bookingStatusLabel(b.status)}`, sub: 'No operator action is available in this status.' };
+    }
+  });
 
   // Payment form. The amount is prefilled with the API's balance due — never computed here.
   paymentAmount = 0;
@@ -81,11 +143,16 @@ export class AdminBookingDetail {
   paymentReceivedOn = new Date().toISOString().slice(0, 10);
   paymentReference = '';
   paymentNote = '';
-  decisionNote = '';
 
-  readonly fmtMoney = formatMoney;
-  readonly fmtDate = formatDate;
-  readonly fmtDateTime = formatDateTime;
+  readonly paymentMethods = PAYMENT_METHODS;
+
+  methodLabel(method: string): string {
+    return METHOD_LABELS[method] ?? method;
+  }
+
+  setMethod(value: string): void {
+    this.paymentMethod = value as PaymentMethod;
+  }
 
   async recordPayment(): Promise<void> {
     const b = this.booking();
@@ -98,62 +165,96 @@ export class AdminBookingDetail {
       reference: this.paymentReference.trim() || null,
       note: this.paymentNote.trim() || null,
     };
-    await this.act(`/api/v1/admin/bookings/${b.id}/payments`, request, 'Payment recorded.');
-    this.paymentReference = '';
-    this.paymentNote = '';
+    const recorded = formatMoney(request.amount, request.currency);
+    const ok = await this.act(`/api/v1/admin/bookings/${b.id}/payments`, request,
+      updated => `Payment ${recorded} recorded · balance ${formatMoney(updated.balanceDue, updated.currency)}`);
+    if (ok) {
+      this.payOpen.set(false);
+      this.paymentReference = '';
+      this.paymentNote = '';
+    }
   }
 
   async confirm(): Promise<void> {
     const b = this.booking();
-    if (!b || !window.confirm(`Confirm reservation ${b.ref}? The agency will be able to receive its invoice.`)) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/confirm`, {}, 'Reservation confirmed.');
+    if (!b) return;
+    const decision = await this.dialogs.confirm({
+      title: `Confirm ${b.ref}?`,
+      message: 'The agency is notified and the booking becomes final. After this, only an operator admin can cancel it.',
+      confirmLabel: 'Confirm booking',
+      cancelLabel: 'Not now',
+      facts: [
+        { label: 'Paid', value: `${formatMoney(b.paidAmount, b.currency)} of ${formatMoney(b.sellAmount, b.currency)}` },
+        { label: 'Supplier hold', value: b.providerBookingRef ? `${b.providerBookingRef} · active` : '—' },
+      ],
+    });
+    if (!decision) return;
+    await this.act(`/api/v1/admin/bookings/${b.id}/confirm`, {}, () => `${b.ref} confirmed · agency notified`);
   }
 
   async reject(): Promise<void> {
-    await this.decide('reject', 'Reject reservation', 'Reservation rejected; the supplier hold was released.');
+    await this.decide('reject', 'Reject', 'The supplier hold is released and the agency is told why.', 'rejected');
   }
 
   async cancel(): Promise<void> {
-    await this.decide('cancel', 'Cancel reservation', 'Reservation cancelled.');
+    await this.decide('cancel', 'Cancel', 'The booking is cancelled and the agency is told why. This can’t be undone.', 'cancelled');
   }
 
   async expire(): Promise<void> {
     const b = this.booking();
-    if (!b || !window.confirm(`Expire ${b.ref}? The supplier hold will be released.`)) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/expire`, {}, 'Reservation expired.');
+    if (!b) return;
+    const decision = await this.dialogs.confirm({
+      title: `Expire ${b.ref}?`,
+      message: 'The payment deadline has passed. The supplier hold is released and the agency is notified.',
+      confirmLabel: 'Expire booking',
+      destructive: true,
+    });
+    if (!decision) return;
+    await this.act(`/api/v1/admin/bookings/${b.id}/expire`, {}, () => `${b.ref} expired`);
   }
 
   async voidPayment(payment: OperatorPayment): Promise<void> {
     const b = this.booking();
-    const reason = b ? window.prompt(`Void payment of ${formatMoney(payment.amount, payment.currency)}? Reason:`) : null;
-    if (!b || !reason?.trim()) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/payments/${payment.id}/void`, { reason: reason.trim() }, 'Payment voided.');
+    if (!b) return;
+    const decision = await this.dialogs.confirm({
+      title: `Void payment of ${formatMoney(payment.amount, payment.currency)}?`,
+      message: 'The payment stays on record as voided; the balance due goes back up.',
+      confirmLabel: 'Void payment',
+      destructive: true,
+      reason: { label: 'Reason', placeholder: 'e.g. transfer bounced', required: true },
+    });
+    if (!decision) return;
+    await this.act(`/api/v1/admin/bookings/${b.id}/payments/${payment.id}/void`, { reason: decision.reason },
+      () => 'Payment voided');
   }
 
-  private async decide(action: 'reject' | 'cancel', title: string, done: string): Promise<void> {
+  private async decide(action: 'reject' | 'cancel', verb: string, consequence: string, past: string): Promise<void> {
     const b = this.booking();
     if (!b) return;
-    const note = this.decisionNote.trim();
-    if (!note) {
-      this.error.set(`${title}: a note is required.`);
-      return;
-    }
-    if (!window.confirm(`${title} ${b.ref}? This cannot be undone.`)) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/${action}`, { note }, done);
-    this.decisionNote = '';
+    const decision = await this.dialogs.confirm({
+      title: `${verb} ${b.ref}?`,
+      message: consequence,
+      confirmLabel: `${verb} booking`,
+      cancelLabel: 'Keep booking',
+      destructive: true,
+      reason: { label: 'Reason', placeholder: 'Visible to the agency', required: true },
+    });
+    if (!decision) return;
+    await this.act(`/api/v1/admin/bookings/${b.id}/${action}`, { note: decision.reason }, () => `${b.ref} ${past}`);
   }
 
-  private async act(url: string, body: unknown, done: string): Promise<void> {
+  private async act(url: string, body: unknown, done: (updated: OperatorBooking) => string): Promise<boolean> {
     this.busy.set(true);
     this.error.set(null);
-    this.notice.set(null);
     try {
       const updated = await firstValueFrom(this.http.post<OperatorBooking>(url, body));
       this.booking.set(updated);
       this.paymentAmount = updated.balanceDue;
-      this.notice.set(done);
+      this.toasts.show(done(updated));
+      return true;
     } catch (err) {
       this.error.set(problemMessage(err, 'The action failed.'));
+      return false;
     } finally {
       this.busy.set(false);
     }

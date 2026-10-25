@@ -6,29 +6,22 @@ import { firstValueFrom } from 'rxjs';
 import {
   HotelOffer, ProgramDetail, ProgramListItem, SearchResponse,
 } from '../../core/api.types';
-import { formatDate, formatMoney } from '../../core/format';
 import { problemMessage } from '../../core/problem';
+import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import {
+  Banner, ButtonDirective, Card, EmptyState, Icon, PageHeader, Pill, Skeleton,
+} from '../../shared/ui';
 import { BookingDraftService } from './booking-draft.service';
 
 @Component({
   selector: 'app-agency-search',
-  imports: [FormsModule],
+  imports: [
+    FormsModule, MoneyPipe, OdDatePipe,
+    Banner, ButtonDirective, Card, EmptyState, Icon, PageHeader, Pill, Skeleton,
+  ],
   templateUrl: './search.html',
-  styles: `
-    .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: .75rem; }
-    .criteria { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: end; padding: 1.25rem; margin-bottom: 1.5rem; }
-    .field { display: flex; flex-direction: column; gap: .3rem; }
-    .field.pax { flex-direction: row; align-items: center; gap: .5rem; }
-    .field.pax input { width: 4rem; }
-    label { font-size: .8rem; font-weight: 600; }
-    select { padding: .5rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--surface-1); font: inherit; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: .7rem 1rem; border-bottom: 1px solid var(--border); }
-    th.num, td.num { text-align: right; }
-    .strong { font-weight: 700; }
-    .muted { color: var(--text-muted); }
-    .error { color: var(--danger); }
-  `,
+  styleUrl: './search.scss',
 })
 export class AgencySearch {
   private readonly http = inject(HttpClient);
@@ -57,9 +50,6 @@ export class AgencySearch {
 
   readonly canSearch = computed(() => this.programId() !== '' && this.departureId() !== '');
 
-  readonly fmtMoney = formatMoney;
-  readonly fmtDate = formatDate;
-
   selectProgram(id: string): void {
     this.programId.set(id);
     this.departureId.set('');
@@ -70,7 +60,12 @@ export class AgencySearch {
     return offer.offerExpiresAt !== null && Date.parse(offer.offerExpiresAt) < Date.now();
   }
 
+  stars(count: number): number[] {
+    return Array.from({ length: count });
+  }
+
   async search(): Promise<void> {
+    if (!this.canSearch()) return;
     this.searching.set(true);
     this.error.set(null);
     this.results.set(null);

@@ -1,0 +1,63 @@
+<div class="shell" [class.shell--drawer]="drawerOpen()">
+  <header class="topbar">
+    <button
+      type="button"
+      uiButton="ghost"
+      iconOnly
+      aria-label="Open menu"
+      aria-controls="shell-sidebar"
+      [attr.aria-expanded]="drawerOpen()"
+      (click)="drawerOpen.set(true)"
+    >
+      <ui-icon name="menu" />
+    </button>
+    <span class="topbar__brand">
+      @if (brand.logoSrc(); as logo) {
+        <img [src]="logo" alt="" />
+      } @else {
+        <span class="topbar__mark" aria-hidden="true">{{ brand.initial() }}</span>
+      }
+      {{ brand.branding().displayName }}
+    </span>
+  </header>
+
+  @if (drawerOpen()) {
+    <div class="shell__scrim" (click)="drawerOpen.set(false)"></div>
+  }
+
+  <aside class="sidecol" id="shell-sidebar">
+    <button
+      type="button"
+      class="sidecol__close"
+      uiButton="ghost"
+      iconOnly
+      aria-label="Close menu"
+      (click)="drawerOpen.set(false)"
+    >
+      <ui-icon name="x" />
+    </button>
+    <app-side-nav [area]="area()" [groups]="groups()" [primaryAction]="primaryAction()" (signOut)="logout()" />
+  </aside>
+
+  <main class="mainc">
+    <router-outlet />
+    @if (brand.branding(); as b) {
+      @if (b.legalFooter || b.supportEmail || b.supportPhone) {
+        <footer class="foot">
+          <span>
+            {{ b.displayName }}
+            @if (b.supportEmail; as email) {
+              · <a [href]="'mailto:' + email">{{ email }}</a>
+            }
+            @if (b.supportPhone; as phone) {
+              · {{ phone }}
+            }
+          </span>
+          @if (b.legalFooter; as legal) {
+            <span>{{ legal }}</span>
+          }
+        </footer>
+      }
+    }
+  </main>
+</div>

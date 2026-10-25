@@ -1,169 +1,268 @@
 @if (!context) {
-  <p>No offer selected. <a routerLink="/agency/search">Back to search</a></p>
+  <ui-empty-state icon="search" title="No offer selected" description="Pick a package from Search to start a booking.">
+    <a uiButton="primary" size="sm" routerLink="/agency/search">Search packages</a>
+  </ui-empty-state>
 } @else {
-  <h2>Book: {{ context.programName }}</h2>
-  <p class="muted">
-    {{ context.offer.hotelName }} {{ '★'.repeat(context.offer.stars) }} ·
-    {{ context.offer.roomType }} / {{ context.offer.board }} ·
-    {{ fmtDate(context.checkIn) }} – {{ fmtDate(context.checkOut) }} ({{ context.nights }} nights) ·
-    {{ context.adults }} adult(s), {{ context.children }} child(ren)
-  </p>
+  <ui-page-header
+    [title]="title()"
+    [crumbs]="[{ label: 'Search', link: '/agency/search' }, { label: context.offer.hotelName }]"
+  />
 
-  @if (step() === 'passengers') {
-    <section class="card">
-      <h3>Passengers</h3>
-      <p class="hint">
-        Names exactly as printed in the travel document (Latin letters). Country codes are two letters
-        (BG, DE, …). The lead passenger is the contact for this reservation.
-      </p>
+  <ol class="steps" aria-label="Progress">
+    @for (s of steps; track s.key; let i = $index) {
+      <li
+        class="steps__item"
+        [class.steps__item--current]="i === stepIndex()"
+        [class.steps__item--done]="i < stepIndex()"
+        [attr.aria-current]="i === stepIndex() ? 'step' : null"
+      >
+        <span class="steps__dot">
+          @if (i < stepIndex()) {
+            <ui-icon name="check" size="sm" />
+          } @else {
+            {{ i + 1 }}
+          }
+        </span>
+        <span class="steps__label">{{ s.label }}</span>
+      </li>
+    }
+  </ol>
 
-      @for (p of passengers; track $index; let i = $index) {
-        <div class="passenger">
-          <header>
-            <h4>{{ slotLabel(i) }}
-              @if (typeHint(p); as type) { <span class="hint">· {{ type }} at check-in</span> }
-            </h4>
-            <label>
-              <input type="radio" name="lead" [value]="i" [(ngModel)]="leadIndex" /> Lead passenger
+  <div class="wizard">
+    <div class="wizard__main">
+      @if (step() === 'passengers') {
+        @for (p of passengers; track $index; let i = $index) {
+          <ui-card [title]="slotLabel(i) + (typeHint(p) ? ' · ' + typeHint(p) + ' at check-in' : '')">
+            <label cardActions class="lead" [class.lead--on]="i === leadIndex">
+              <input type="radio" class="ui-chk" name="lead" [value]="i" [(ngModel)]="leadIndex" />
+              Lead traveller
             </label>
-          </header>
-          <div class="grid">
-            <div class="field">
-              <label for="title{{ i }}">Title</label>
-              <select id="title{{ i }}" name="title{{ i }}" [(ngModel)]="p.title">
-                <option value="">—</option>
-                <option>Mr</option><option>Mrs</option><option>Ms</option><option>Mstr</option><option>Miss</option>
-              </select>
+
+            <div class="grid">
+              <ui-field label="Title" [for]="'title' + i" optional>
+                <select uiInput id="title{{ i }}" name="title{{ i }}" [(ngModel)]="p.title">
+                  <option value="">—</option>
+                  <option>Mr</option><option>Mrs</option><option>Ms</option><option>Mstr</option><option>Miss</option>
+                </select>
+              </ui-field>
+              <ui-field label="Gender" [for]="'gender' + i">
+                <select uiInput id="gender{{ i }}" name="gender{{ i }}" [(ngModel)]="p.gender">
+                  <option value="">Choose…</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </ui-field>
+              <ui-field label="First name (Latin)" [for]="'fn' + i">
+                <input uiInput id="fn{{ i }}" name="fn{{ i }}" [(ngModel)]="p.firstName" autocomplete="off" />
+              </ui-field>
+              <ui-field label="Last name (Latin)" [for]="'ln' + i">
+                <input uiInput id="ln{{ i }}" name="ln{{ i }}" [(ngModel)]="p.lastName" autocomplete="off" />
+              </ui-field>
+              <ui-field label="Birth date" [for]="'bd' + i">
+                <input uiInput id="bd{{ i }}" name="bd{{ i }}" type="date" [(ngModel)]="p.birthDate" [max]="context.checkIn" />
+              </ui-field>
+              <ui-field label="Nationality" [for]="'nat' + i" hint="2-letter code, e.g. BG">
+                <input uiInput id="nat{{ i }}" name="nat{{ i }}" [(ngModel)]="p.nationality" maxlength="2" placeholder="BG" />
+              </ui-field>
             </div>
-            <div class="field">
-              <label for="gender{{ i }}">Gender</label>
-              <select id="gender{{ i }}" name="gender{{ i }}" [(ngModel)]="p.gender">
-                <option value="">Choose…</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+
+            <div class="grid">
+              <ui-field label="Document" [for]="'dt' + i">
+                <select uiInput id="dt{{ i }}" name="dt{{ i }}" [(ngModel)]="p.documentType">
+                  <option value="">Choose…</option>
+                  <option value="Passport">Passport</option>
+                  <option value="IdCard">ID card</option>
+                </select>
+              </ui-field>
+              <ui-field label="Number" [for]="'dn' + i">
+                <input uiInput class="mono" id="dn{{ i }}" name="dn{{ i }}" [(ngModel)]="p.documentNumber" maxlength="20" autocomplete="off" />
+              </ui-field>
+              <ui-field label="Issuing country" [for]="'dc' + i">
+                <input uiInput id="dc{{ i }}" name="dc{{ i }}" [(ngModel)]="p.documentIssuingCountry" maxlength="2" placeholder="BG" />
+              </ui-field>
+              <ui-field label="Expiry" [for]="'de' + i" hint="Must be valid after the trip">
+                <input uiInput id="de{{ i }}" name="de{{ i }}" type="date" [(ngModel)]="p.documentExpiryDate" [min]="context.checkOut" />
+              </ui-field>
             </div>
-            <div class="field">
-              <label for="fn{{ i }}">First name</label>
-              <input id="fn{{ i }}" name="fn{{ i }}" [(ngModel)]="p.firstName" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="ln{{ i }}">Last name</label>
-              <input id="ln{{ i }}" name="ln{{ i }}" [(ngModel)]="p.lastName" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="bd{{ i }}">Birth date</label>
-              <input id="bd{{ i }}" name="bd{{ i }}" type="date" [(ngModel)]="p.birthDate" [max]="context.checkIn" />
-            </div>
-            <div class="field">
-              <label for="nat{{ i }}">Nationality</label>
-              <input id="nat{{ i }}" name="nat{{ i }}" [(ngModel)]="p.nationality" maxlength="2" placeholder="BG" />
-            </div>
-            <div class="field">
-              <label for="dt{{ i }}">Document</label>
-              <select id="dt{{ i }}" name="dt{{ i }}" [(ngModel)]="p.documentType">
-                <option value="">Choose…</option>
-                <option value="Passport">Passport</option>
-                <option value="IdCard">ID card</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="dn{{ i }}">Document number</label>
-              <input id="dn{{ i }}" name="dn{{ i }}" [(ngModel)]="p.documentNumber" maxlength="20" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="dc{{ i }}">Issuing country</label>
-              <input id="dc{{ i }}" name="dc{{ i }}" [(ngModel)]="p.documentIssuingCountry" maxlength="2" placeholder="BG" />
-            </div>
-            <div class="field">
-              <label for="de{{ i }}">Document expiry</label>
-              <input id="de{{ i }}" name="de{{ i }}" type="date" [(ngModel)]="p.documentExpiryDate" [min]="context.checkOut" />
-            </div>
+
             @if (i === leadIndex) {
-              <div class="field">
-                <label for="em{{ i }}">Email (lead)</label>
-                <input id="em{{ i }}" name="em{{ i }}" type="email" [(ngModel)]="p.email" />
-              </div>
-              <div class="field">
-                <label for="ph{{ i }}">Phone (lead)</label>
-                <input id="ph{{ i }}" name="ph{{ i }}" type="tel" [(ngModel)]="p.phone" placeholder="+359 …" />
+              <div class="grid grid--2">
+                <ui-field label="Email (lead only)" [for]="'em' + i">
+                  <input uiInput id="em{{ i }}" name="em{{ i }}" type="email" [(ngModel)]="p.email" />
+                </ui-field>
+                <ui-field label="Phone (lead only)" [for]="'ph' + i">
+                  <input uiInput id="ph{{ i }}" name="ph{{ i }}" type="tel" [(ngModel)]="p.phone" placeholder="+359 …" />
+                </ui-field>
               </div>
             }
+          </ui-card>
+        }
+
+        @if (problems(); as issues) {
+          @if (issues.length > 0) {
+            <ui-banner tone="warn">
+              <b>{{ issues.length }} {{ issues.length === 1 ? 'thing' : 'things' }} to fix before continuing</b>
+              <ul class="issues">
+                @for (issue of issues; track issue) {
+                  <li>{{ issue }}</li>
+                }
+              </ul>
+            </ui-banner>
+          }
+        }
+
+        <div class="wizard__nav">
+          <span class="small muted">
+            Search price <b class="m">{{ context.searchSellPrice | money: context.offer.currency }}</b> — re-checked with the supplier next.
+          </span>
+          <button type="button" uiButton="primary" (click)="continueToPrice()" [disabled]="busy() || problems().length > 0">
+            {{ busy() ? 'Checking price…' : 'Continue' }}
+          </button>
+        </div>
+      }
+
+      @if (step() === 'price' && booking(); as b) {
+        <ui-card title="Confirm the price">
+          @if (drifted()) {
+            <ui-banner tone="warn">
+              <b>The price changed since your search.</b>
+              Was {{ context.searchSellPrice | money: b.currency }}, now {{ b.sellPrice | money: b.currency }}.
+              Check with your client before you continue.
+            </ui-banner>
+          } @else {
+            <ui-banner tone="ok">Price confirmed by the supplier — unchanged since your search.</ui-banner>
+          }
+          <div class="price">
+            <div class="price__row">
+              <b>Total sell price</b>
+              <span class="row">
+                @if (drifted()) {
+                  <s class="m muted small">{{ context.searchSellPrice | money: b.currency }}</s>
+                }
+                <b class="m price__total">{{ b.sellPrice | money: b.currency }}</b>
+              </span>
+            </div>
+            <div class="price__row">
+              <span>Your commission</span>
+              <span class="m strong price__ok">{{ b.agencyCommission | money: b.currency }}</span>
+            </div>
+            <div class="price__row small muted">
+              <span>Reservation</span>
+              <span class="num">{{ b.ref }}</span>
+            </div>
+          </div>
+          <p class="small muted">
+            Submitting asks the supplier to hold the rooms. You then get a payment deadline; nothing is charged
+            until then. The operator confirms the booking once the payment is received.
+          </p>
+        </ui-card>
+
+        <div class="wizard__nav">
+          <button type="button" uiButton (click)="editPassengers()" [disabled]="busy()">Back</button>
+          <div class="row">
+            <button type="button" uiButton="danger-quiet" (click)="cancel()" [disabled]="busy()">Discard</button>
+            <button type="button" uiButton="primary" (click)="submit()" [disabled]="busy()">
+              {{ busy() ? 'Submitting…' : 'Submit reservation' }}
+            </button>
           </div>
         </div>
       }
 
-      @if (problems(); as issues) {
-        @if (issues.length > 0) {
-          <ul class="problems" role="status">
-            @for (issue of issues; track issue) { <li>{{ issue }}</li> }
-          </ul>
-        }
+      @if (step() === 'done' && booking(); as b) {
+        <ui-card>
+          @if (b.status === 'AwaitingPayment') {
+            <div class="result">
+              <span class="result__icon result__icon--warn"><ui-icon name="clock" size="lg" /></span>
+              <div class="col result__text">
+                <ui-status-chip [status]="b.status" />
+                <h2 class="result__title">Rooms held — booking {{ b.ref }}</h2>
+                <p class="muted">Pay before the deadline or the hold is released automatically.</p>
+              </div>
+            </div>
+            <div class="facts">
+              <div class="fact">
+                <span class="small muted">Amount due</span>
+                <div class="m fact__big">{{ b.balanceDue | money: b.currency }}</div>
+              </div>
+              <div class="fact">
+                <span class="small muted">Pay by</span>
+                <ui-deadline [at]="b.paymentDueAt" />
+              </div>
+              @if (b.providerBookingRef) {
+                <div class="fact">
+                  <span class="small muted">Supplier reference</span>
+                  <div class="mono">{{ b.providerBookingRef }}</div>
+                </div>
+              }
+            </div>
+            <p class="small muted">
+              The operator records your payment when it arrives and confirms the booking. Use the booking
+              reference <b class="mono">{{ b.ref }}</b> on the transfer.
+            </p>
+            <div class="row wrap">
+              <a uiButton="primary" routerLink="/agency/bookings">Open bookings</a>
+              <a uiButton routerLink="/agency/search">New booking</a>
+            </div>
+          } @else if (b.status === 'Failed') {
+            <div class="result">
+              <span class="result__icon result__icon--bad"><ui-icon name="alert-triangle" size="lg" /></span>
+              <div class="col result__text">
+                <h2 class="result__title">The supplier couldn’t hold these rooms</h2>
+                <p class="muted">Nothing was booked or charged.</p>
+              </div>
+            </div>
+            @if (b.history.at(-1)?.note; as note) {
+              <ui-banner tone="bad"><b>Supplier said:</b> “{{ note }}”</ui-banner>
+            }
+            <div class="row wrap">
+              <a uiButton="primary" routerLink="/agency/search">Find similar offers</a>
+              <a uiButton routerLink="/agency/bookings">Open bookings</a>
+            </div>
+          } @else {
+            <div class="result">
+              <span class="result__icon"><ui-icon name="info" size="lg" /></span>
+              <div class="col result__text">
+                <ui-status-chip [status]="b.status" />
+                <h2 class="result__title">Reservation {{ b.ref }}</h2>
+                <p class="muted">See Bookings for the details and history.</p>
+              </div>
+            </div>
+            <a uiButton="primary" routerLink="/agency/bookings">Open bookings</a>
+          }
+        </ui-card>
       }
 
-      <div class="actions">
-        <button type="button" (click)="continueToPrice()" [disabled]="busy() || problems().length > 0">
-          {{ busy() ? 'Checking price…' : 'Continue — check live price' }}
-        </button>
-      </div>
-      <p class="muted">
-        Search price: <strong>{{ fmtMoney(context.searchSellPrice, context.offer.currency) }}</strong>
-        — it will be re-verified with the supplier before you submit.
-      </p>
-    </section>
-  }
-
-  @if (step() === 'price' && booking(); as b) {
-    <section class="card">
-      <h3>Confirm price and submit</h3>
-      @if (drifted()) {
-        <p class="drift" role="alert">
-          ⚠ The price changed since your search:
-          <s>{{ fmtMoney(context.searchSellPrice, b.currency) }}</s>
-          → <strong>{{ fmtMoney(b.sellPrice, b.currency) }}</strong>. Submit only if the client agrees.
-        </p>
-      } @else {
-        <p>Price confirmed by the supplier.</p>
+      @if (error(); as message) {
+        <ui-banner tone="bad">{{ message }}</ui-banner>
       }
-      <p class="price">{{ fmtMoney(b.sellPrice, b.currency) }}</p>
-      <p class="muted">Your commission: {{ fmtMoney(b.agencyCommission, b.currency) }} · Reservation {{ b.ref }}</p>
-      <p class="hint">
-        Submitting asks the supplier to hold the reservation. You then receive a payment deadline;
-        the operator confirms the reservation once the payment is received.
-      </p>
-      <div class="actions">
-        <button type="button" class="ghost" (click)="cancel()" [disabled]="busy()">Cancel reservation</button>
-        <button type="button" class="ghost" (click)="editPassengers()" [disabled]="busy()">Edit passengers</button>
-        <button type="button" (click)="submit()" [disabled]="busy()">
-          {{ busy() ? 'Submitting…' : 'Submit reservation' }}
-        </button>
-      </div>
-    </section>
-  }
+    </div>
 
-  @if (step() === 'done' && booking(); as b) {
-    <section class="card done">
-      @if (b.status === 'AwaitingPayment') {
-        <h3>✔ Reservation submitted</h3>
-        <p><strong>{{ b.ref }}</strong> is held by the supplier (reference {{ b.providerBookingRef }}).</p>
-        <p>
-          Amount due: <strong>{{ fmtMoney(b.balanceDue, b.currency) }}</strong>
-          @if (b.paymentDueAt) { by <strong>{{ fmtDateTime(b.paymentDueAt) }}</strong> }.
-          The operator confirms the reservation once the payment is received.
-        </p>
-      } @else if (b.status === 'Failed') {
-        <h3>Reservation not accepted</h3>
-        <p>The supplier declined {{ b.ref }}. {{ b.history.at(-1)?.note }}</p>
-        <p><a routerLink="/agency/search">Search again</a></p>
-      } @else {
-        <h3>Reservation {{ b.status }}</h3>
-        <p>{{ b.ref }} ended in status {{ b.status }}. See bookings for details.</p>
-      }
-      <a routerLink="/agency/bookings">Go to bookings →</a>
-    </section>
-  }
-
-  @if (error()) {
-    <p class="error" role="alert">{{ error() }}</p>
-  }
+    <aside class="wizard__aside">
+      <ui-card class="summary">
+        <div class="col summary__hotel">
+          <b>{{ context.offer.hotelName }}</b>
+          <span class="stars" role="img" [attr.aria-label]="context.offer.stars + ' stars'">
+            @for (star of stars(context.offer.stars); track $index) {
+              <ui-icon name="star" size="sm" />
+            }
+          </span>
+          <span class="small muted">{{ context.offer.roomType }} · {{ context.offer.board }}</span>
+        </div>
+        <dl class="kv summary__kv">
+          <dt>Program</dt><dd>{{ context.programName }}</dd>
+          <dt>Dates</dt><dd>{{ context.checkIn | odDate }} → {{ context.checkOut | odDate }} · {{ context.nights }} nights</dd>
+          <dt>Travellers</dt><dd>{{ context.adults }} {{ context.adults === 1 ? 'adult' : 'adults' }}@if (context.children > 0) {, {{ context.children }} {{ context.children === 1 ? 'child' : 'children' }}}</dd>
+        </dl>
+        <hr class="hr" />
+        <div class="row between">
+          <span class="muted">Total</span>
+          <b class="m summary__total">{{ total() | money: context.offer.currency }}</b>
+        </div>
+        <div class="row between small">
+          <span class="muted">You earn</span>
+          <span class="m strong">{{ commission() | money: context.offer.currency }}</span>
+        </div>
+      </ui-card>
+    </aside>
+  </div>
 }

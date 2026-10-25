@@ -1,0 +1,92 @@
+<div class="login">
+  <main class="login__main">
+    <form class="login__card" (ngSubmit)="submit()">
+      <div class="login__brand">
+        @if (brand.logoSrc(); as logo) {
+          <img class="login__logo" [src]="logo" alt="" />
+        } @else {
+          <span class="login__mark" aria-hidden="true">{{ brand.initial() }}</span>
+        }
+        <h1 class="login__title">{{ brand.branding().displayName }}</h1>
+        <p class="login__sub">Partner &amp; operations portal</p>
+      </div>
+
+      @if (error(); as problem) {
+        <ui-banner [tone]="problem.tone">{{ problem.message }}</ui-banner>
+      }
+
+      <ui-field label="Work email" for="login-email">
+        <input
+          uiInput
+          id="login-email"
+          name="email"
+          type="email"
+          required
+          autocomplete="username"
+          class="login__input"
+          [(ngModel)]="email"
+          [disabled]="busy()"
+        />
+      </ui-field>
+
+      <ui-field label="Password" for="login-password">
+        <span class="login__password">
+          <input
+            uiInput
+            id="login-password"
+            name="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            required
+            autocomplete="current-password"
+            class="login__input"
+            [(ngModel)]="password"
+            [disabled]="busy()"
+          />
+          <button
+            type="button"
+            uiButton="ghost"
+            size="sm"
+            iconOnly
+            class="login__eye"
+            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="showPassword.set(!showPassword())"
+          >
+            <ui-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+          </button>
+        </span>
+      </ui-field>
+
+      <button type="submit" uiButton="primary" size="lg" block [disabled]="busy() || !email || !password">
+        {{ busy() ? 'Signing in…' : 'Sign in' }}
+      </button>
+
+      @if (brand.branding().supportEmail; as support) {
+        <p class="login__help">
+          Trouble signing in? <a [href]="'mailto:' + support">Contact support</a>
+        </p>
+      }
+    </form>
+  </main>
+
+  @if (brand.branding(); as b) {
+    @if (b.legalFooter || b.supportEmail || b.supportPhone) {
+      <footer class="login__foot">
+        <span>
+          @if (b.supportEmail; as email) {
+            {{ email }}
+          }
+          @if (b.supportEmail && b.supportPhone) {
+            ·
+          }
+          @if (b.supportPhone; as phone) {
+            {{ phone }}
+          }
+        </span>
+        @if (b.legalFooter; as legal) {
+          <span>{{ legal }}</span>
+        }
+      </footer>
+    }
+  }
+</div>

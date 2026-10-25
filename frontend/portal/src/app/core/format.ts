@@ -38,3 +38,38 @@ export function formatDateTime(iso: string | null | undefined): string {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
       }).format(date);
 }
+
+export type Urgency = 'over' | 'soon' | 'ok';
+
+export interface RelativeDeadline {
+  /** Human phrase: "Overdue 3h", "in 19h", "in 2 days 17h", "in 4 days". */
+  label: string;
+  urgency: Urgency;
+}
+
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+/**
+ * Deadlines are shown twice: the absolute instant and how far away it is. Under a
+ * day is "soon"; past is "over". Returns null when there is no deadline.
+ */
+export function relativeDeadline(iso: string | null | undefined, now = new Date()): RelativeDeadline | null {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return null;
+
+  const diff = at - now.getTime();
+  const span = (ms: number): string => {
+    const days = Math.floor(ms / DAY);
+    const hours = Math.floor((ms % DAY) / HOUR);
+    const minutes = Math.floor((ms % HOUR) / 60_000);
+    if (days >= 3) return `${days} days`;
+    if (days >= 1) return hours > 0 ? `${days} day${days > 1 ? 's' : ''} ${hours}h` : `${days} day${days > 1 ? 's' : ''}`;
+    if (hours >= 1) return `${hours}h`;
+    return `${Math.max(minutes, 1)} min`;
+  };
+
+  if (diff < 0) return { label: `Overdue ${span(-diff)}`, urgency: 'over' };
+  return { label: `in ${span(diff)}`, urgency: diff < DAY ? 'soon' : 'ok' };
+}

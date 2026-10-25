@@ -1,0 +1,61 @@
+// Form controls carry the `uiInput` directive (class `ui-inp`). Labels, hints and
+// errors come from the ui-field component.
+.ui-inp {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  color: var(--ink);
+  width: 100%;
+  min-width: 0;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 18%, transparent);
+  }
+
+  &--error,
+  &[aria-invalid='true'] {
+    border-color: var(--bad);
+    box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.1);
+  }
+
+  &--sm {
+    height: 32px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+
+  &:disabled,
+  &[readonly] {
+    background: rgba(118, 118, 128, 0.08);
+    color: var(--ink-3);
+  }
+}
+
+textarea.ui-inp {
+  height: auto;
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 84px;
+}
+
+select.ui-inp {
+  padding-right: 32px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B6472' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+.ui-chk {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  margin: 0;
+  flex: none;
+}

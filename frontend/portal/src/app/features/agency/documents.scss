@@ -1,0 +1,9 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+tr.annulled td {
+  opacity: 0.6;
+}

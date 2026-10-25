@@ -1,0 +1,104 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// One glass bar: each criterion is a recessed cell, the primary button closes the row.
+.search {
+  @include glass;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-radius: 22px;
+  align-items: stretch;
+}
+
+.search__cell {
+  @include inset;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 16px;
+  flex: 1 1 160px;
+  min-width: 0;
+  cursor: pointer;
+
+  &--wide {
+    flex: 2 1 260px;
+  }
+
+  &--dates {
+    flex: 1.5 1 230px;
+  }
+
+  &--pax {
+    flex: 0 1 96px;
+  }
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 25%, transparent);
+  }
+}
+
+.search__lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.search__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mute);
+}
+
+.search__ctl {
+  border: 0;
+  background: transparent;
+  font-weight: 600;
+  outline: none;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+  height: 22px;
+
+  &:disabled {
+    color: var(--mute);
+    font-weight: 500;
+  }
+}
+
+.search__go {
+  height: auto;
+  min-height: 56px;
+  border-radius: 16px;
+  flex: 0 1 140px;
+
+  @include below($bp-sm) {
+    flex: 1 1 100%;
+  }
+}
+
+.results {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  margin-left: 6px;
+  color: #d29a1e;
+  vertical-align: middle;
+}

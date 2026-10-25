@@ -1,15 +1,28 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BookingDto, RePriceResponse } from '../../core/api.types';
-import { formatDate, formatDateTime, formatMoney } from '../../core/format';
 import { problemMessage } from '../../core/problem';
+import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import {
+  Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Field, Icon, InputDirective,
+  PageHeader, StatusChip,
+} from '../../shared/ui';
 import { BookingDraftService } from './booking-draft.service';
 import {
   PassengerForm, emptyPassenger, passengerTypeAt, toPassengerRequest, validatePassengers,
 } from './passenger-form';
+
+type Step = 'passengers' | 'price' | 'done';
+
+const STEPS: { key: Step; label: string; title: string }[] = [
+  { key: 'passengers', label: 'Travellers', title: 'Who’s travelling?' },
+  { key: 'price', label: 'Price', title: 'Review the price' },
+  { key: 'done', label: 'Submitted', title: 'Booking submitted' },
+];
 
 /**
  * Agency wizard: passengers → live price → submit. Submitting hands the reservation
@@ -17,40 +30,34 @@ import {
  */
 @Component({
   selector: 'app-agency-book',
-  imports: [FormsModule, RouterLink],
+  imports: [
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe,
+    Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, PageHeader, StatusChip,
+  ],
   templateUrl: './book.html',
-  styles: `
-    .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; max-width: 60rem; }
-    .passenger { border: 1px solid var(--border); border-radius: .6rem; padding: 1rem; margin-bottom: 1rem; }
-    .passenger header { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
-    .passenger header h4 { margin: 0; flex: 1; }
-    .passenger header label { font-size: .85rem; display: flex; align-items: center; gap: .35rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .6rem; }
-    .field { display: flex; flex-direction: column; gap: .25rem; }
-    .field label { font-size: .75rem; font-weight: 600; color: var(--text-muted); }
-    select { padding: .5rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--surface-1); font: inherit; }
-    .hint { font-size: .8rem; color: var(--text-muted); }
-    .problems { margin: .75rem 0 0; padding: .7rem .9rem; border-radius: .5rem; background: #fff4e0; border: 1px solid #f0c36d; font-size: .85rem; }
-    .problems li { margin: .15rem 0; }
-    .actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1rem; }
-    .price { font-size: 1.8rem; font-weight: 800; margin: .5rem 0; }
-    .drift { background: #fff4e0; border: 1px solid #f0c36d; padding: .7rem .9rem; border-radius: .5rem; }
-    .done h3 { margin-top: 0; }
-    .muted { color: var(--text-muted); }
-    .error { color: var(--danger); }
-  `,
+  styleUrl: './book.scss',
 })
 export class AgencyBook {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly draft = inject(BookingDraftService);
+  private readonly dialogs = inject(DialogService);
 
   readonly context = this.draft.context();
-  readonly step = signal<'passengers' | 'price' | 'done'>('passengers');
+  readonly step = signal<Step>('passengers');
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly booking = signal<BookingDto | null>(null);
   readonly drifted = signal(false);
+
+  readonly steps = STEPS;
+  readonly title = computed(() => STEPS.find(s => s.key === this.step())?.title ?? '');
+  readonly stepIndex = computed(() => STEPS.findIndex(s => s.key === this.step()));
+
+  /** What the summary shows: the live price once we have it, the search price before. */
+  readonly total = computed(() => this.booking()?.sellPrice ?? this.context?.searchSellPrice ?? null);
+  readonly commission = computed(
+    () => this.booking()?.agencyCommission ?? this.context?.offer.agencyCommission ?? null);
 
   /** Set once the draft exists so later edits replace its passengers instead of
    *  creating a second (orphan) draft. */
@@ -61,15 +68,11 @@ export class AgencyBook {
     { length: (this.context?.adults ?? 1) + (this.context?.children ?? 0) }, emptyPassenger);
   leadIndex = 0;
 
-  readonly fmtMoney = formatMoney;
-  readonly fmtDate = formatDate;
-  readonly fmtDateTime = formatDateTime;
-
   slotLabel(index: number): string {
-    if (!this.context) return `Passenger ${index + 1}`;
+    if (!this.context) return `Traveller ${index + 1}`;
     return index < this.context.adults
-      ? `Adult ${index + 1}`
-      : `Child ${index - this.context.adults + 1}`;
+      ? `Traveller ${index + 1} · Adult`
+      : `Traveller ${index + 1} · Child`;
   }
 
   typeHint(p: PassengerForm): string {
@@ -82,6 +85,10 @@ export class AgencyBook {
     return this.context
       ? validatePassengers(this.passengers, this.leadIndex, this.context)
       : [];
+  }
+
+  stars(count: number): number[] {
+    return Array.from({ length: count });
   }
 
   async continueToPrice(): Promise<void> {
@@ -132,6 +139,14 @@ export class AgencyBook {
   async cancel(): Promise<void> {
     const id = this.booking()?.id ?? this.draftId;
     if (!id) return;
+    const decision = await this.dialogs.confirm({
+      title: 'Discard this reservation?',
+      message: 'The draft is cancelled. Nothing has been sent to the supplier or charged.',
+      confirmLabel: 'Discard reservation',
+      cancelLabel: 'Keep editing',
+      destructive: true,
+    });
+    if (!decision) return;
     await this.run(async () => {
       await firstValueFrom(this.http.post(`/api/v1/bookings/${id}/cancel`, {}));
       this.draftId = null;
