@@ -1,10 +1,15 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Component, WritableSignal, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AgencyDto, OperatorBookingSummary, PagedResult } from '../../core/api.types';
-import { formatDate, formatDateTime, formatMoney } from '../../core/format';
+import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import {
+  ButtonDirective, Card, Deadline, EmptyState, InputDirective, PageHeader, Pager, Skeleton, StatusChip,
+  bookingStatusLabel,
+} from '../../shared/ui';
 
 export const BOOKING_STATUSES = [
   'Draft', 'PriceConfirmed', 'PendingConfirmation', 'AwaitingPayment',
@@ -14,27 +19,12 @@ export const BOOKING_STATUSES = [
 /** Operator oversight: every agency's reservations, filtered and paged by the API. */
 @Component({
   selector: 'app-admin-bookings',
-  imports: [FormsModule],
+  imports: [
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe,
+    ButtonDirective, Card, Deadline, EmptyState, InputDirective, PageHeader, Pager, Skeleton, StatusChip,
+  ],
   templateUrl: './bookings.html',
-  styles: `
-    .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: .75rem; }
-    .filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .field { display: flex; flex-direction: column; gap: .3rem; }
-    label { font-size: .8rem; font-weight: 600; }
-    select, input { padding: .5rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--surface-1); font: inherit; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: .7rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th.num, td.num { text-align: right; }
-    .strong { font-weight: 700; }
-    .muted { color: var(--text-muted); font-size: .85rem; }
-    .clickable { cursor: pointer; }
-    .chip { padding: .2rem .55rem; border-radius: 1rem; font-size: .75rem; font-weight: 600; background: var(--surface-2); white-space: nowrap; }
-    .chip.s-Confirmed { background: #e2f4e5; color: #1b6e2a; }
-    .chip.s-AwaitingPayment { background: #fff4e0; color: #8a5a00; }
-    .chip.s-Cancelled, .chip.s-Failed, .chip.s-Rejected, .chip.s-Expired { background: #fbe4e4; color: #a32020; }
-    .pager { display: flex; gap: 1rem; align-items: center; justify-content: flex-end; padding: .75rem 1.25rem; }
-    .error { color: var(--danger); }
-  `,
+  styleUrl: './bookings.scss',
 })
 export class AdminBookings {
   private readonly http = inject(HttpClient);
@@ -70,14 +60,9 @@ export class AdminBookings {
     },
   });
 
-  readonly pageCount = computed(() => {
-    const result = this.bookings.value();
-    return result ? Math.max(1, Math.ceil(result.totalCount / result.pageSize)) : 1;
-  });
+  readonly hasFilters = computed(() => !!(this.status() || this.agencyId() || this.from() || this.to()));
 
-  readonly fmtMoney = formatMoney;
-  readonly fmtDate = formatDate;
-  readonly fmtDateTime = formatDateTime;
+  readonly statusLabel = bookingStatusLabel;
 
   agencyName(id: string): string {
     return this.agencyNames().get(id) ?? id.slice(0, 8);
@@ -86,6 +71,14 @@ export class AdminBookings {
   /** Any filter change restarts paging from the first page. */
   filter(target: WritableSignal<string>, value: string): void {
     target.set(value);
+    this.page.set(1);
+  }
+
+  clearFilters(): void {
+    this.status.set('');
+    this.agencyId.set('');
+    this.from.set('');
+    this.to.set('');
     this.page.set(1);
   }
 

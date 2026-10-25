@@ -1,0 +1,132 @@
+@use 'mixins' as *;
+
+.shell {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  min-height: 100dvh;
+  align-items: flex-start;
+}
+
+.sidecol {
+  flex: 0 0 252px;
+  position: sticky;
+  top: 16px;
+}
+
+.sidecol__close {
+  display: none;
+}
+
+.mainc {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 4px 8px;
+}
+
+.topbar {
+  display: none;
+}
+
+.shell__scrim {
+  display: none;
+}
+
+@include below($bp-md) {
+  .shell {
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .topbar {
+    @include glass;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    width: 100%;
+    position: sticky;
+    top: 12px;
+    z-index: var(--z-sticky);
+
+    &__brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      min-width: 0;
+      @include truncate;
+
+      img {
+        height: 28px;
+        max-width: 7rem;
+        object-fit: contain;
+      }
+    }
+
+    &__mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: var(--on-primary);
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+    }
+  }
+
+  .sidecol {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    padding: 12px;
+    z-index: var(--z-drawer);
+    transform: translateX(-104%);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+  }
+
+  .sidecol__close {
+    display: inline-flex;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1;
+  }
+
+  .shell--drawer .sidecol {
+    transform: none;
+  }
+
+  .shell__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 20, 28, 0.26);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    z-index: var(--z-scrim);
+  }
+
+  // The drawer must sit above its own scrim.
+  .shell--drawer .sidecol {
+    z-index: calc(var(--z-scrim) + 1);
+  }
+
+  .mainc {
+    padding: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidecol {
+    transition: none;
+  }
+}

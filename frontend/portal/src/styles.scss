@@ -1,0 +1,10 @@
+// Global stylesheet: design tokens, reset and the design-system primitives that
+// native elements and feature templates rely on. Everything component-specific
+// lives next to its component (`*.scss`) and builds on `@use 'mixins'`.
+@use 'tokens';
+@use 'reset';
+@use 'utilities';
+@use 'primitives/surfaces';
+@use 'primitives/button';
+@use 'primitives/input';
+@use 'primitives/table';

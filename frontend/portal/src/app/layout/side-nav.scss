@@ -1,0 +1,159 @@
+@use 'mixins' as *;
+
+:host {
+  @include glass;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  width: 100%;
+  min-height: calc(100dvh - 32px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 12px;
+  min-width: 0;
+
+  &__mark,
+  &__logo {
+    width: 34px;
+    height: 34px;
+    flex: none;
+  }
+
+  &__mark {
+    border-radius: 10px;
+    background: var(--primary);
+    color: var(--on-primary);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  &__logo {
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    @include truncate;
+  }
+
+  &__area {
+    font-size: 12px;
+    color: var(--mute);
+  }
+}
+
+.side__cta {
+  margin-bottom: 8px;
+}
+
+.side__section {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mute);
+  padding: 14px 10px 4px;
+}
+
+.side__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+
+  &:hover {
+    background: rgba(15, 23, 42, 0.05);
+  }
+
+  &--on {
+    background: brand-tint(12%);
+    color: var(--primary-ink);
+    font-weight: 600;
+
+    .side__count {
+      color: var(--primary-ink);
+    }
+  }
+}
+
+.side__label {
+  @include truncate;
+}
+
+.side__count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  @include tabular;
+}
+
+.side__spacer {
+  flex: 1 1 auto;
+}
+
+.side__me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.side__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #d5dae2;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink-2);
+  flex: none;
+}
+
+.side__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.side__name {
+  font-weight: 600;
+  font-size: 13px;
+  @include truncate;
+}
+
+.side__role {
+  font-size: 12px;
+  color: var(--mute);
+}

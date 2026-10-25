@@ -1,0 +1,12 @@
+@use 'mixins' as *;
+
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mask {
+  @include mono;
+  letter-spacing: 0.04em;
+}

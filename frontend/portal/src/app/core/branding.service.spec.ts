@@ -26,8 +26,9 @@ describe('BrandingService', () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     service = TestBed.inject(BrandingService);
     http = TestBed.inject(HttpTestingController);
-    document.documentElement.style.removeProperty('--accent');
-    document.documentElement.style.removeProperty('--accent-2');
+    for (const token of ['--primary', '--primary-ink', '--on-primary', '--accent', '--accent-ink']) {
+      document.documentElement.style.removeProperty(token);
+    }
   });
 
   it('applies the deployment branding to the tokens, the title and the logo', async () => {
@@ -36,8 +37,13 @@ describe('BrandingService', () => {
     await loading;
 
     expect(service.branding().displayName).toBe('Paradise Travel');
-    expect(document.documentElement.style.getPropertyValue('--accent')).toBe('#0a7c86');
-    expect(document.documentElement.style.getPropertyValue('--accent-2')).toBe('#f2a900');
+    const tokens = document.documentElement.style;
+    expect(tokens.getPropertyValue('--primary')).toBe('#0a7c86');
+    expect(tokens.getPropertyValue('--accent')).toBe('#f2a900');
+    // Derived, not copied: the light accent is darkened into a readable ink, the dark primary is not.
+    expect(tokens.getPropertyValue('--primary-ink')).toBe('#0a7c86');
+    expect(tokens.getPropertyValue('--accent-ink')).not.toBe('#f2a900');
+    expect(tokens.getPropertyValue('--on-primary')).toBe('#ffffff');
     expect(document.title).toBe('Paradise Travel');
     expect(service.logoSrc()).toBe('/api/v1/branding/logo?v=ae9e3aef9225');
   });
@@ -49,7 +55,7 @@ describe('BrandingService', () => {
 
     expect(service.branding()).toEqual(DEFAULT_BRANDING);
     expect(service.logoSrc()).toBeNull();
-    expect(document.documentElement.style.getPropertyValue('--accent')).toBe('#1f5eff');
+    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#1946b8');
   });
 
   it('has no logo source when the operator has not uploaded one', () => {

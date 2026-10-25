@@ -1,0 +1,34 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--fill);
+  color: var(--ink-3);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+:host(.pill--ok) {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+:host(.pill--warn) {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+:host(.pill--bad) {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+:host(.pill--brand) {
+  background: color-mix(in oklab, var(--primary) 12%, white);
+  color: var(--primary-ink);
+}

@@ -1,0 +1,28 @@
+@use 'mixins' as *;
+
+.glass {
+  @include glass;
+
+  &--solid {
+    background: rgba(255, 255, 255, 0.84);
+  }
+}
+
+.inset {
+  @include inset;
+}
+
+// Footer line under every page: support contact and legal footer.
+.foot {
+  font-size: 12px;
+  color: var(--mute);
+  padding: 8px 4px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  a {
+    color: inherit;
+  }
+}

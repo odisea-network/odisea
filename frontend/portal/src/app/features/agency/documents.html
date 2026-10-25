@@ -1,41 +1,66 @@
-<h2>Documents</h2>
+<ui-page-header title="Documents" sub="Invoices and credit notes issued to your agency" />
+
 @if (documents.error()) {
-  <p class="error" role="alert">Could not load documents — try reloading.</p>
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load documents" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="documents.reload()">Retry</button>
+  </ui-empty-state>
 } @else if (documents.isLoading()) {
-  <p>Loading…</p>
-} @else {
-  <table class="card">
-    <thead>
-      <tr>
-        <th>№</th><th>Вид</th><th>Дата</th><th>Резервация</th>
-        <th class="num">Сума</th><th>Статус</th><th></th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (d of documents.value(); track d.id) {
-        <tr>
-          <td class="strong">{{ d.number }}</td>
-          <td>{{ kindLabel(d.kind) }}
-            @if (d.relatedDocumentNumber) {
-              <span class="muted">→ № {{ d.relatedDocumentNumber }}</span>
+  <ui-card><ui-skeleton [lines]="4" /></ui-card>
+} @else if (documents.value(); as list) {
+  @if (list.length === 0) {
+    <ui-empty-state icon="file" title="No documents yet" description="The invoice for a booking appears here once the operator confirms it." />
+  } @else {
+    <ui-card flush>
+      <div class="tw">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Booking</th>
+              <th class="r">Amount</th>
+              <th>Status</th>
+              <th><span class="sr-only">Download</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of list; track d.id) {
+              <tr [class.annulled]="d.status === 'Annulled'">
+                <td class="mono strong">{{ d.number }}</td>
+                <td>
+                  {{ kindLabel(d.kind) }}
+                  @if (d.relatedDocumentNumber) {
+                    <div class="sub-line">→ № {{ d.relatedDocumentNumber }}</div>
+                  }
+                </td>
+                <td class="num">{{ d.issueDate | odDate }}</td>
+                <td>{{ d.bookingRef ?? '—' }}</td>
+                <td class="r m strong">{{ d.total | money: d.currency }}</td>
+                <td>
+                  @if (d.status === 'Annulled') {
+                    <ui-pill>Annulled · Анулиран</ui-pill>
+                  } @else {
+                    <ui-pill tone="ok">Issued · Издаден</ui-pill>
+                  }
+                </td>
+                <td class="r">
+                  <button
+                    type="button"
+                    uiButton="ghost"
+                    size="sm"
+                    (click)="download(d)"
+                    [disabled]="downloading() === d.id"
+                    [attr.aria-label]="'Download PDF ' + d.number"
+                  >
+                    <ui-icon name="download" />{{ downloading() === d.id ? '…' : 'PDF' }}
+                  </button>
+                </td>
+              </tr>
             }
-          </td>
-          <td>{{ fmtDate(d.issueDate) }}</td>
-          <td>{{ d.bookingRef ?? '—' }}</td>
-          <td class="num">{{ fmtMoney(d.total, d.currency) }}</td>
-          <td>{{ d.status === 'Annulled' ? 'Анулиран' : 'Издаден' }}</td>
-          <td>
-            <button type="button" class="ghost" (click)="download(d)" [disabled]="downloading() === d.id">
-              {{ downloading() === d.id ? '…' : 'PDF' }}
-            </button>
-          </td>
-        </tr>
-      } @empty {
-        <tr><td colspan="7">No documents yet.</td></tr>
-      }
-    </tbody>
-  </table>
-}
-@if (error()) {
-  <p class="error" role="alert">{{ error() }}</p>
+          </tbody>
+        </table>
+      </div>
+    </ui-card>
+  }
 }

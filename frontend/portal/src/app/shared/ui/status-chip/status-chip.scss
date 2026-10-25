@@ -1,0 +1,63 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+// Semantic colours are fixed on purpose — a status means the same for every operator.
+:host(.chip--draft) {
+  background: #f4f5f7;
+  color: #4a505c;
+  border-color: #c9cdd4;
+  border-style: dashed;
+}
+
+:host(.chip--priced) {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+:host(.chip--pending) {
+  background: #f2edff;
+  color: #5b21b6;
+}
+
+:host(.chip--await) {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+:host(.chip--confirmed) {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+:host(.chip--rejected) {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+:host(.chip--expired) {
+  background: #e9ebee;
+  color: var(--ink-3);
+}
+
+:host(.chip--cancelled) {
+  background: #fff;
+  color: var(--ink-3);
+  border-color: #c9cdd4;
+}
+
+:host(.chip--failed) {
+  background: #a3200f;
+  color: #fff;
+}

@@ -1,0 +1,22 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--mute);
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.pager__text {
+  @include tabular;
+}
+
+.pager__nav {
+  display: flex;
+  gap: 6px;
+}

@@ -1,84 +1,135 @@
-<h2>Bookings</h2>
-@if (error()) {
-  <p class="error" role="alert">{{ error() }}</p>
+<ui-page-header title="Bookings" sub="Every reservation made by your agency">
+  <a actions uiButton="primary" routerLink="/agency/search"><ui-icon name="plus" />New booking</a>
+</ui-page-header>
+
+@if (error(); as message) {
+  <ui-banner tone="bad">{{ message }}</ui-banner>
 }
+
 @if (bookings.error()) {
-  <p class="error" role="alert">Could not load bookings — try reloading.</p>
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load bookings" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="bookings.reload()">Retry</button>
+  </ui-empty-state>
 } @else if (bookings.isLoading()) {
-  <p>Loading…</p>
-} @else {
-  <table class="card">
-    <thead>
-      <tr>
-        <th>Ref</th><th>Program / hotel</th><th>Dates</th>
-        <th class="num">Price</th><th class="num">Paid / due</th><th>Status</th><th></th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (b of bookings.value(); track b.id) {
-        <tr (click)="toggle(b.id)" class="clickable">
-          <td class="strong">{{ b.ref }}</td>
-          <td>{{ b.programName }}<br /><span class="muted">{{ b.hotelName }} · {{ b.adults }} ad. {{ b.children }} ch.</span></td>
-          <td>{{ fmtDate(b.checkIn) }} – {{ fmtDate(b.checkOut) }}</td>
-          <td class="num">{{ fmtMoney(b.sellPrice, b.currency) }}</td>
-          <td class="num">
-            {{ fmtMoney(b.paidAmount, b.currency) }}
-            @if (b.sellPrice !== null && b.balanceDue > 0) {
-              <br /><span class="muted">due {{ fmtMoney(b.balanceDue, b.currency) }}</span>
-            }
-          </td>
-          <td>
-            <span class="chip" [class]="'chip s-' + b.status">{{ statusLabel(b.status) }}</span>
-            @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
-              <br /><span class="muted">pay by {{ fmtDateTime(b.paymentDueAt) }}</span>
-            }
-          </td>
-          <td>
-            @if (cancellable(b)) {
-              <button type="button" class="ghost" (click)="cancel(b, $event)" [disabled]="busy()">
-                Cancel
-              </button>
-            }
-          </td>
-        </tr>
-        @if (expanded() === b.id) {
-          <tr class="detail">
-            <td colspan="7">
-              <div class="columns">
-                <div>
-                  <h4>Passengers</h4>
-                  @for (p of b.passengers; track p.id) {
-                    <p>
-                      {{ p.isLead ? '★ ' : '' }}{{ p.title ? p.title + ' ' : '' }}{{ p.firstName }} {{ p.lastName }}
-                      <span class="muted">
-                        · {{ p.passengerType ?? '—' }}
-                        @if (p.documentType) { · {{ p.documentType === 'IdCard' ? 'ID card' : p.documentType }} {{ p.documentNumber }} }
-                        @if (p.isLead && p.email) { · {{ p.email }} }
-                      </span>
-                    </p>
-                  }
-                </div>
-                <div>
-                  <h4>History</h4>
-                  @for (h of b.history; track h.at) {
-                    <p class="muted">{{ fmtDateTime(h.at) }} · {{ h.from }} → {{ h.to }} · {{ h.actor }}
-                      @if (h.note) { <em> — {{ h.note }}</em> }
-                    </p>
-                  }
-                </div>
-                @if (b.providerBookingRef) {
-                  <div>
-                    <h4>Supplier</h4>
-                    <p class="muted">Reference {{ b.providerBookingRef }}</p>
-                  </div>
+  <ui-card><ui-skeleton [lines]="5" /></ui-card>
+} @else if (bookings.value(); as all) {
+  @if (all.length === 0) {
+    <ui-empty-state icon="bookings" title="No bookings yet" description="Search for a package to make your first booking.">
+      <a uiButton="primary" size="sm" routerLink="/agency/search">Search packages</a>
+    </ui-empty-state>
+  } @else {
+    <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" />
+
+    <ui-card flush>
+      @if (filtered().length === 0) {
+        <div class="none">Nothing in this view.</div>
+      } @else {
+        <div class="tw">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th class="toggle"><span class="sr-only">Details</span></th>
+                <th>Ref</th>
+                <th>Travellers</th>
+                <th>Package</th>
+                <th>Travel dates</th>
+                <th>Status</th>
+                <th class="r">Paid</th>
+                <th class="r">Balance due</th>
+                <th>Pay by</th>
+                <th><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (b of filtered(); track b.id) {
+                <tr class="clickable" (click)="toggle(b.id)" [attr.aria-expanded]="expanded() === b.id">
+                  <td class="toggle"><ui-icon [name]="expanded() === b.id ? 'chevron-down' : 'chevron-right'" size="sm" /></td>
+                  <td><span class="ref">{{ b.ref }}</span></td>
+                  <td>
+                    @if (lead(b); as lead) {
+                      <b>{{ lead.firstName }} {{ lead.lastName }}</b>
+                      @if (b.passengers.length > 1) {
+                        <span class="muted"> +{{ b.passengers.length - 1 }}</span>
+                      }
+                    } @else {
+                      <span class="muted">{{ b.adults }} ad. {{ b.children }} ch.</span>
+                    }
+                  </td>
+                  <td>{{ b.hotelName }}<div class="sub-line">{{ b.programName }}</div></td>
+                  <td class="num">{{ b.checkIn | odDate }} – {{ b.checkOut | odDate }}</td>
+                  <td><ui-status-chip [status]="b.status" /></td>
+                  <td class="r m">{{ b.paidAmount | money: b.currency }}</td>
+                  <td class="r m strong">{{ b.sellPrice === null ? '—' : (b.balanceDue | money: b.currency) }}</td>
+                  <td>
+                    @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
+                      <ui-deadline [at]="b.paymentDueAt" />
+                    }
+                  </td>
+                  <td class="r">
+                    @if (cancellable(b)) {
+                      <button type="button" uiButton="danger-quiet" size="sm" (click)="cancel(b, $event)" [disabled]="busy()">
+                        Cancel
+                      </button>
+                    }
+                  </td>
+                </tr>
+                @if (expanded() === b.id) {
+                  <tr class="detail">
+                    <td colspan="10">
+                      <div class="detail__grid">
+                        <section class="detail__block">
+                          <h3 class="h3">Travellers</h3>
+                          <ul class="people">
+                            @for (p of b.passengers; track p.id) {
+                              <li class="person">
+                                <span class="person__name">
+                                  <b>{{ p.title ? p.title + ' ' : '' }}{{ p.firstName }} {{ p.lastName }}</b>
+                                  @if (p.isLead) {
+                                    <ui-pill tone="brand">Lead</ui-pill>
+                                  }
+                                </span>
+                                <span class="small muted person__doc">
+                                  {{ p.passengerType ?? '—' }}
+                                  @if (p.documentType) {
+                                    · {{ p.documentType === 'IdCard' ? 'ID card' : p.documentType }}
+                                    <ui-masked [value]="p.documentNumber" [subject]="'document number for ' + p.firstName + ' ' + p.lastName" />
+                                  }
+                                </span>
+                                @if (p.isLead && (p.email || p.phone)) {
+                                  <span class="small muted">{{ p.email }}{{ p.email && p.phone ? ' · ' : '' }}{{ p.phone }}</span>
+                                }
+                              </li>
+                            }
+                          </ul>
+                        </section>
+                        <section class="detail__block">
+                          <h3 class="h3">History</h3>
+                          <ui-timeline [items]="timeline(b)" />
+                        </section>
+                        @if (b.providerBookingRef || b.status === 'AwaitingPayment') {
+                          <section class="detail__block">
+                            <h3 class="h3">Payment</h3>
+                            <dl class="kv detail__kv">
+                              <dt>Total</dt><dd class="m">{{ b.sellPrice | money: b.currency }}</dd>
+                              <dt>Paid</dt><dd class="m">{{ b.paidAmount | money: b.currency }}</dd>
+                              <dt>Balance due</dt><dd class="m strong">{{ b.balanceDue | money: b.currency }}</dd>
+                              <dt>Your commission</dt><dd class="m">{{ b.agencyCommission | money: b.currency }}</dd>
+                              <dt>Reference</dt><dd class="mono">{{ b.ref }}</dd>
+                              @if (b.providerBookingRef) {
+                                <dt>Supplier ref</dt><dd class="mono">{{ b.providerBookingRef }}</dd>
+                              }
+                            </dl>
+                          </section>
+                        }
+                      </div>
+                    </td>
+                  </tr>
                 }
-              </div>
-            </td>
-          </tr>
-        }
-      } @empty {
-        <tr><td colspan="7">No bookings yet — start from Search.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
-    </tbody>
-  </table>
+    </ui-card>
+  }
 }

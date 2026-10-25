@@ -1,0 +1,128 @@
+@use 'mixins' as *;
+
+// Typography scale (page titles are rendered by ui-page-header).
+.h2 {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+}
+
+.h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.sub {
+  color: var(--mute);
+  font-size: 14px;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.muted {
+  color: var(--mute);
+}
+
+.strong {
+  font-weight: 600;
+}
+
+// Money and other figures: tabular, never wrapped; `.r` right-aligns in tables.
+.m,
+.num {
+  @include tabular;
+}
+
+.m {
+  white-space: nowrap;
+}
+
+.r {
+  text-align: right;
+}
+
+.mono {
+  @include mono;
+}
+
+.mask {
+  @include mono;
+  letter-spacing: 0.04em;
+}
+
+.sr-only {
+  @include visually-hidden;
+}
+
+// Layout helpers mirroring the design's building blocks.
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hr {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+  width: 100%;
+}
+
+// Key / value list.
+.kv {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 10px 20px;
+  font-size: 14px;
+
+  dt {
+    color: var(--mute);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+// Deadlines: urgency is told by words and position, colour only reinforces it.
+.u-over {
+  color: var(--bad);
+}
+
+.u-soon {
+  color: var(--warn);
+}
+
+.u-ok {
+  color: var(--ink-2);
+}

@@ -1,0 +1,87 @@
+// Data tables live in feature templates, so their skin is global. Wrap a table
+// in `.tw` so wide tables scroll inside their card instead of the page.
+.tw {
+  overflow-x: auto;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+
+  th {
+    position: sticky;
+    top: 0;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mute);
+    padding: 10px 12px;
+    background: rgba(246, 247, 249, 0.92);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  th.r,
+  td.r {
+    text-align: right;
+  }
+
+  td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  tbody tr.clickable {
+    cursor: pointer;
+  }
+
+  tbody tr.void td {
+    color: var(--mute);
+    text-decoration: line-through;
+  }
+
+  // Secondary line under a cell's main value.
+  .sub-line {
+    font-size: 12px;
+    color: var(--mute);
+    margin-top: 2px;
+  }
+
+  &--dense td {
+    padding: 7px 12px;
+  }
+}
+
+// Reference-style link (booking ref, document number).
+.ref {
+  font-weight: 600;
+  color: var(--primary-ink);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Filter / search strip above a table.
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+}

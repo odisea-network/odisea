@@ -1,17 +1,18 @@
 import { Component } from '@angular/core';
-import { NavLink, Shell } from './shell';
+import { Shell } from './shell';
+import { NavGroup } from './side-nav';
 
 @Component({
   selector: 'app-admin-shell',
   imports: [Shell],
-  template: `<app-shell [links]="links" />`,
+  template: `<app-shell area="Back-office" [groups]="groups" />`,
 })
 export class AdminShell {
-  readonly links: NavLink[] = [
-    { path: '/admin/agencies', label: 'Agencies' },
-    { path: '/admin/programs', label: 'Programs' },
-    { path: '/admin/pricing', label: 'Pricing' },
-    { path: '/admin/bookings', label: 'Bookings' },
-    { path: '/admin/documents', label: 'Documents' },
+  readonly groups: NavGroup[] = [
+    { items: [{ label: 'Bookings', link: '/admin/bookings', icon: 'bookings' }] },
+    { label: 'Partners', items: [{ label: 'Agencies', link: '/admin/agencies', icon: 'building' }] },
+    { label: 'Catalogue', items: [{ label: 'Programs', link: '/admin/programs', icon: 'layers' }] },
+    { label: 'Pricing', items: [{ label: 'Pricing rules', link: '/admin/pricing', icon: 'percent' }] },
+    { label: 'Finance', items: [{ label: 'Documents', link: '/admin/documents', icon: 'documents' }] },
   ];
 }

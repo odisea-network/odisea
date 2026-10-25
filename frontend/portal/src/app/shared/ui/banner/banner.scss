@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.banner__body {
+  min-width: 0;
+}
+
+:host(.banner--info) {
+  background: var(--info-bg);
+  color: #173ea8;
+}
+
+:host(.banner--ok) {
+  background: var(--ok-bg);
+  color: #0c4f2c;
+}
+
+:host(.banner--warn) {
+  background: var(--warn-bg);
+  color: #6b3400;
+}
+
+:host(.banner--bad) {
+  background: var(--bad-bg);
+  color: #8a1a12;
+}

@@ -4,56 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandingService } from '../../core/branding.service';
+import { Banner, ButtonDirective, Field, Icon, InputDirective } from '../../shared/ui';
+
+interface LoginError {
+  tone: 'bad' | 'warn';
+  message: string;
+}
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule],
-  template: `
-    <div class="login-page">
-      <form class="login-card" (ngSubmit)="submit()">
-        @if (brand.logoSrc(); as logo) {
-          <img class="logo" [src]="logo" alt="" />
-        }
-        <h1>{{ brand.branding().displayName }}</h1>
-        <p class="subtitle">B2B travel platform</p>
-
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" required autocomplete="username"
-               [(ngModel)]="email" [disabled]="busy()" />
-
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" required autocomplete="current-password"
-               [(ngModel)]="password" [disabled]="busy()" />
-
-        @if (error()) {
-          <p class="error" role="alert">{{ error() }}</p>
-        }
-
-        <button type="submit" [disabled]="busy() || !email || !password">
-          {{ busy() ? 'Signing in…' : 'Sign in' }}
-        </button>
-
-        @if (brand.branding().supportEmail; as support) {
-          <p class="support">Need access? <a [href]="'mailto:' + support">{{ support }}</a></p>
-        }
-      </form>
-    </div>
-  `,
-  styles: `
-    .login-page { min-height: 100dvh; display: grid; place-items: center; background: var(--surface-2); }
-    .login-card {
-      display: flex; flex-direction: column; gap: .5rem;
-      width: min(22rem, 90vw); padding: 2rem; border-radius: .75rem;
-      background: var(--surface-1); box-shadow: 0 8px 30px rgb(0 0 0 / .08);
-    }
-    .logo { max-height: 3.5rem; max-width: 100%; align-self: flex-start; object-fit: contain; }
-    h1 { margin: 0; font-size: 1.6rem; color: var(--accent-2); }
-    .subtitle { margin: 0 0 1rem; color: var(--text-muted); font-size: .9rem; }
-    label { font-size: .8rem; font-weight: 600; }
-    .error { color: var(--danger); font-size: .85rem; margin: .25rem 0 0; }
-    button { margin-top: 1rem; }
-    .support { margin: 1rem 0 0; font-size: .8rem; color: var(--text-muted); }
-  `,
+  imports: [FormsModule, Banner, ButtonDirective, Field, Icon, InputDirective],
+  templateUrl: './login.html',
+  styleUrl: './login.scss',
 })
 export class Login {
   private readonly auth = inject(AuthService);
@@ -63,7 +25,8 @@ export class Login {
   email = '';
   password = '';
   readonly busy = signal(false);
-  readonly error = signal<string | null>(null);
+  readonly showPassword = signal(false);
+  readonly error = signal<LoginError | null>(null);
 
   async submit(): Promise<void> {
     this.busy.set(true);
@@ -72,13 +35,23 @@ export class Login {
       const user = await this.auth.login(this.email, this.password);
       await this.router.navigate([user.userType === 'agency' ? '/agency' : '/admin']);
     } catch (err) {
-      this.error.set(
-        err instanceof HttpErrorResponse && (err.status === 401 || err.status === 423)
-          ? ((err.error?.detail as string) ?? 'Invalid email or password.')
-          : 'Login failed — is the API running?',
-      );
+      this.error.set(describe(err));
     } finally {
       this.busy.set(false);
     }
   }
+}
+
+/** Same wording for unknown email and wrong password — the API never says which. */
+function describe(err: unknown): LoginError {
+  if (err instanceof HttpErrorResponse) {
+    const detail = (err.error?.detail as string | undefined) ?? undefined;
+    if (err.status === 423) {
+      return { tone: 'warn', message: detail ?? 'Too many attempts. Sign-in is paused for 15 minutes.' };
+    }
+    if (err.status === 401) {
+      return { tone: 'bad', message: detail ?? 'Email or password is incorrect.' };
+    }
+  }
+  return { tone: 'bad', message: 'Could not reach the server. Try again in a moment.' };
 }

@@ -1,0 +1,22 @@
+@use 'mixins' as *;
+
+:host {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.25;
+  gap: 1px;
+}
+
+.dl__rel {
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.dl__abs {
+  font-size: 12px;
+  color: var(--mute);
+  @include tabular;
+}

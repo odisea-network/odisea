@@ -1,0 +1,49 @@
+@use 'mixins' as *;
+
+:host {
+  @include glass;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  min-width: 0;
+}
+
+:host(.card--solid) {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+// Tables bleed to the edges; the header keeps its own padding.
+:host(.card--flush) {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+
+  .card__head {
+    padding: 16px 20px 12px;
+  }
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.card__title {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+}
+
+.card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:empty {
+    display: none;
+  }
+}

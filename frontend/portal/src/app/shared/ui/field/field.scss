@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+
+  &__optional {
+    font-weight: 500;
+    color: var(--mute);
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: var(--mute);
+  }
+
+  &__error {
+    font-size: 12px;
+    color: var(--bad);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-weight: 500;
+  }
+}
