@@ -1,0 +1,189 @@
+@if (loaded.error()) {
+  <ui-page-header title="Booking" [crumbs]="[{ label: 'Bookings', link: '/agency/bookings' }, { label: 'Not found' }]" />
+  <ui-empty-state tone="error" icon="alert-circle" title="Couldn't load this booking" description="It may not exist, or the API is unreachable.">
+    <button type="button" uiButton size="sm" (click)="loaded.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (booking(); as b) {
+  <ui-page-header
+    [title]="b.ref"
+    tabular
+    [crumbs]="[{ label: 'Bookings', link: '/agency/bookings' }, { label: b.ref }]"
+    [sub]="subtitle()"
+  >
+    <ui-status-chip status [status]="b.status" />
+    @if (brand.branding().supportEmail; as email) {
+      <a actions uiButton [href]="'mailto:' + email + '?subject=' + b.ref"><ui-icon name="chat" />Contact operator</a>
+    }
+  </ui-page-header>
+
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+
+  @if (next(); as step) {
+    <ui-next-step [icon]="step.icon" [tone]="step.tone" [title]="step.title" [sub]="step.sub">
+      @if (b.status === 'AwaitingPayment') {
+        <div class="paid">
+          <div class="row between small">
+            <span class="muted">Paid</span>
+            <span class="m strong">{{ b.paidAmount | money: b.currency }} of {{ b.sellPrice | money: b.currency }}</span>
+          </div>
+          <ui-progress [value]="b.paidAmount" [max]="b.sellPrice ?? 0" />
+        </div>
+        <a uiButton="primary" routerLink="." fragment="pay">Payment details</a>
+      } @else if (step.action; as action) {
+        @if (b.status === 'Draft' || b.status === 'PriceConfirmed') {
+          <button type="button" uiButton="primary" (click)="continueDraft()">{{ action.label }}</button>
+        }
+      }
+    </ui-next-step>
+  }
+
+  <div class="detail">
+    <div class="detail__main">
+      <ui-card title="Travellers" flush>
+        <span cardActions class="why"><ui-icon name="lock" size="sm" />Editable only while draft — contact the operator to change</span>
+        <div class="tw">
+          <table class="tbl">
+            <thead>
+              <tr><th>Name</th><th>Type</th><th>Birth date</th><th>Nationality</th><th>Document</th></tr>
+            </thead>
+            <tbody>
+              @for (p of b.passengers; track p.id) {
+                <tr>
+                  <td>
+                    <b>{{ p.title ? p.title + ' ' : '' }}{{ p.firstName }} {{ p.lastName }}</b>
+                    @if (p.isLead) {
+                      <ui-pill tone="brand" class="lead">Lead</ui-pill>
+                    }
+                    @if (p.isLead && (p.email || p.phone)) {
+                      <div class="sub-line">{{ p.email }}{{ p.email && p.phone ? ' · ' : '' }}{{ p.phone }}</div>
+                    }
+                  </td>
+                  <td>{{ p.passengerType ?? '—' }}</td>
+                  <td class="num">{{ p.birthDate | odDate }}</td>
+                  <td>{{ p.nationality ?? '—' }}</td>
+                  <td>
+                    @if (p.documentType) {
+                      <span class="row doc">
+                        {{ p.documentType === 'IdCard' ? 'ID card' : p.documentType }}
+                        <ui-masked [value]="p.documentNumber" [subject]="'document number for ' + p.firstName + ' ' + p.lastName" />
+                      </span>
+                    } @else {
+                      —
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="muted">No travellers entered yet.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </ui-card>
+
+      <ui-card title="Package">
+        <div class="pkg">
+          <div class="pkg__item">
+            <span class="eyebrow">Hotel</span>
+            <div class="strong">{{ b.hotelName }}</div>
+            <div class="small muted">{{ b.programName }}</div>
+          </div>
+          <div class="pkg__item">
+            <span class="eyebrow">Dates</span>
+            <div class="strong num">{{ b.checkIn | odDate }} → {{ b.checkOut | odDate }}</div>
+            <div class="small muted">Check-in to check-out</div>
+          </div>
+          <div class="pkg__item">
+            <span class="eyebrow">Travellers</span>
+            <div class="strong">{{ b.adults }} {{ b.adults === 1 ? 'adult' : 'adults' }}@if (b.children > 0) {, {{ b.children }} {{ b.children === 1 ? 'child' : 'children' }}}</div>
+            @if (b.providerBookingRef) {
+              <div class="small muted">Supplier ref <span class="mono">{{ b.providerBookingRef }}</span></div>
+            }
+          </div>
+        </div>
+      </ui-card>
+
+      <ui-card title="Documents" [flush]="bookingDocuments().length > 0">
+        @if (bookingDocuments().length === 0) {
+          <div class="nodocs">
+            <span class="nodocs__icon"><ui-icon name="file" /></span>
+            <div class="col">
+              <b class="small">No documents yet</b>
+              <span class="small muted">The invoice appears here once the operator confirms the booking.</span>
+            </div>
+          </div>
+        } @else {
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Number</th><th>Type</th><th>Date</th><th class="r">Amount</th><th>Status</th><th><span class="sr-only">Download</span></th></tr></thead>
+              <tbody>
+                @for (d of bookingDocuments(); track d.id) {
+                  <tr>
+                    <td class="mono strong">{{ d.number }}</td>
+                    <td>{{ d.kind }}</td>
+                    <td class="num">{{ d.issueDate | odDate }}</td>
+                    <td class="r m strong">{{ d.total | money: d.currency }}</td>
+                    <td>
+                      @if (d.status === 'Annulled') {
+                        <ui-pill>Annulled</ui-pill>
+                      } @else {
+                        <ui-pill tone="ok">Issued</ui-pill>
+                      }
+                    </td>
+                    <td class="r">
+                      <button type="button" uiButton="ghost" size="sm" (click)="download(d)" [attr.aria-label]="'Download PDF ' + d.number">
+                        <ui-icon name="download" />PDF
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </ui-card>
+    </div>
+
+    <aside class="detail__aside">
+      <ui-card title="Payment" id="pay">
+        <div class="col pay">
+          <div class="row between"><span class="muted">Total</span><span class="m strong">{{ b.sellPrice | money: b.currency }}</span></div>
+          <div class="row between"><span class="muted">Paid</span><span class="m">{{ b.paidAmount | money: b.currency }}</span></div>
+          <hr class="hr" />
+          <div class="row between"><b>Balance due</b><b class="m pay__due">{{ b.balanceDue | money: b.currency }}</b></div>
+          <div class="row between small"><span class="muted">Your commission</span><span class="m strong">{{ b.agencyCommission | money: b.currency }}</span></div>
+        </div>
+        @if (b.status === 'AwaitingPayment') {
+          <div class="bank">
+            <b class="small">Bank transfer</b>
+            <span class="small"><span class="muted">Reference</span> <b class="mono">{{ b.ref }}</b></span>
+            <span class="small"><span class="muted">Pay by</span> <ui-deadline [at]="b.paymentDueAt" /></span>
+            <span class="small muted">Use the booking reference on the transfer so the operator can match it. Bank details are on your agreement with the operator.</span>
+          </div>
+          <p class="small muted">The operator records your payment when it arrives. You’ll be notified when the booking is confirmed.</p>
+        }
+      </ui-card>
+
+      <ui-card title="History">
+        @if (timeline().length > 0) {
+          <ui-timeline [items]="timeline()" />
+        } @else {
+          <p class="small muted">No status changes yet.</p>
+        }
+      </ui-card>
+
+      @if (cancellable()) {
+        <ui-card class="cancel">
+          <div class="col grow">
+            <b class="small">Cancel this booking</b>
+            <span class="small muted">Free while nothing is paid.</span>
+          </div>
+          <button type="button" uiButton="danger-quiet" size="sm" (click)="cancel()" [disabled]="busy()">Cancel booking</button>
+        </ui-card>
+      }
+    </aside>
+  </div>
+} @else {
+  <ui-card><ui-skeleton [lines]="6" /></ui-card>
+}

@@ -6,52 +6,6 @@
   gap: 16px;
 }
 
-.next {
-  flex-direction: row;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  flex-wrap: wrap;
-}
-
-.next__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  background: var(--fill);
-  color: var(--ink-3);
-
-  &--warn { background: var(--warn-bg); color: var(--warn); }
-  &--ok { background: var(--ok-bg); color: var(--ok); }
-  &--info { background: var(--info-bg); color: var(--info); }
-}
-
-.next__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1 1 260px;
-  min-width: 0;
-}
-
-.next__title {
-  font-size: 17px;
-}
-
-.next__action {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-end;
-}
-
-.why {
-  gap: 5px;
-}
-
 .detail {
   display: flex;
   flex-wrap: wrap;

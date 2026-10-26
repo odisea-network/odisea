@@ -3,7 +3,8 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AgencySearch } from './search';
+import { HotelOffer } from '../../core/api.types';
+import { AgencySearch, sortOffers } from './search';
 
 describe('AgencySearch', () => {
   beforeEach(() => {
@@ -38,5 +39,29 @@ describe('AgencySearch', () => {
     };
     expect(component.expired(offer)).toBe(true);
     expect(component.expired({ ...offer, offerExpiresAt: null })).toBe(false);
+  });
+});
+
+describe('sortOffers', () => {
+  const offer = (hotel: string, price: number, stars: number, commission: number): HotelOffer => ({
+    hotelId: hotel, hotelName: hotel, stars, roomType: 'DBL', board: 'HB', sellPrice: price, currency: 'EUR',
+    agencyCommission: commission, offerToken: hotel, offerExpiresAt: null,
+  });
+  const offers = [offer('b', 1500, 4, 150), offer('a', 1100, 3, 110), offer('c', 2600, 5, 260)];
+
+  it('sorts by price both ways', () => {
+    expect(sortOffers(offers, 'price-asc').map(o => o.hotelName)).toEqual(['a', 'b', 'c']);
+    expect(sortOffers(offers, 'price-desc').map(o => o.hotelName)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('sorts by stars and commission, best first', () => {
+    expect(sortOffers(offers, 'stars').map(o => o.hotelName)).toEqual(['c', 'b', 'a']);
+    expect(sortOffers(offers, 'commission').map(o => o.hotelName)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('never mutates the API result', () => {
+    const copy = [...offers];
+    sortOffers(offers, 'price-desc');
+    expect(offers).toEqual(copy);
   });
 });

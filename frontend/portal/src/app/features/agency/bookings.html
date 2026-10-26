@@ -18,17 +18,39 @@
       <a uiButton="primary" size="sm" routerLink="/agency/search">Search packages</a>
     </ui-empty-state>
   } @else {
-    <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" />
+    <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" [stretch]="phone()" />
 
-    <ui-card flush>
-      @if (filtered().length === 0) {
-        <div class="none">Nothing in this view.</div>
-      } @else {
+    @if (filtered().length === 0) {
+      <ui-card><div class="none">Nothing in this view.</div></ui-card>
+    } @else if (phone()) {
+      <ui-card flush>
+        @for (b of filtered(); track b.id) {
+          <a class="item" [routerLink]="['/agency/bookings', b.id]">
+            <div class="row between">
+              <span class="ref">{{ b.ref }}</span>
+              <ui-status-chip [status]="b.status" />
+            </div>
+            <div class="col">
+              @if (lead(b); as lead) {
+                <b>{{ lead.firstName }} {{ lead.lastName }}@if (b.passengers.length > 1) { +{{ b.passengers.length - 1 }}}</b>
+              }
+              <span class="small muted">{{ b.hotelName }} · {{ b.checkIn | odDate }}</span>
+            </div>
+            <div class="row between">
+              <span class="small due"><span class="muted">Due</span><b class="m">{{ b.sellPrice === null ? '—' : (b.balanceDue | money: b.currency) }}</b></span>
+              @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
+                <ui-deadline [at]="b.paymentDueAt" />
+              }
+            </div>
+          </a>
+        }
+      </ui-card>
+    } @else {
+      <ui-card flush>
         <div class="tw">
           <table class="tbl">
             <thead>
               <tr>
-                <th class="toggle"><span class="sr-only">Details</span></th>
                 <th>Ref</th>
                 <th>Travellers</th>
                 <th>Package</th>
@@ -42,9 +64,8 @@
             </thead>
             <tbody>
               @for (b of filtered(); track b.id) {
-                <tr class="clickable" (click)="toggle(b.id)" [attr.aria-expanded]="expanded() === b.id">
-                  <td class="toggle"><ui-icon [name]="expanded() === b.id ? 'chevron-down' : 'chevron-right'" size="sm" /></td>
-                  <td><span class="ref">{{ b.ref }}</span></td>
+                <tr class="clickable" (click)="open(b)">
+                  <td><a class="ref" [routerLink]="['/agency/bookings', b.id]" (click)="$event.stopPropagation()">{{ b.ref }}</a></td>
                   <td>
                     @if (lead(b); as lead) {
                       <b>{{ lead.firstName }} {{ lead.lastName }}</b>
@@ -66,70 +87,20 @@
                     }
                   </td>
                   <td class="r">
-                    @if (cancellable(b)) {
+                    @if (b.status === 'Draft' || b.status === 'PriceConfirmed') {
+                      <a uiButton size="sm" [routerLink]="['/agency/book']" [queryParams]="{ bookingId: b.id }" (click)="$event.stopPropagation()">Continue</a>
+                    } @else if (cancellable(b)) {
                       <button type="button" uiButton="danger-quiet" size="sm" (click)="cancel(b, $event)" [disabled]="busy()">
                         Cancel
                       </button>
                     }
                   </td>
                 </tr>
-                @if (expanded() === b.id) {
-                  <tr class="detail">
-                    <td colspan="10">
-                      <div class="detail__grid">
-                        <section class="detail__block">
-                          <h3 class="h3">Travellers</h3>
-                          <ul class="people">
-                            @for (p of b.passengers; track p.id) {
-                              <li class="person">
-                                <span class="person__name">
-                                  <b>{{ p.title ? p.title + ' ' : '' }}{{ p.firstName }} {{ p.lastName }}</b>
-                                  @if (p.isLead) {
-                                    <ui-pill tone="brand">Lead</ui-pill>
-                                  }
-                                </span>
-                                <span class="small muted person__doc">
-                                  {{ p.passengerType ?? '—' }}
-                                  @if (p.documentType) {
-                                    · {{ p.documentType === 'IdCard' ? 'ID card' : p.documentType }}
-                                    <ui-masked [value]="p.documentNumber" [subject]="'document number for ' + p.firstName + ' ' + p.lastName" />
-                                  }
-                                </span>
-                                @if (p.isLead && (p.email || p.phone)) {
-                                  <span class="small muted">{{ p.email }}{{ p.email && p.phone ? ' · ' : '' }}{{ p.phone }}</span>
-                                }
-                              </li>
-                            }
-                          </ul>
-                        </section>
-                        <section class="detail__block">
-                          <h3 class="h3">History</h3>
-                          <ui-timeline [items]="timeline(b)" />
-                        </section>
-                        @if (b.providerBookingRef || b.status === 'AwaitingPayment') {
-                          <section class="detail__block">
-                            <h3 class="h3">Payment</h3>
-                            <dl class="kv detail__kv">
-                              <dt>Total</dt><dd class="m">{{ b.sellPrice | money: b.currency }}</dd>
-                              <dt>Paid</dt><dd class="m">{{ b.paidAmount | money: b.currency }}</dd>
-                              <dt>Balance due</dt><dd class="m strong">{{ b.balanceDue | money: b.currency }}</dd>
-                              <dt>Your commission</dt><dd class="m">{{ b.agencyCommission | money: b.currency }}</dd>
-                              <dt>Reference</dt><dd class="mono">{{ b.ref }}</dd>
-                              @if (b.providerBookingRef) {
-                                <dt>Supplier ref</dt><dd class="mono">{{ b.providerBookingRef }}</dd>
-                              }
-                            </dl>
-                          </section>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
               }
             </tbody>
           </table>
         </div>
-      }
-    </ui-card>
+      </ui-card>
+    }
   }
 }
