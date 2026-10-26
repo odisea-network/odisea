@@ -32,6 +32,7 @@ export class AdminBookings {
 
   /** Query parameter, e.g. from an agency page: /admin/bookings?agencyId=… */
   readonly agencyFilter = input<string | undefined>(undefined, { alias: 'agencyId' });
+  readonly statusFilter = input<string | undefined>(undefined, { alias: 'status' });
 
   readonly statuses = BOOKING_STATUSES;
   readonly status = signal('');
@@ -69,6 +70,10 @@ export class AdminBookings {
     effect(() => {
       const preset = this.agencyFilter();
       if (preset) this.filter(this.agencyId, preset);
+    });
+    effect(() => {
+      const preset = this.statusFilter();
+      if (preset) this.filter(this.status, preset);
     });
   }
 
