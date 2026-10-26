@@ -1,0 +1,268 @@
+@if (loaded.error()) {
+  <ui-page-header title="Agency" [crumbs]="[{ label: 'Agencies', link: '/admin/agencies' }, { label: 'Not found' }]" />
+  <ui-empty-state tone="error" icon="alert-circle" title="Couldn't load this agency" description="It may not exist, or the API is unreachable.">
+    <button type="button" uiButton size="sm" (click)="loaded.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (agency(); as a) {
+  <ui-page-header
+    [title]="a.name"
+    [crumbs]="[{ label: 'Agencies', link: '/admin/agencies' }, { label: a.name }]"
+    [sub]="a.country + ' · ' + a.plan + ' plan · partner since ' + (a.createdAt | odDate) + (users.value() ? ' · ' + users.value()!.length + ' users' : '')"
+  >
+    @if (a.status === 'Active') {
+      <ui-pill status tone="ok"><ui-icon name="check-circle" size="sm" />Active</ui-pill>
+    } @else {
+      <ui-pill status tone="bad"><ui-icon name="slash-circle" size="sm" />Suspended</ui-pill>
+    }
+    <button actions type="button" uiButton (click)="openEdit()">Edit details</button>
+    @if (a.status === 'Active') {
+      <button actions type="button" uiButton="danger-quiet" (click)="toggleStatus()" [disabled]="busy()">Suspend…</button>
+    } @else {
+      <button actions type="button" uiButton="primary" (click)="toggleStatus()" [disabled]="busy()">Reactivate</button>
+    }
+  </ui-page-header>
+
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+
+  <div class="tiles">
+    <div class="tile">
+      <span class="small muted">Credit limit</span>
+      <div class="m tile__v">{{ a.creditLimit | money }}</div>
+      <span class="small muted">per the agreement</span>
+    </div>
+    <div class="tile">
+      <div class="row between">
+        <span class="small muted">Plan</span>
+        @if (isAdmin()) {
+          <button type="button" uiButton="ghost" size="sm" class="tile__link" (click)="setPlan(a.plan === 'Core' ? 'Workspace' : 'Core')" [disabled]="busy()">
+            {{ a.plan === 'Core' ? 'Upgrade' : 'Downgrade' }}
+          </button>
+        }
+      </div>
+      <div class="tile__v">{{ a.plan }}</div>
+      <span class="small muted">{{ a.plan === 'Workspace' ? 'External reservations, inquiry forms, e-mail' : 'Search and booking only' }}</span>
+    </div>
+    <div class="tile">
+      <span class="small muted">Users</span>
+      <div class="m tile__v">{{ users.value()?.length ?? '—' }}</div>
+      <span class="small muted">{{ (users.value() ?? []).length > 0 ? 'can sign in' : 'nobody can sign in yet' }}</span>
+    </div>
+    <div class="tile">
+      <span class="small muted">Bookings</span>
+      <div class="m tile__v">{{ bookings.value()?.totalCount ?? '—' }}</div>
+      <a class="small" [routerLink]="['/admin/bookings']" [queryParams]="{ agencyId: a.id }">Open the list</a>
+    </div>
+  </div>
+
+  <ui-card flush>
+    <ui-tabs [tabs]="tabs()" [value]="tab()" (valueChange)="setTab($event)" />
+
+    @if (tab() === 'overview') {
+      <div class="overview">
+        <section class="block">
+          <div class="row between"><h2 class="h3">Contact</h2></div>
+          <dl class="kv">
+            <dt>Email</dt><dd>{{ a.contactEmail ?? '—' }}</dd>
+            <dt>Country</dt><dd>{{ a.country }}</dd>
+            <dt>Status</dt><dd>{{ a.status }}</dd>
+          </dl>
+        </section>
+        <section class="block">
+          <div class="row between">
+            <h2 class="h3">Billing requisites</h2>
+            <button type="button" uiButton="ghost" size="sm" (click)="openBilling()">{{ a.billing ? 'Edit' : 'Add' }}</button>
+          </div>
+          @if (a.billing; as b) {
+            <dl class="kv">
+              <dt>Legal name</dt><dd>{{ b.legalName }}</dd>
+              <dt>EIK</dt><dd class="mono">{{ b.eik }}</dd>
+              <dt>VAT number</dt><dd class="mono">{{ b.vatNumber ?? '—' }}</dd>
+              <dt>Address</dt><dd>{{ b.address }}, {{ b.city }}</dd>
+              <dt>MOL</dt><dd>{{ b.mol }}</dd>
+            </dl>
+          } @else {
+            <p class="small muted">Needed before an invoice can be issued to this agency.</p>
+          }
+        </section>
+      </div>
+    }
+
+    @if (tab() === 'users') {
+      <div class="row between tabhead">
+        <div><h2 class="h2">Users</h2><p class="small muted">People who sign in to the partner portal for {{ a.name }}.</p></div>
+        <button type="button" uiButton size="sm" (click)="openUser()"><ui-icon name="plus" />Add user</button>
+      </div>
+      @if (users.value(); as list) {
+        @if (list.length === 0) {
+          <p class="small muted pad">No users yet — add one so the agency can sign in.</p>
+        } @else {
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th></tr></thead>
+              <tbody>
+                @for (u of list; track u.id) {
+                  <tr>
+                    <td><b>{{ u.fullName }}</b></td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ roleLabel(u.role) }}</td>
+                    <td>@if (u.isActive) {<ui-pill tone="ok">Active</ui-pill>} @else {<ui-pill>Deactivated</ui-pill>}</td>
+                    <td class="muted num">{{ u.createdAt | odDate }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      } @else {
+        <div class="pad"><ui-skeleton [lines]="3" /></div>
+      }
+    }
+
+    @if (tab() === 'keys') {
+      <div class="row between tabhead">
+        <div><h2 class="h2">API keys</h2><p class="small muted">For {{ a.name }}’s own systems. Keys act as the agency; each call shows in booking history as an API client.</p></div>
+        <button type="button" uiButton="primary" size="sm" (click)="openKey()"><ui-icon name="plus" />Create key</button>
+      </div>
+      @if (keys.value(); as list) {
+        @if (list.length === 0) {
+          <p class="small muted pad">No keys yet.</p>
+        } @else {
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Expires</th><th>Last used</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                @for (k of list; track k.id) {
+                  <tr>
+                    <td><b>{{ k.name }}</b></td>
+                    <td class="mono">{{ k.keyPrefix }}…</td>
+                    <td class="num">{{ k.createdAt | odDate }}</td>
+                    <td class="num">{{ k.expiresAt ? (k.expiresAt | odDate) : 'Never' }}</td>
+                    <td class="muted num">{{ k.lastUsedAt ? (k.lastUsedAt | odDateTime) : 'Never' }}</td>
+                    <td>
+                      @switch (keyState(k)) {
+                        @case ('Active') { <ui-pill tone="ok">Active</ui-pill> }
+                        @case ('Expired') { <ui-pill>Expired</ui-pill> }
+                        @default { <ui-pill tone="bad">Revoked</ui-pill> }
+                      }
+                    </td>
+                    <td class="r">
+                      @if (keyState(k) === 'Active') {
+                        <button type="button" uiButton="ghost" size="sm" class="danger-text" (click)="revoke(k)" [disabled]="busy()">Revoke</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      } @else {
+        <div class="pad"><ui-skeleton [lines]="3" /></div>
+      }
+    }
+
+    @if (tab() === 'bookings') {
+      <div class="pad">
+        <ui-empty-state icon="bookings" title="Same list as Bookings, pre-filtered to this agency" [description]="(bookings.value()?.totalCount ?? 0) + ' bookings so far'">
+          <a uiButton size="sm" [routerLink]="['/admin/bookings']" [queryParams]="{ agencyId: a.id }">Open filtered list</a>
+        </ui-empty-state>
+      </div>
+    }
+  </ui-card>
+
+  <ui-sheet [(open)]="editOpen" title="Edit agency">
+    <form id="edit-agency" (ngSubmit)="saveEdit()">
+      <ui-field label="Agency name" for="ed-name"><input uiInput id="ed-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
+      <div class="two">
+        <ui-field label="Country" for="ed-country" hint="2-letter code"><input uiInput id="ed-country" name="country" [(ngModel)]="edit.country" maxlength="2" /></ui-field>
+        <ui-field label="Credit limit" for="ed-credit" hint="EUR"><input uiInput id="ed-credit" name="creditLimit" type="number" min="0" step="100" class="m" [(ngModel)]="edit.creditLimit" /></ui-field>
+      </div>
+      <ui-field label="Contact email" for="ed-email" optional><input uiInput id="ed-email" name="contactEmail" type="email" [(ngModel)]="edit.contactEmail" /></ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="editOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="edit-agency" uiButton="primary" [disabled]="busy()">Save</button>
+  </ui-sheet>
+
+  <ui-sheet [(open)]="billingOpen" title="Billing requisites" sub="Printed on every invoice issued to the agency.">
+    <form id="edit-billing" (ngSubmit)="saveBilling()">
+      <ui-field label="Legal name" for="bl-legal"><input uiInput id="bl-legal" name="legalName" [(ngModel)]="billing.legalName" required maxlength="200" /></ui-field>
+      <div class="two">
+        <ui-field label="EIK" for="bl-eik" hint="9 digits (13 for branches)"><input uiInput id="bl-eik" name="eik" class="mono" [(ngModel)]="billing.eik" required /></ui-field>
+        <ui-field label="VAT number" for="bl-vat" optional hint="BG + 9–10 digits"><input uiInput id="bl-vat" name="vatNumber" class="mono" [(ngModel)]="billing.vatNumber" placeholder="BG…" /></ui-field>
+      </div>
+      <ui-field label="Address" for="bl-address"><input uiInput id="bl-address" name="address" [(ngModel)]="billing.address" required maxlength="300" /></ui-field>
+      <div class="two">
+        <ui-field label="City" for="bl-city"><input uiInput id="bl-city" name="city" [(ngModel)]="billing.city" required maxlength="100" /></ui-field>
+        <ui-field label="MOL" for="bl-mol" hint="Person in charge"><input uiInput id="bl-mol" name="mol" [(ngModel)]="billing.mol" required maxlength="200" /></ui-field>
+      </div>
+    </form>
+    <button sheetActions type="button" uiButton (click)="billingOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="edit-billing" uiButton="primary" [disabled]="busy() || !billingValid()">Save</button>
+  </ui-sheet>
+
+  <ui-sheet [(open)]="userOpen" title="Add user" [sub]="'They sign in to the partner portal as ' + a.name + '.'">
+    <form id="add-user" (ngSubmit)="createUser()">
+      <ui-field label="Full name" for="us-name"><input uiInput id="us-name" name="fullName" [(ngModel)]="user.fullName" required maxlength="200" autocomplete="off" /></ui-field>
+      <ui-field label="Work email" for="us-email"><input uiInput id="us-email" name="email" type="email" [(ngModel)]="user.email" required autocomplete="off" /></ui-field>
+      <ui-field label="Role" for="us-role" hint="Agency admins see every booking of the agency">
+        <select uiInput id="us-role" name="role" [(ngModel)]="user.role">
+          <option value="Agent">Agent</option>
+          <option value="AgencyAdmin">Agency admin</option>
+        </select>
+      </ui-field>
+      <ui-field label="Initial password" for="us-pw" hint="12 to 128 characters; share it over a separate channel">
+        <span class="pw">
+          <input uiInput id="us-pw" name="password" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="user.password" minlength="12" maxlength="128" autocomplete="new-password" />
+          <button type="button" uiButton="ghost" size="sm" iconOnly class="pw__eye" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'" (click)="showPassword.set(!showPassword())"><ui-icon [name]="showPassword() ? 'eye-off' : 'eye'" /></button>
+        </span>
+      </ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="userOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="add-user" uiButton="primary" [disabled]="busy() || !userValid()">Add user</button>
+  </ui-sheet>
+
+  <ui-sheet [(open)]="keyOpen" [title]="'New API key for ' + a.name">
+    <form id="add-key" (ngSubmit)="createKey()">
+      <ui-field label="Name" for="ky-name" hint="Appears as the actor in booking history"><input uiInput id="ky-name" name="name" [(ngModel)]="key.name" required maxlength="100" placeholder="e.g. Booking engine — production" /></ui-field>
+      <ui-field label="Expires" for="ky-exp">
+        <select uiInput id="ky-exp" name="expiry" [(ngModel)]="key.expiry">
+          <option value="90d">In 90 days</option>
+          <option value="1y">In 1 year</option>
+          <option value="never">Never</option>
+        </select>
+      </ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="keyOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="add-key" uiButton="primary" [disabled]="busy() || !key.name.trim()">Create key</button>
+  </ui-sheet>
+
+  @if (createdKey(); as created) {
+    <div class="scrim">
+      <div class="secret" role="alertdialog" aria-modal="true" aria-label="Copy your new key">
+        <div class="row">
+          <span class="secret__icon"><ui-icon name="key" /></span>
+          <h3 class="secret__title">Copy this key now</h3>
+        </div>
+        <ui-banner tone="warn"><b>You won’t see it again.</b> Only a fingerprint is stored. If it’s lost, revoke it and create a new one.</ui-banner>
+        <div class="secret__box">
+          <code class="mono secret__code">{{ created.secret }}</code>
+          <button type="button" uiButton="primary" size="sm" (click)="copySecret()">{{ copied() ? 'Copied' : 'Copy' }}</button>
+        </div>
+        <label class="row stored">
+          <input type="checkbox" class="ui-chk" [checked]="secretStored()" (change)="secretStored.set(!secretStored())" />
+          <span class="small">I’ve stored this key somewhere safe</span>
+        </label>
+        <div class="row secret__foot">
+          @if (!secretStored()) {
+            <span class="small muted">Tick the box to close</span>
+          }
+          <button type="button" uiButton="primary" [disabled]="!secretStored()" (click)="finishKey()">Done</button>
+        </div>
+      </div>
+    </div>
+  }
+} @else {
+  <ui-card><ui-skeleton [lines]="6" /></ui-card>
+}

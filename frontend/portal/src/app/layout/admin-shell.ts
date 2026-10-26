@@ -14,5 +14,6 @@ export class AdminShell {
     { label: 'Catalogue', items: [{ label: 'Programs', link: '/admin/programs', icon: 'layers' }] },
     { label: 'Pricing', items: [{ label: 'Pricing rules', link: '/admin/pricing', icon: 'percent' }] },
     { label: 'Finance', items: [{ label: 'Documents', link: '/admin/documents', icon: 'documents' }] },
+    { label: 'System', items: [{ label: 'Settings', link: '/admin/settings', icon: 'settings' }] },
   ];
 }

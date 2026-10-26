@@ -255,3 +255,88 @@ export interface RecordPaymentRequest {
   reference: string | null;
   note: string | null;
 }
+
+// --- Agencies admin (served by /api/v1/agencies/**) ---
+
+export type AgencyStatus = 'Active' | 'Suspended';
+export type AgencyPlan = 'Core' | 'Workspace';
+export type AgencyUserRole = 'AgencyAdmin' | 'Agent';
+
+export interface AgencyBillingDto {
+  legalName: string | null;
+  eik: string | null;
+  vatNumber: string | null;
+  address: string | null;
+  city: string | null;
+  mol: string | null;
+}
+
+export interface AgencyDetailDto extends AgencyDto {
+  plan: AgencyPlan | string;
+  commissionLevelId: string | null;
+  billing: AgencyBillingDto | null;
+  createdAt: string;
+}
+
+export interface SaveAgencyRequest {
+  name: string;
+  country: string;
+  creditLimit: number;
+  contactEmail: string | null;
+}
+
+export interface UpdateAgencyRequest extends SaveAgencyRequest {
+  status: AgencyStatus;
+}
+
+export interface UpdateAgencyBillingRequest {
+  legalName: string;
+  eik: string;
+  vatNumber: string | null;
+  address: string;
+  city: string;
+  mol: string;
+}
+
+export interface AgencyUserDto {
+  id: string;
+  agencyId: string;
+  email: string;
+  fullName: string;
+  role: AgencyUserRole | string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreateAgencyUserRequest {
+  email: string;
+  fullName: string;
+  role: AgencyUserRole;
+  password: string;
+}
+
+export interface ApiKeyDto {
+  id: string;
+  agencyId: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+}
+
+/** Returned once from the create call; the secret is never shown again. */
+export interface ApiKeyCreatedDto {
+  key: ApiKeyDto;
+  secret: string;
+}
+
+export interface UpdateBrandingRequest {
+  displayName: string;
+  primaryColor: string;
+  accentColor: string;
+  supportEmail: string | null;
+  supportPhone: string | null;
+  legalFooter: string | null;
+}

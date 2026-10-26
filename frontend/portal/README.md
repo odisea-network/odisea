@@ -36,6 +36,9 @@ src/
                  form), travellers with masked document numbers, decisions and the actor timeline
                  (booking-actions.ts mirrors the API's state + role rules so a button only shows
                  when the call can succeed; disabled actions say why)
+                 agencies (list, create), agency-detail (profile and billing, users, API keys issued once
+                 and revoked, plan), branding (Settings: name, colours with live preview and contrast
+                 check, logo, support and legal footer; publishing re-themes the running portal)
       placeholder.ts for the remaining admin routes whose API already exists but UI doesn't yet
 ```
 
