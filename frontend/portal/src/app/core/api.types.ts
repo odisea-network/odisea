@@ -340,3 +340,60 @@ export interface UpdateBrandingRequest {
   supportPhone: string | null;
   legalFooter: string | null;
 }
+
+// --- Catalog admin (served by /api/v1/destinations, /api/v1/hotels, /api/v1/programs) ---
+
+export type ProgramStatus = 'Draft' | 'Published' | 'Archived';
+
+export interface DestinationDto {
+  id: string;
+  name: string;
+  country: string;
+  createdAt: string;
+}
+
+export interface LocationMappingDto {
+  id: string;
+  destinationId: string;
+  providerCode: string;
+  externalLocationCode: string;
+}
+
+export interface HotelDto {
+  id: string;
+  name: string;
+  destinationId: string;
+  stars: number;
+  createdAt: string;
+}
+
+export interface HotelMappingDto {
+  id: string;
+  hotelId: string;
+  providerCode: string;
+  externalHotelCode: string;
+}
+
+export interface ProgramDto extends ProgramListItem {
+  createdAt: string;
+}
+
+export interface CreateProgramRequest {
+  name: string;
+  destinationId: string;
+  providerCode: string;
+  season: string | null;
+  description: string | null;
+}
+
+export interface UpdateProgramRequest {
+  name: string;
+  season: string | null;
+  description: string | null;
+}
+
+export interface CreateDepartureRequest {
+  startDate: string;
+  endDate: string;
+  transportNote: string | null;
+}
