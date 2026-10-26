@@ -76,7 +76,23 @@
 
   @include below($bp-md) {
     position: static;
+    order: -1;
   }
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.accept {
+  gap: 10px;
+  cursor: pointer;
+}
+
+.submit__kv {
+  padding: 16px;
 }
 
 .wizard__nav {

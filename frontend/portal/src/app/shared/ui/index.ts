@@ -11,6 +11,7 @@ export { Icon } from './icon/icon';
 export type { IconName } from './icon/icons';
 export { InputDirective } from './input/input.directive';
 export { Masked } from './masked/masked';
+export { NextStep } from './next-step/next-step';
 export { PageHeader } from './page-header/page-header';
 export type { Crumb } from './page-header/page-header';
 export { Pager } from './pager/pager';

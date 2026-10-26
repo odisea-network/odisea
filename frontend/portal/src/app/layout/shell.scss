@@ -125,6 +125,47 @@
   }
 }
 
+.tabbar {
+  display: none;
+}
+
+@include below($bp-sm) {
+  .tabbar {
+    @include glass(true);
+    display: flex;
+    justify-content: space-around;
+    padding: 6px;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    border-radius: 26px;
+    z-index: var(--z-sticky);
+  }
+
+  .tabbar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--mute);
+    text-decoration: none;
+    min-width: 64px;
+    padding: 6px 0;
+    border-radius: 14px;
+
+    &--on {
+      color: var(--primary-ink);
+    }
+  }
+
+  .shell--tabs .mainc {
+    padding-bottom: 84px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidecol {
     transition: none;

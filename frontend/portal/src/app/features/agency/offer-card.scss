@@ -1,0 +1,130 @@
+@use 'mixins' as *;
+
+:host {
+  @include glass;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 22px;
+}
+
+:host(.offer--expired) {
+  opacity: 0.7;
+}
+
+.offer__img {
+  position: relative;
+  height: 150px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, brand-tint(28%), #e3e8ee);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.offer__initial {
+  font-size: 56px;
+  font-weight: 700;
+  color: color-mix(in oklab, var(--primary) 45%, white);
+  letter-spacing: -0.04em;
+}
+
+.offer__av {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
+.offer__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px 6px;
+  min-width: 0;
+}
+
+.offer__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.offer__name {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.offer__stars {
+  display: inline-flex;
+  gap: 1px;
+  padding-top: 3px;
+  color: #d29a1e;
+  flex: none;
+}
+
+.offer__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.offer__price {
+  display: flex;
+  flex-direction: column;
+}
+
+.offer__total {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.offer__actions {
+  display: flex;
+  gap: 6px;
+}
+
+// Phone: photo on the left, everything else beside it.
+:host(.offer--compact) {
+  flex-direction: row;
+  padding: 8px;
+  border-radius: 20px;
+
+  .offer__img {
+    width: 84px;
+    height: 96px;
+    flex: none;
+    border-radius: 14px;
+  }
+
+  .offer__initial {
+    font-size: 32px;
+  }
+
+  .offer__av {
+    display: none;
+  }
+
+  .offer__body {
+    flex: 1 1 auto;
+    padding: 4px 4px 4px 0;
+  }
+
+  .offer__foot {
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 0;
+  }
+
+  .offer__total {
+    font-size: 16px;
+  }
+}

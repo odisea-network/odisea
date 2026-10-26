@@ -71,20 +71,52 @@
   <ui-card><ui-skeleton [lines]="4" /></ui-card>
 } @else if (results(); as found) {
   <div class="results">
-    <span class="strong">{{ found.offers.length }} {{ found.offers.length === 1 ? 'offer' : 'offers' }}</span>
-    <span class="small muted">
-      {{ found.programName }} · {{ found.checkIn | odDate }} – {{ found.checkOut | odDate }} · {{ found.nights }} nights
-    </span>
+    <div class="results__meta">
+      <span class="strong">{{ found.offers.length }} {{ found.offers.length === 1 ? 'offer' : 'offers' }}</span>
+      <span class="small muted">
+        {{ found.programName }} · {{ found.checkIn | odDate }} – {{ found.checkOut | odDate }} · {{ found.nights }} nights
+      </span>
+    </div>
+    <div class="results__tools">
+      <label class="results__sort">
+        <span class="small muted">Sort</span>
+        <select uiInput size="sm" name="sort" [ngModel]="sort()" (ngModelChange)="setSort($event)" aria-label="Sort offers">
+          <option value="price-asc">Price, low to high</option>
+          <option value="price-desc">Price, high to low</option>
+          <option value="stars">Stars</option>
+          <option value="commission">Commission</option>
+        </select>
+      </label>
+      @if (!phone()) {
+        <ui-segmented [options]="views" [value]="view()" (valueChange)="setView($event)" />
+      }
+    </div>
   </div>
 
   @if (found.offers.length === 0) {
     <ui-empty-state icon="search" title="No availability for these criteria" description="Try another departure or a different party size." />
+  } @else if (showCards()) {
+    <div class="grid" [class.grid--list]="phone()">
+      @for (offer of offers(); track offer.offerToken) {
+        <app-offer-card
+          [offer]="offer"
+          [nights]="found.nights"
+          [expired]="expired(offer)"
+          [compared]="isCompared(offer)"
+          [compareFull]="compareFull()"
+          [compact]="phone()"
+          (book)="book(offer)"
+          (toggleCompare)="toggleCompare(offer)"
+        />
+      }
+    </div>
   } @else {
     <ui-card flush>
       <div class="tw">
         <table class="tbl">
           <thead>
             <tr>
+              <th class="cmp"><span class="sr-only">Compare</span></th>
               <th>Hotel</th>
               <th>Room · board</th>
               <th>Availability</th>
@@ -94,8 +126,18 @@
             </tr>
           </thead>
           <tbody>
-            @for (offer of found.offers; track offer.offerToken) {
+            @for (offer of offers(); track offer.offerToken) {
               <tr>
+                <td class="cmp">
+                  <input
+                    type="checkbox"
+                    class="ui-chk"
+                    [checked]="isCompared(offer)"
+                    [disabled]="expired(offer) || (!isCompared(offer) && compareFull())"
+                    (change)="toggleCompare(offer)"
+                    [attr.aria-label]="'Compare ' + offer.hotelName"
+                  />
+                </td>
                 <td>
                   <b>{{ offer.hotelName }}</b>
                   <span class="stars" role="img" [attr.aria-label]="offer.stars + ' stars'">
@@ -118,7 +160,7 @@
                   @if (expired(offer)) {
                     <span class="small muted">Search again</span>
                   } @else {
-                    <button type="button" uiButton="primary" size="sm" (click)="book(found, offer)">Book</button>
+                    <button type="button" uiButton="primary" size="sm" (click)="book(offer)">Book</button>
                   }
                 </td>
               </tr>
@@ -128,4 +170,37 @@
       </div>
     </ui-card>
   }
+
+  @if (compare().length > 0) {
+    <div class="tray">
+      <span class="strong small">{{ compare().length }} selected to compare</span>
+      <button type="button" uiButton="ghost" size="sm" (click)="clearCompare()">Clear</button>
+      <button type="button" uiButton="primary" size="sm" (click)="compareOpen.set(true)" [disabled]="compare().length < 2">
+        Compare side by side
+      </button>
+    </div>
+  }
+
+  <dialog #compareDialog class="cmpdlg" aria-label="Compare offers" (close)="compareOpen.set(false)" (cancel)="$event.preventDefault(); compareOpen.set(false)">
+    <div class="cmpdlg__head">
+      <h2 class="cmpdlg__title">Compare offers</h2>
+      <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Close" (click)="compareOpen.set(false)"><ui-icon name="x" /></button>
+    </div>
+    <div class="cmpdlg__grid">
+      @for (offer of compared(); track offer.offerToken) {
+        <div class="cmpdlg__col">
+          <b>{{ offer.hotelName }}</b>
+          <dl class="kv cmpdlg__kv">
+            <dt>Stars</dt><dd>{{ offer.stars }}</dd>
+            <dt>Room</dt><dd>{{ offer.roomType }}</dd>
+            <dt>Board</dt><dd>{{ offer.board }}</dd>
+            <dt>Availability</dt><dd>{{ expired(offer) ? 'Expired' : 'Available' }}</dd>
+            <dt>Total</dt><dd class="m strong">{{ offer.sellPrice | money: offer.currency }}</dd>
+            <dt>You earn</dt><dd class="m">{{ offer.agencyCommission | money: offer.currency }}</dd>
+          </dl>
+          <button type="button" uiButton="primary" size="sm" [disabled]="expired(offer)" (click)="book(offer)">Book this</button>
+        </div>
+      }
+    </div>
+  </dialog>
 }
