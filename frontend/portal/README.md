@@ -38,7 +38,10 @@ src/
                  when the call can succeed; disabled actions say why)
                  agencies (list, create), agency-detail (profile and billing, users, API keys issued once
                  and revoked, plan), branding (Settings: name, colours with live preview and contrast
-                 check, logo, support and legal footer; publishing re-themes the running portal)
+                 check, logo, support and legal footer; publishing re-themes the running portal),
+                 programs (list, create), program-detail (departures calendar and table, allowed hotels
+                 with supplier-mapping status, publish checklist and publish), hotels and destinations
+                 (lists, create, supplier code mappings)
       placeholder.ts for the remaining admin routes whose API already exists but UI doesn't yet
 ```
 

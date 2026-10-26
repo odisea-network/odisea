@@ -1,0 +1,192 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.publish {
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.main {
+  flex: 999 1 600px;
+  min-width: 0;
+}
+
+.ready {
+  flex: 1 1 320px;
+  gap: 14px;
+}
+
+.departures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+}
+
+.cal {
+  flex: 0 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cal__nav {
+  gap: 2px;
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  text-align: center;
+}
+
+.cal__dow {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  padding: 4px 0;
+}
+
+.cal__day {
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+  @include tabular;
+
+  &--ok {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 700;
+  }
+
+  &--warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-weight: 700;
+    border: 2px dashed var(--warn);
+  }
+}
+
+.cal__legend {
+  gap: 14px;
+}
+
+.cal__key {
+  gap: 6px;
+}
+
+.cal__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  display: inline-block;
+
+  &--ok {
+    background: var(--primary);
+  }
+
+  &--warn {
+    border: 2px dashed var(--warn);
+  }
+}
+
+.deplist {
+  flex: 999 1 380px;
+  min-width: 0;
+  gap: 10px;
+}
+
+.deplist__table {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+
+tr.past td {
+  color: var(--mute);
+}
+
+.tabhead {
+  padding: 16px 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pad {
+  padding: 0 20px 20px;
+}
+
+.maplink {
+  margin-left: 8px;
+}
+
+.general {
+  padding: 20px;
+}
+
+.prose {
+  white-space: pre-wrap;
+}
+
+.checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.check {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-start;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.check__dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--warn-bg);
+  color: var(--warn);
+
+  &--ok {
+    background: var(--ok-bg);
+    color: var(--ok);
+  }
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

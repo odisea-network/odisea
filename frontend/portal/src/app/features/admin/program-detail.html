@@ -1,0 +1,192 @@
+@if (loaded.error()) {
+  <ui-page-header title="Program" [crumbs]="[{ label: 'Programs', link: '/admin/programs' }, { label: 'Not found' }]" />
+  <ui-empty-state tone="error" icon="alert-circle" title="Couldn't load this program" description="It may not exist, or the API is unreachable.">
+    <button type="button" uiButton size="sm" (click)="loaded.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (program(); as p) {
+  <ui-page-header
+    [title]="p.name"
+    [crumbs]="[{ label: 'Programs', link: '/admin/programs' }, { label: p.name }]"
+    [sub]="(destination() ? destination()!.name + ', ' + destination()!.country + ' · ' : '') + 'supplier ' + p.providerCode + (p.season ? ' · ' + p.season : '') + ' · ' + p.departures.length + (p.departures.length === 1 ? ' departure · ' : ' departures · ') + p.hotelIds.length + (p.hotelIds.length === 1 ? ' hotel' : ' hotels')"
+  >
+    <ui-pill status [tone]="tone(p.status)">{{ p.status }}@if (p.status === 'Draft') { · not visible to agencies}</ui-pill>
+    <button actions type="button" uiButton (click)="openEdit()">Edit details</button>
+    @if (p.status === 'Draft') {
+      <div actions class="col publish">
+        <button type="button" uiButton="primary" (click)="publish()" [disabled]="busy() || !canPublish()">Publish</button>
+        @if (!canPublish()) {
+          <span class="why"><ui-icon name="lock" size="sm" />Needs a departure and a hotel</span>
+        }
+      </div>
+    }
+  </ui-page-header>
+
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+
+  <div class="layout">
+    <ui-card flush class="main">
+      <ui-tabs [tabs]="tabs()" [value]="tab()" (valueChange)="setTab($event)" />
+
+      @if (tab() === 'departures') {
+        <div class="departures">
+          @if (grid(); as g) {
+            <div class="cal">
+              <div class="row between">
+                <b>{{ g.label }}</b>
+                <div class="row cal__nav">
+                  <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Previous month" (click)="shift(-1)"><ui-icon name="chevron-left" size="sm" /></button>
+                  <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Next month" (click)="shift(1)"><ui-icon name="chevron-right" size="sm" /></button>
+                </div>
+              </div>
+              <div class="cal__grid">
+                @for (d of dow; track d) {
+                  <span class="cal__dow">{{ d }}</span>
+                }
+                @for (c of g.cells; track $index) {
+                  <span class="cal__day" [class.cal__day--ok]="c.mark === 'ok'" [class.cal__day--warn]="c.mark === 'warn'">{{ c.day ?? '' }}</span>
+                }
+              </div>
+              <div class="row wrap small muted cal__legend">
+                <span class="row cal__key"><i class="cal__swatch cal__swatch--ok"></i>Departure</span>
+                <span class="row cal__key"><i class="cal__swatch cal__swatch--warn"></i>No transport note</span>
+              </div>
+            </div>
+          }
+          <div class="col deplist">
+            <div class="row between">
+              <b>All departures</b>
+              <button type="button" uiButton size="sm" (click)="openDeparture()"><ui-icon name="plus" />Add departure</button>
+            </div>
+            @if (p.departures.length === 0) {
+              <p class="small muted">No departures yet — agencies can only search dates you add here.</p>
+            } @else {
+              <div class="tw deplist__table">
+                <table class="tbl tbl--dense">
+                  <thead><tr><th>Departure</th><th>Return</th><th class="r">Nights</th><th>Transport</th></tr></thead>
+                  <tbody>
+                    @for (d of p.departures; track d.id) {
+                      <tr [class.past]="d.startDate < today">
+                        <td class="num strong">{{ d.startDate | odDate }}</td>
+                        <td class="num">{{ d.endDate | odDate }}</td>
+                        <td class="r num">{{ d.nights }}</td>
+                        <td>
+                          @if (d.transportNote) {
+                            <span class="mono">{{ d.transportNote }}</span>
+                          } @else {
+                            <ui-pill tone="warn"><ui-icon name="alert-triangle" size="sm" />No transport note</ui-pill>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (tab() === 'hotels') {
+        <div class="row between tabhead">
+          <div><h2 class="h2">Allowed hotels</h2><p class="small muted">Only these hotels appear in search results for this program.</p></div>
+          <button type="button" uiButton size="sm" (click)="openHotel()" [disabled]="availableHotels().length === 0"><ui-icon name="plus" />Allow hotel</button>
+        </div>
+        @if (attachedHotels().length === 0) {
+          <p class="small muted pad">No hotels allowed yet.@if (availableHotels().length === 0) { Add hotels to the destination first.}</p>
+        } @else {
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Hotel</th><th>Stars</th><th>Supplier mapping</th></tr></thead>
+              <tbody>
+                @for (h of attachedHotels(); track h.id) {
+                  <tr>
+                    <td><b>{{ h.name }}</b></td>
+                    <td class="num">{{ h.stars }}★</td>
+                    <td>
+                      @switch (isMapped(h.id)) {
+                        @case (true) { <ui-pill tone="ok">Mapped to {{ p.providerCode }}</ui-pill> }
+                        @case (false) { <ui-pill tone="warn"><ui-icon name="alert-triangle" size="sm" />No {{ p.providerCode }} code</ui-pill> }
+                        @default { <span class="small muted">Checking…</span> }
+                      }
+                      <a class="small maplink" [routerLink]="['/admin/hotels']" [queryParams]="{ hotelId: h.id }">Mappings</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      @if (tab() === 'general') {
+        <div class="general">
+          <dl class="kv">
+            <dt>Name</dt><dd>{{ p.name }}</dd>
+            <dt>Destination</dt><dd>{{ destination() ? destination()!.name + ', ' + destination()!.country : '—' }}</dd>
+            <dt>Supplier</dt><dd class="mono">{{ p.providerCode }}</dd>
+            <dt>Season</dt><dd>{{ p.season ?? '—' }}</dd>
+            <dt>Description</dt><dd class="prose">{{ p.description ?? '—' }}</dd>
+          </dl>
+        </div>
+      }
+    </ui-card>
+
+    <ui-card class="ready">
+      <div class="row between"><h2 class="h2">Ready to publish?</h2><span class="small strong">{{ checksPassed() }} of {{ checks().length }}</span></div>
+      <ui-progress [value]="checksPassed()" [max]="checks().length" />
+      <ul class="checks">
+        @for (c of checks(); track c.title) {
+          <li class="check">
+            <span class="check__dot" [class.check__dot--ok]="c.ok"><ui-icon [name]="checkIcon(c.ok)" size="sm" /></span>
+            <div class="col grow"><b class="small">{{ c.title }}</b><span class="small muted">{{ c.sub }}</span></div>
+          </li>
+        }
+      </ul>
+      <p class="small muted">
+        @if (p.status === 'Published') { Published — every active agency can search it. }
+        @else { Publishing makes this program searchable by every active agency. Existing bookings stay. }
+      </p>
+    </ui-card>
+  </div>
+
+  <ui-sheet [(open)]="editOpen" title="Edit program">
+    <form id="edit-program" (ngSubmit)="saveEdit()">
+      <ui-field label="Name" for="pe-name"><input uiInput id="pe-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
+      <ui-field label="Season" for="pe-season" optional><input uiInput id="pe-season" name="season" [(ngModel)]="edit.season" maxlength="50" /></ui-field>
+      <ui-field label="Description" for="pe-desc" optional><textarea uiInput id="pe-desc" name="description" [(ngModel)]="edit.description" maxlength="2000"></textarea></ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="editOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="edit-program" uiButton="primary" [disabled]="busy() || !edit.name.trim()">Save</button>
+  </ui-sheet>
+
+  <ui-sheet [(open)]="departureOpen" title="Add departure" sub="One row per outbound date agencies can book.">
+    <form id="add-departure" (ngSubmit)="addDeparture()">
+      <div class="two">
+        <ui-field label="Departure" for="dp-start"><input uiInput id="dp-start" name="startDate" type="date" [(ngModel)]="departure.startDate" required /></ui-field>
+        <ui-field label="Return" for="dp-end" [hint]="nights() > 0 ? nights() + ' nights' : 'After the departure'"><input uiInput id="dp-end" name="endDate" type="date" [(ngModel)]="departure.endDate" [min]="departure.startDate" required /></ui-field>
+      </div>
+      <ui-field label="Transport note" for="dp-transport" optional hint="Flight numbers or coach details, shown to agencies"><input uiInput id="dp-transport" name="transportNote" [(ngModel)]="departure.transportNote" maxlength="500" placeholder="e.g. FB 1471 SOF–AYT 06:40" /></ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="departureOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="add-departure" uiButton="primary" [disabled]="busy() || !departureValid()">Add departure</button>
+  </ui-sheet>
+
+  <ui-sheet [(open)]="hotelOpen" title="Allow a hotel" [sub]="'Hotels in ' + (destination()?.name ?? 'this destination') + ' not yet in the program.'">
+    <form id="attach-hotel" (ngSubmit)="attachHotel()">
+      <ui-field label="Hotel" for="ah-hotel">
+        <select uiInput id="ah-hotel" name="hotelId" [(ngModel)]="hotelToAttach">
+          @for (h of availableHotels(); track h.id) {
+            <option [value]="h.id">{{ h.name }} · {{ h.stars }}★</option>
+          }
+        </select>
+      </ui-field>
+      <p class="small muted">Missing a hotel? Add it under Catalogue › Hotels first.</p>
+    </form>
+    <button sheetActions type="button" uiButton (click)="hotelOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="attach-hotel" uiButton="primary" [disabled]="busy() || !hotelToAttach">Allow hotel</button>
+  </ui-sheet>
+} @else {
+  <ui-card><ui-skeleton [lines]="6" /></ui-card>
+}

@@ -1,0 +1,71 @@
+<ui-page-header title="Programs" sub="Packaged offers agencies can search once published">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />New program</button>
+</ui-page-header>
+
+@if (programs.error()) {
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load programs" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="programs.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (programs.isLoading()) {
+  <ui-card><ui-skeleton [lines]="5" /></ui-card>
+} @else if (programs.value(); as all) {
+  @if (all.length === 0) {
+    <ui-empty-state icon="layers" title="No programs yet" description="Create a program, add departures and hotels, then publish it.">
+      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">New program</button>
+    </ui-empty-state>
+  } @else {
+    <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" />
+    <ui-card flush>
+      @if (filtered().length === 0) {
+        <div class="none">Nothing in this view.</div>
+      } @else {
+        <div class="tw">
+          <table class="tbl">
+            <thead>
+              <tr><th>Program</th><th>Destination</th><th>Supplier</th><th>Status</th><th>Created</th></tr>
+            </thead>
+            <tbody>
+              @for (p of filtered(); track p.id) {
+                <tr class="clickable" (click)="open(p)">
+                  <td>
+                    <a class="ref ref--ink" [routerLink]="['/admin/programs', p.id]" (click)="$event.stopPropagation()">{{ p.name }}</a>
+                    @if (p.season) {
+                      <div class="sub-line">{{ p.season }}</div>
+                    }
+                  </td>
+                  <td>{{ destinationName(p.destinationId) }}</td>
+                  <td class="mono">{{ p.providerCode }}</td>
+                  <td><ui-pill [tone]="tone(p.status)">{{ p.status }}</ui-pill></td>
+                  <td class="muted num">{{ p.createdAt | odDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </ui-card>
+  }
+}
+
+<ui-sheet [(open)]="createOpen" title="New program" sub="Starts as a draft; agencies see it only after you publish.">
+  <form id="create-program" (ngSubmit)="create()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field label="Name" for="pg-name"><input uiInput id="pg-name" name="name" [(ngModel)]="form.name" required maxlength="200" placeholder="e.g. Antalya Spring 2027" /></ui-field>
+    <ui-field label="Destination" for="pg-dest">
+      <select uiInput id="pg-dest" name="destinationId" [(ngModel)]="form.destinationId">
+        @for (d of destinations.value(); track d.id) {
+          <option [value]="d.id">{{ d.name }}, {{ d.country }}</option>
+        }
+      </select>
+    </ui-field>
+    <div class="two">
+      <ui-field label="Supplier" for="pg-provider" hint="Reservation provider code"><input uiInput id="pg-provider" name="providerCode" class="mono" [(ngModel)]="form.providerCode" required maxlength="30" /></ui-field>
+      <ui-field label="Season" for="pg-season" optional><input uiInput id="pg-season" name="season" [(ngModel)]="form.season" maxlength="50" placeholder="e.g. Summer 2027" /></ui-field>
+    </div>
+    <ui-field label="Description" for="pg-desc" optional><textarea uiInput id="pg-desc" name="description" [(ngModel)]="form.description" maxlength="2000"></textarea></ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
+  <button sheetActions type="submit" form="create-program" uiButton="primary" [disabled]="busy() || !formValid()">{{ busy() ? 'Creating…' : 'Create draft' }}</button>
+</ui-sheet>
