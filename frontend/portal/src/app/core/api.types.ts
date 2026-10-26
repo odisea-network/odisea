@@ -397,3 +397,50 @@ export interface CreateDepartureRequest {
   endDate: string;
   transportNote: string | null;
 }
+
+// --- Pricing admin (served by /api/v1/pricing-rules, /api/v1/exchange-rates) ---
+
+export type RuleScope = 'Global' | 'Program' | 'Agency';
+export type RuleKind = 'Markup' | 'Fee' | 'Commission';
+export type RuleValueType = 'Percent' | 'FixedAmount';
+
+export interface PricingRuleDto {
+  id: string;
+  name: string;
+  scope: RuleScope | string;
+  scopeId: string | null;
+  kind: RuleKind | string;
+  valueType: RuleValueType | string;
+  value: number;
+  priority: number;
+  validFrom: string | null;
+  validTo: string | null;
+  enabled: boolean;
+}
+
+export interface SavePricingRuleRequest {
+  name: string;
+  scope: RuleScope;
+  scopeId: string | null;
+  kind: RuleKind;
+  valueType: RuleValueType;
+  value: number;
+  priority: number;
+  validFrom: string | null;
+  validTo: string | null;
+  enabled: boolean;
+}
+
+export interface ExchangeRateDto {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  asOf: string;
+}
+
+export interface SaveExchangeRateRequest {
+  fromCurrency: string;
+  rate: number;
+  asOf: string;
+}

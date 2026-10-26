@@ -1,0 +1,154 @@
+<ui-page-header title="Pricing rules" sub="Applied in priority order within each kind, lowest first. The most specific scope wins: agency over program over global.">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />New rule</button>
+</ui-page-header>
+
+@if (error(); as message) {
+  <ui-banner tone="bad">{{ message }}</ui-banner>
+}
+
+<div class="layout">
+  <ui-card flush class="main">
+    <div class="toolbar">
+      <ui-segmented [options]="kinds()" [value]="kindView()" (valueChange)="setKind($event)" />
+      <div class="grow"></div>
+      <label class="row inactive">
+        <ui-switch [checked]="showInactive()" (checkedChange)="showInactive.set($event)" label="Show inactive rules" />
+        <span class="small">Show inactive</span>
+      </label>
+    </div>
+
+    @if (rules.error()) {
+      <div class="pad">
+        <ui-empty-state tone="error" icon="refresh" title="Couldn't load pricing rules">
+          <button type="button" uiButton size="sm" (click)="rules.reload()">Retry</button>
+        </ui-empty-state>
+      </div>
+    } @else if (rules.isLoading()) {
+      <div class="pad"><ui-skeleton [lines]="5" /></div>
+    } @else if ((rules.value()?.length ?? 0) === 0) {
+      <div class="pad">
+        <ui-empty-state icon="percent" title="No pricing rules yet" description="Without rules agencies see the net cost as the sell price. Start with a global markup and a commission.">
+          <button type="button" uiButton="primary" size="sm" (click)="openCreate()">New rule</button>
+        </ui-empty-state>
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="none">Nothing in this view.</div>
+    } @else {
+      <div class="tw">
+        <table class="tbl">
+          <thead>
+            <tr><th class="r">Priority</th><th>Rule</th><th>Scope</th><th class="r">Value</th><th>Valid</th><th>Active</th></tr>
+          </thead>
+          <tbody>
+            @for (r of filtered(); track r.id) {
+              <tr [class.off]="!r.enabled">
+                <td class="r num muted">{{ r.priority }}</td>
+                <td>
+                  <button type="button" class="rule-name" (click)="openEdit(r)">{{ r.name }}</button>
+                  <div class="sub-line">{{ kindLabel(r.kind) }}</div>
+                </td>
+                <td><ui-pill>{{ r.scope }}</ui-pill> <span class="small scope">{{ scopeName(r) }}</span></td>
+                <td class="r m strong">{{ valueLabel(r) }}</td>
+                <td class="small num">{{ validity(r, fmt) }}</td>
+                <td><ui-switch [checked]="r.enabled" (checkedChange)="toggle(r, $event)" [label]="(r.enabled ? 'Deactivate ' : 'Activate ') + r.name" [disabled]="busy()" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </ui-card>
+
+  <ui-card title="Exchange rates" class="rates">
+    <p class="small muted">Supplier costs in other currencies are converted to EUR with the latest rate on or before the travel date.</p>
+    @if (rateError(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    @if (rates.value(); as list) {
+      @if (list.length === 0) {
+        <p class="small muted">No rates yet — only EUR-priced suppliers can be sold.</p>
+      } @else {
+        <table class="tbl tbl--dense rates__table">
+          <thead><tr><th>From</th><th class="r">Rate to EUR</th><th>As of</th></tr></thead>
+          <tbody>
+            @for (x of list; track x.id) {
+              <tr><td class="mono">{{ x.fromCurrency }}</td><td class="r m">{{ x.rate }}</td><td class="num">{{ x.asOf | odDate }}</td></tr>
+            }
+          </tbody>
+        </table>
+      }
+    } @else {
+      <ui-skeleton [lines]="2" />
+    }
+    <form class="rate-form" (ngSubmit)="addRate()">
+      <div class="three">
+        <ui-field label="Currency" for="xr-cur"><input uiInput id="xr-cur" name="fromCurrency" class="mono" [(ngModel)]="rateForm.fromCurrency" maxlength="3" required /></ui-field>
+        <ui-field label="1 unit = EUR" for="xr-rate"><input uiInput id="xr-rate" name="rate" type="number" step="0.000001" min="0.000001" class="m" [(ngModel)]="rateForm.rate" required /></ui-field>
+        <ui-field label="As of" for="xr-asof"><input uiInput id="xr-asof" name="asOf" type="date" [(ngModel)]="rateForm.asOf" required /></ui-field>
+      </div>
+      <button type="submit" uiButton size="sm" [disabled]="busy() || !rateValid()"><ui-icon name="plus" />Add rate</button>
+    </form>
+  </ui-card>
+</div>
+
+<ui-sheet [(open)]="sheetOpen" [title]="editing() ? 'Edit rule' : 'New rule'" sub="Takes effect on the next price calculation. Quoted prices keep their own breakdown.">
+  <form id="rule-form" (ngSubmit)="save()">
+    <ui-field label="Name" for="rl-name" hint="Shown in every price breakdown"><input uiInput id="rl-name" name="name" [(ngModel)]="form.name" required maxlength="200" placeholder="e.g. Global markup" /></ui-field>
+    <div class="two">
+      <ui-field label="Kind" for="rl-kind">
+        <select uiInput id="rl-kind" name="kind" [(ngModel)]="form.kind">
+          <option value="Markup">Markup</option>
+          <option value="Fee">Fee</option>
+          <option value="Commission">Commission</option>
+        </select>
+      </ui-field>
+      <ui-field label="Value type" for="rl-vt">
+        <select uiInput id="rl-vt" name="valueType" [(ngModel)]="form.valueType">
+          <option value="Percent">Percent</option>
+          <option value="FixedAmount">Fixed amount (EUR)</option>
+        </select>
+      </ui-field>
+    </div>
+    <div class="two">
+      <ui-field label="Value" for="rl-value" [hint]="form.kind === 'Commission' ? 'Share the agency earns' : 'Negative values discount'">
+        <input uiInput id="rl-value" name="value" type="number" step="0.01" min="-1000" max="1000" class="m" [(ngModel)]="form.value" required />
+      </ui-field>
+      <ui-field label="Priority" for="rl-prio" hint="Lower runs first within a kind">
+        <input uiInput id="rl-prio" name="priority" type="number" min="0" max="1000" step="1" class="m" [(ngModel)]="form.priority" required />
+      </ui-field>
+    </div>
+    <ui-field label="Scope" for="rl-scope">
+      <select uiInput id="rl-scope" name="scope" [ngModel]="form.scope" (ngModelChange)="onScopeChange($event)">
+        <option value="Global">Global — all programs and agencies</option>
+        <option value="Program">One program</option>
+        <option value="Agency">One agency</option>
+      </select>
+    </ui-field>
+    @if (form.scope === 'Program') {
+      <ui-field label="Program" for="rl-program">
+        <select uiInput id="rl-program" name="scopeId" [(ngModel)]="form.scopeId">
+          @for (p of programs.value(); track p.id) { <option [value]="p.id">{{ p.name }}</option> }
+        </select>
+      </ui-field>
+    } @else if (form.scope === 'Agency') {
+      <ui-field label="Agency" for="rl-agency">
+        <select uiInput id="rl-agency" name="scopeId" [(ngModel)]="form.scopeId">
+          @for (a of agencies.value(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }
+        </select>
+      </ui-field>
+    }
+    <div class="two">
+      <ui-field label="Valid from" for="rl-from" optional><input uiInput id="rl-from" name="validFrom" type="date" [(ngModel)]="form.validFrom" /></ui-field>
+      <ui-field label="Valid to" for="rl-to" optional><input uiInput id="rl-to" name="validTo" type="date" [(ngModel)]="form.validTo" [min]="form.validFrom ?? ''" /></ui-field>
+    </div>
+    <label class="row enabled">
+      <ui-switch [checked]="form.enabled" (checkedChange)="form.enabled = $event" label="Rule active" />
+      <span class="small">Active</span>
+    </label>
+  </form>
+  @if (editing(); as rule) {
+    <button sheetActions type="button" uiButton="danger-quiet" class="delete" (click)="remove(rule)" [disabled]="busy()">Delete</button>
+  }
+  <button sheetActions type="button" uiButton (click)="sheetOpen.set(false)">Cancel</button>
+  <button sheetActions type="submit" form="rule-form" uiButton="primary" [disabled]="busy() || !formValid()">{{ editing() ? 'Save' : 'Create rule' }}</button>
+</ui-sheet>

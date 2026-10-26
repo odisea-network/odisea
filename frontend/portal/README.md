@@ -41,7 +41,8 @@ src/
                  check, logo, support and legal footer; publishing re-themes the running portal),
                  programs (list, create), program-detail (departures calendar and table, allowed hotels
                  with supplier-mapping status, publish checklist and publish), hotels and destinations
-                 (lists, create, supplier code mappings)
+                 (lists, create, supplier code mappings), pricing (rules by kind with scope, value,
+                 validity and an active switch; create/edit/delete sheet; exchange rates)
       placeholder.ts for the remaining admin routes whose API already exists but UI doesn't yet
 ```
 

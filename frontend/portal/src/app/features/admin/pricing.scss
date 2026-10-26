@@ -1,0 +1,100 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.main {
+  flex: 999 1 620px;
+  min-width: 0;
+}
+
+.rates {
+  flex: 1 1 340px;
+}
+
+.inactive {
+  gap: 8px;
+  cursor: pointer;
+}
+
+.pad {
+  padding: 16px;
+}
+
+.none {
+  padding: 24px;
+  text-align: center;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+tr.off td {
+  opacity: 0.55;
+}
+
+.rule-name {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    color: var(--primary-ink);
+    text-decoration: underline;
+  }
+}
+
+.scope {
+  margin-left: 4px;
+}
+
+.rates__table {
+  font-size: 13px;
+}
+
+.rate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.three {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+form#rule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.enabled {
+  gap: 10px;
+  cursor: pointer;
+}
+
+.delete {
+  margin-right: auto;
+}

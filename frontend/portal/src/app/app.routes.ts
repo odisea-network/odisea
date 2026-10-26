@@ -78,7 +78,11 @@ export const routes: Routes = [
         path: 'destinations',
         loadComponent: () => import('./features/admin/destinations').then(m => m.AdminDestinations),
       },
-      ...['pricing', 'documents'].map(section => ({
+      {
+        path: 'pricing',
+        loadComponent: () => import('./features/admin/pricing').then(m => m.AdminPricing),
+      },
+      ...['documents'].map(section => ({
         path: section,
         loadComponent: () => import('./features/placeholder').then(m => m.Placeholder),
         data: { title: section[0].toUpperCase() + section.slice(1) },
