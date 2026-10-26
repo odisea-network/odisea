@@ -1,0 +1,155 @@
+<ui-page-header
+  title="Branding"
+  [crumbs]="[{ label: 'Settings' }, { label: 'Branding' }]"
+  sub="How your portal looks to agencies and staff. Changes apply to every page after you publish."
+/>
+
+@if (!isAdmin()) {
+  <ui-banner tone="info">Only operator admins can publish branding. You can preview changes here.</ui-banner>
+}
+@if (error(); as message) {
+  <ui-banner tone="bad">{{ message }}</ui-banner>
+}
+
+<div class="layout">
+  <ui-card class="form">
+    <section class="section">
+      <h2 class="h2">Identity</h2>
+      <ui-field label="Display name" for="br-name">
+        <input uiInput id="br-name" name="displayName" [ngModel]="displayName()" (ngModelChange)="displayName.set($event)" maxlength="100" />
+      </ui-field>
+      <div class="field">
+        <span class="field__label">Logo</span>
+        <div class="logo-row">
+          @if (brand.logoSrc(); as logo) {
+            <img class="logo-img" [src]="logo" alt="Current logo" />
+          } @else {
+            <span class="logo-mark" [style.background]="preview().primary" [style.color]="preview().onPrimary">{{ initial() }}</span>
+          }
+          <div class="logo-drop">
+            <span class="small muted">PNG, JPEG or WebP · max 512 KB · square works best</span>
+            <div class="row">
+              <label uiButton size="sm" class="upload" [class.ui-btn--disabled]="!isAdmin()">
+                <ui-icon name="plus" />Upload
+                <input type="file" accept="image/png,image/jpeg,image/webp" (change)="uploadLogo($event)" [disabled]="!isAdmin() || busy()" />
+              </label>
+              @if (brand.branding().hasLogo) {
+                <button type="button" uiButton="ghost" size="sm" (click)="removeLogo()" [disabled]="!isAdmin() || busy()">Remove</button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="hr" />
+
+    <section class="section">
+      <h2 class="h2">Colours</h2>
+      <div class="field">
+        <span class="field__label">Primary — buttons, active navigation, links</span>
+        <div class="swatches">
+          <label class="picker">
+            <input type="color" [value]="primary()" (input)="primary.set($any($event.target).value)" aria-label="Pick primary colour" />
+            <span class="mono">{{ primary() }}</span>
+          </label>
+          @for (hex of primarySwatches; track hex) {
+            <button type="button" class="swatch" [class.swatch--on]="hex.toLowerCase() === primary()" [style.background]="hex" [attr.aria-label]="'Use ' + hex" (click)="primary.set(hex.toLowerCase())"></button>
+          }
+        </div>
+        @if (preview().onPrimary === '#ffffff') {
+          <ui-banner tone="ok">White text on this colour: {{ whiteOnPrimary().toFixed(1) }}:1 — passes AA. Links and active states use {{ preview().primaryInk }}.</ui-banner>
+        } @else {
+          <ui-banner tone="warn">White text only reaches {{ whiteOnPrimary().toFixed(1) }}:1 on this colour. Buttons switch to dark text automatically, and links use {{ preview().primaryInk }}.</ui-banner>
+        }
+      </div>
+      <div class="field">
+        <span class="field__label">Accent — highlights and “next step” cues</span>
+        <div class="swatches">
+          <label class="picker">
+            <input type="color" [value]="accent()" (input)="accent.set($any($event.target).value)" aria-label="Pick accent colour" />
+            <span class="mono">{{ accent() }}</span>
+          </label>
+          @for (hex of accentSwatches; track hex) {
+            <button type="button" class="swatch" [class.swatch--on]="hex.toLowerCase() === accent()" [style.background]="hex" [attr.aria-label]="'Use ' + hex" (click)="accent.set(hex.toLowerCase())"></button>
+          }
+        </div>
+        <span class="small muted">Text in accent colour uses {{ preview().accentInk }} (auto-darkened to 4.8:1).</span>
+      </div>
+    </section>
+
+    <hr class="hr" />
+
+    <section class="section">
+      <h2 class="h2">Support &amp; legal</h2>
+      <div class="two">
+        <ui-field label="Support email" for="br-email" optional>
+          <input uiInput id="br-email" name="supportEmail" type="email" [ngModel]="supportEmail()" (ngModelChange)="supportEmail.set($event)" />
+        </ui-field>
+        <ui-field label="Support phone" for="br-phone" optional>
+          <input uiInput id="br-phone" name="supportPhone" type="tel" [ngModel]="supportPhone()" (ngModelChange)="supportPhone.set($event)" />
+        </ui-field>
+      </div>
+      <ui-field label="Legal footer" for="br-legal" optional hint="Shown at the bottom of every page and on the login screen.">
+        <textarea uiInput id="br-legal" name="legalFooter" [ngModel]="legalFooter()" (ngModelChange)="legalFooter.set($event)" maxlength="500" placeholder="Legal name, registration no., tour-operator licence no."></textarea>
+      </ui-field>
+    </section>
+  </ui-card>
+
+  <aside class="preview-col">
+    <div class="row between">
+      <h2 class="h2">Live preview</h2>
+      @if (dirty()) {
+        <ui-pill tone="warn">Not published</ui-pill>
+      } @else {
+        <ui-pill tone="ok">Published</ui-pill>
+      }
+    </div>
+    <ui-card
+      class="preview"
+      [style.--primary]="preview().primary"
+      [style.--primary-ink]="preview().primaryInk"
+      [style.--on-primary]="preview().onPrimary"
+      [style.--accent]="preview().accent"
+      [style.--accent-ink]="preview().accentInk"
+    >
+      <span class="eyebrow">Login</span>
+      <div class="stage">
+        <div class="mini-login">
+          <span class="mini-mark">{{ initial() }}</span>
+          <b>{{ displayName() || 'Display name' }}</b>
+          <span class="mini-inp"></span>
+          <span class="mini-inp"></span>
+          <span class="ui-btn ui-btn--primary ui-btn--sm ui-btn--block">Sign in</span>
+        </div>
+      </div>
+      <span class="eyebrow">App shell</span>
+      <div class="stage stage--shell">
+        <div class="mini-side">
+          <div class="row mini-brand"><span class="mini-mark mini-mark--sm">{{ initial() }}</span><b class="small">{{ displayName() || 'Display name' }}</b></div>
+          <span class="mini-nav mini-nav--on">Bookings</span>
+          <span class="mini-nav">Agencies</span>
+          <span class="mini-nav">Pricing</span>
+        </div>
+        <div class="mini-main">
+          <b>Bookings</b>
+          <div class="mini-next">
+            <span class="mini-nico"><ui-icon name="check-circle" size="sm" /></span>
+            <span class="col grow"><b class="small">6 ready to confirm</b><span class="small mini-link">Review</span></span>
+            <span class="ui-btn ui-btn--primary ui-btn--sm">Confirm</span>
+          </div>
+        </div>
+      </div>
+    </ui-card>
+    <ui-card solid class="publish">
+      <span class="small muted grow">Unsaved changes are previewed only. Everyone sees them after publishing.</span>
+      <button type="button" uiButton size="sm" (click)="reset()" [disabled]="!dirty() || busy()">Discard</button>
+      <button type="button" uiButton="primary" size="sm" (click)="publish()" [disabled]="!isAdmin() || !dirty() || !valid() || busy()">
+        {{ busy() ? 'Publishing…' : 'Publish branding' }}
+      </button>
+      @if (!isAdmin()) {
+        <span class="why"><ui-icon name="lock" size="sm" />Requires an operator admin</span>
+      }
+    </ui-card>
+  </aside>
+</div>

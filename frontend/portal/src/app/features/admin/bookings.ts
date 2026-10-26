@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, WritableSignal, computed, inject, resource, signal } from '@angular/core';
+import { Component, WritableSignal, computed, effect, inject, input, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -29,6 +29,9 @@ export const BOOKING_STATUSES = [
 export class AdminBookings {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+
+  /** Query parameter, e.g. from an agency page: /admin/bookings?agencyId=… */
+  readonly agencyFilter = input<string | undefined>(undefined, { alias: 'agencyId' });
 
   readonly statuses = BOOKING_STATUSES;
   readonly status = signal('');
@@ -61,6 +64,13 @@ export class AdminBookings {
   });
 
   readonly hasFilters = computed(() => !!(this.status() || this.agencyId() || this.from() || this.to()));
+
+  constructor() {
+    effect(() => {
+      const preset = this.agencyFilter();
+      if (preset) this.filter(this.agencyId, preset);
+    });
+  }
 
   readonly statusLabel = bookingStatusLabel;
 

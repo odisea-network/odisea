@@ -1,0 +1,42 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  padding: 4px 12px 0;
+}
+
+.tab {
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mute);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+
+  &--on {
+    color: var(--ink);
+    border-bottom-color: var(--primary);
+  }
+}
+
+.tab__n {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--fill);
+  color: var(--ink-3);
+  @include tabular;
+}
