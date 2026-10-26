@@ -22,6 +22,7 @@ export { Sheet } from './sheet/sheet';
 export type { SegmentOption } from './segmented/segmented';
 export { Skeleton } from './skeleton/skeleton';
 export { StatusChip, bookingStatusLabel, bookingStatusMeta } from './status-chip/status-chip';
+export { Switch } from './switch/switch';
 export { Tabs } from './tabs/tabs';
 export type { TabOption } from './tabs/tabs';
 export { Timeline } from './timeline/timeline';
