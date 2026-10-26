@@ -444,3 +444,50 @@ export interface SaveExchangeRateRequest {
   rate: number;
   asOf: string;
 }
+
+// --- Documents admin (served by /api/v1/documents, /api/v1/company-profile) ---
+
+export interface PartyDto {
+  name: string;
+  eik: string;
+  vatNumber: string | null;
+  address: string;
+  city: string;
+  mol: string | null;
+}
+
+/** The operator's view carries both parties and the VAT lines; agencies get the trimmed FinancialDocumentDto. */
+export interface OperatorDocumentDto extends FinancialDocumentDto {
+  supplier: PartyDto;
+  recipient: PartyDto;
+  relatedDocumentDate: string | null;
+  vatTreatment: string;
+  vatRatePercent: number;
+  taxBase: number;
+  vatAmount: number;
+  legalNote: string | null;
+  annulmentReason: string | null;
+}
+
+export interface IssueInvoiceRequest {
+  bookingId: string;
+  vatTreatment: string;
+  exemptionGrounds: string | null;
+  dueInDays: number;
+}
+
+export interface IssueCreditNoteRequest {
+  invoiceId: string;
+  reason: string;
+}
+
+export interface CompanyProfileDto {
+  name: string;
+  eik: string;
+  vatNumber: string | null;
+  address: string;
+  city: string;
+  mol: string;
+  iban: string | null;
+  bankName: string | null;
+}

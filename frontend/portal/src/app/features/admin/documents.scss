@@ -1,0 +1,43 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter {
+  width: auto;
+  max-width: 220px;
+}
+
+.pad {
+  padding: 16px;
+}
+
+.tw--stale {
+  opacity: 0.6;
+}
+
+tr.annulled td {
+  opacity: 0.6;
+}
+
+.actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+
+.danger-text {
+  color: var(--bad);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.facts {
+  padding: 12px 14px;
+  font-size: 13px;
+}
