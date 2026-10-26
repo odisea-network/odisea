@@ -10,6 +10,7 @@ export { Field } from './field/field';
 export { Icon } from './icon/icon';
 export type { IconName } from './icon/icons';
 export { InputDirective } from './input/input.directive';
+export { Kpi } from './kpi/kpi';
 export { Masked } from './masked/masked';
 export { NextStep } from './next-step/next-step';
 export { PageHeader } from './page-header/page-header';

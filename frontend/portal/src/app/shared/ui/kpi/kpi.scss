@@ -1,0 +1,82 @@
+@use 'mixins' as *;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.kpi {
+  @include glass;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+  min-height: 124px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.82);
+  }
+}
+
+.kpi__k {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi__ico {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--fill);
+  color: var(--ink-3);
+
+  &--ok {
+    background: var(--ok-bg);
+    color: var(--ok);
+  }
+
+  &--warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+
+  &--bad {
+    background: var(--bad-bg);
+    color: var(--bad);
+  }
+
+  &--info {
+    background: var(--info-bg);
+    color: var(--info);
+  }
+}
+
+.kpi__v {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  @include tabular;
+
+  &--bad {
+    color: var(--bad);
+  }
+}
+
+.kpi__f {
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

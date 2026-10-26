@@ -40,7 +40,11 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./layout/admin-shell').then(m => m.AdminShell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'bookings' },
+      { path: '', pathMatch: 'full', redirectTo: 'today' },
+      {
+        path: 'today',
+        loadComponent: () => import('./features/admin/dashboard').then(m => m.AdminDashboard),
+      },
       {
         path: 'bookings',
         loadComponent: () => import('./features/admin/bookings').then(m => m.AdminBookings),
