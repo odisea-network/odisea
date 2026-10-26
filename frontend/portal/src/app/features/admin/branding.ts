@@ -10,6 +10,7 @@ import { contrastRatio, deriveBrandTheme } from '../../core/theme';
 import {
   Banner, ButtonDirective, Card, DialogService, Field, Icon, InputDirective, PageHeader, Pill, ToastService,
 } from '../../shared/ui';
+import { SettingsNav } from './settings-nav';
 
 const PRIMARY_SWATCHES = ['#1946B8', '#0B3B5C', '#C2410C', '#0F5E57', '#5B2A86', '#F2C94C'];
 const ACCENT_SWATCHES = ['#E8A23A', '#0E8C83', '#D9467A', '#3B82F6', '#65A30D'];
@@ -18,7 +19,7 @@ const MAX_LOGO_BYTES = 512 * 1024;
 /** Settings › Branding: how the portal looks to agencies and staff, previewed before publishing. */
 @Component({
   selector: 'app-admin-branding',
-  imports: [FormsModule, Banner, ButtonDirective, Card, Field, Icon, InputDirective, PageHeader, Pill],
+  imports: [FormsModule, Banner, ButtonDirective, Card, Field, Icon, InputDirective, PageHeader, Pill, SettingsNav],
   templateUrl: './branding.html',
   styleUrl: './branding.scss',
 })

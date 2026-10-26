@@ -207,6 +207,44 @@
           </table>
         </div>
       </ui-card>
+
+      <ui-card title="Documents" [flush]="(documents.value()?.length ?? 0) > 0">
+        @if (b.status === 'Confirmed' && documents.value() && !invoice()) {
+          <button cardActions type="button" uiButton size="sm" (click)="openIssue()" [disabled]="busy()">Issue invoice</button>
+        }
+        @if (documents.value(); as docs) {
+          @if (docs.length === 0) {
+            <div class="nodocs">
+              <span class="nodocs__icon"><ui-icon name="file" /></span>
+              <span class="small muted">
+                @if (b.status === 'Confirmed') { No invoice yet — issue it from here. }
+                @else { The invoice can be issued once the booking is confirmed. }
+              </span>
+            </div>
+          } @else {
+            <div class="tw">
+              <table class="tbl">
+                <thead><tr><th>Number</th><th>Type</th><th>Date</th><th>VAT</th><th class="r">Amount</th><th>Status</th><th><span class="sr-only">Download</span></th></tr></thead>
+                <tbody>
+                  @for (d of docs; track d.id) {
+                    <tr>
+                      <td class="mono strong">{{ d.number }}</td>
+                      <td>{{ kindLabel(d.kind) }}</td>
+                      <td class="num">{{ d.issueDate | odDate }}</td>
+                      <td class="small">{{ vatLabel(d.vatTreatment) }}</td>
+                      <td class="r m strong">{{ d.total | money: d.currency }}</td>
+                      <td>@if (d.status === 'Annulled') {<ui-pill>Annulled</ui-pill>} @else {<ui-pill tone="ok">Issued</ui-pill>}</td>
+                      <td class="r"><button type="button" uiButton="ghost" size="sm" (click)="downloadDocument(d)" [attr.aria-label]="'Download PDF ' + d.number"><ui-icon name="download" />PDF</button></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else {
+          <ui-skeleton [lines]="2" />
+        }
+      </ui-card>
     </div>
 
     <aside class="detail__aside">
@@ -252,6 +290,31 @@
       </ui-card>
     </aside>
   </div>
+
+  <ui-sheet [(open)]="issueOpen" [title]="'Issue invoice for ' + b.ref" sub="The number is the next in the series; the agency can download it right away.">
+    <form id="issue-invoice" class="invoice-form" (ngSubmit)="issueInvoice()">
+      @if (error(); as message) {
+        <ui-banner tone="bad">{{ message }}</ui-banner>
+      }
+      <dl class="kv inset facts">
+        <dt>Recipient</dt><dd>{{ agency.value()?.name ?? '—' }}</dd>
+        <dt>Amount</dt><dd class="m">{{ b.sellAmount | money: b.currency }}</dd>
+      </dl>
+      <ui-field label="VAT treatment" for="iv-vat">
+        <select uiInput id="iv-vat" name="vatTreatment" [(ngModel)]="invoiceForm.vatTreatment">
+          @for (o of vatOptions; track o.value) {
+            <option [value]="o.value">{{ o.label }}</option>
+          }
+        </select>
+      </ui-field>
+      @if (invoiceForm.vatTreatment === 'Exempt') {
+        <ui-field label="Exemption grounds" for="iv-grounds"><input uiInput id="iv-grounds" name="exemptionGrounds" [(ngModel)]="invoiceForm.exemptionGrounds" maxlength="300" required /></ui-field>
+      }
+      <ui-field label="Due in days" for="iv-due" hint="0 to 60"><input uiInput id="iv-due" name="dueInDays" type="number" min="0" max="60" class="m" [(ngModel)]="invoiceForm.dueInDays" required /></ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="issueOpen.set(false)">Cancel</button>
+    <button sheetActions type="submit" form="issue-invoice" uiButton="primary" [disabled]="busy() || !invoiceValid()">{{ busy() ? 'Issuing…' : 'Issue invoice' }}</button>
+  </ui-sheet>
 } @else {
   <ui-card><ui-skeleton [lines]="6" /></ui-card>
 }

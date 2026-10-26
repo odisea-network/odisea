@@ -2,7 +2,9 @@
   title="Branding"
   [crumbs]="[{ label: 'Settings' }, { label: 'Branding' }]"
   sub="How your portal looks to agencies and staff. Changes apply to every page after you publish."
-/>
+>
+  <app-settings-nav actions />
+</ui-page-header>
 
 @if (!isAdmin()) {
   <ui-banner tone="info">Only operator admins can publish branding. You can preview changes here.</ui-banner>

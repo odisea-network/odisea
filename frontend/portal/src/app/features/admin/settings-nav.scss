@@ -1,0 +1,27 @@
+:host {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(118, 118, 128, 0.14);
+  gap: 2px;
+}
+
+.seg__link {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+
+  &--on {
+    background: #fff;
+    box-shadow:
+      0 1px 3px rgba(16, 24, 40, 0.12),
+      0 1px 1px rgba(16, 24, 40, 0.05);
+    color: var(--ink);
+  }
+}

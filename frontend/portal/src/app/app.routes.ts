@@ -63,6 +63,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/branding').then(m => m.AdminBranding),
       },
       {
+        path: 'settings/company',
+        loadComponent: () => import('./features/admin/company').then(m => m.AdminCompany),
+      },
+      {
+        path: 'documents',
+        loadComponent: () => import('./features/admin/documents').then(m => m.AdminDocuments),
+      },
+      {
         path: 'programs',
         loadComponent: () => import('./features/admin/programs').then(m => m.AdminPrograms),
       },
@@ -82,11 +90,6 @@ export const routes: Routes = [
         path: 'pricing',
         loadComponent: () => import('./features/admin/pricing').then(m => m.AdminPricing),
       },
-      ...['documents'].map(section => ({
-        path: section,
-        loadComponent: () => import('./features/placeholder').then(m => m.Placeholder),
-        data: { title: section[0].toUpperCase() + section.slice(1) },
-      })),
     ],
   },
   { path: '**', redirectTo: 'login' },

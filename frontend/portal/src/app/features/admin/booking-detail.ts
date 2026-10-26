@@ -3,7 +3,7 @@ import { Component, computed, inject, input, resource, signal } from '@angular/c
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
-  AgencyDto, OperatorBooking, OperatorPayment, PaymentMethod, RecordPaymentRequest,
+  AgencyDto, OperatorBooking, OperatorDocumentDto, OperatorPayment, PaymentMethod, RecordPaymentRequest,
 } from '../../core/api.types';
 import { AuthService } from '../../core/auth.service';
 import { historyTimeline } from '../../core/booking-history';
@@ -13,10 +13,12 @@ import { OdDatePipe, OdDateTimePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import {
   Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Field, Icon, IconName, InputDirective,
-  Masked, NextStep, PageHeader, Pill, Progress, SegmentOption, Segmented, Skeleton, StatusChip, Timeline, ToastService,
+  Masked, NextStep, PageHeader, Pill, Progress, SegmentOption, Segmented, Sheet, Skeleton, StatusChip, Timeline,
+  ToastService,
   bookingStatusLabel,
 } from '../../shared/ui';
 import { operatorActions, parseBreakdown } from './booking-actions';
+import { VAT_TREATMENT_LABELS, documentKindLabel, vatTreatmentShort } from './document-labels';
 
 const PAYMENT_METHODS: SegmentOption[] = [
   { value: 'BankTransfer', label: 'Bank transfer' },
@@ -43,7 +45,7 @@ interface NextAction {
   imports: [
     FormsModule, MoneyPipe, OdDatePipe, OdDateTimePipe,
     Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, Masked, NextStep, PageHeader,
-    Pill, Progress, Segmented, Skeleton, StatusChip, Timeline,
+    Pill, Progress, Segmented, Sheet, Skeleton, StatusChip, Timeline,
   ],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
@@ -61,6 +63,7 @@ export class AdminBookingDetail {
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly payOpen = signal(false);
+  readonly issueOpen = signal(false);
 
   readonly loaded = resource({
     params: () => ({ id: this.id() }),
@@ -81,6 +84,23 @@ export class AdminBookingDetail {
     },
     loader: ({ params }) => firstValueFrom(this.http.get<AgencyDto>(`/api/v1/agencies/${params.agencyId}`)),
   });
+
+  /** Latest 200 documents, narrowed to this booking by its reference. */
+  readonly documents = resource({
+    params: () => {
+      const ref = this.booking()?.ref;
+      return ref ? { ref } : undefined;
+    },
+    loader: async ({ params }) => (await firstValueFrom(this.http.get<OperatorDocumentDto[]>('/api/v1/documents')))
+      .filter(d => d.bookingRef === params.ref),
+  });
+  readonly invoice = computed(() =>
+    (this.documents.value() ?? []).find(d => d.kind === 'Invoice' && d.status === 'Issued') ?? null);
+
+  readonly vatOptions = Object.entries(VAT_TREATMENT_LABELS).map(([value, label]) => ({ value, label }));
+  readonly kindLabel = documentKindLabel;
+  readonly vatLabel = vatTreatmentShort;
+  invoiceForm = { vatTreatment: 'MarginScheme', exemptionGrounds: '', dueInDays: 14 };
 
   readonly isAdmin = computed(() => this.auth.user()?.role === 'Admin');
   readonly actions = computed(() => {
@@ -125,7 +145,14 @@ export class AdminBookingDetail {
           },
         };
       case 'Confirmed':
-        return { icon: 'check-circle', tone: 'ok', title: 'Confirmed', sub: 'Paid in full and final. Invoices are issued from Documents.' };
+        if (this.documents.value() && !this.invoice()) {
+          return {
+            icon: 'file', tone: 'info', title: 'Issue the invoice',
+            sub: 'Next number in the series. The agency can download it right away.',
+            action: { label: 'Issue invoice', run: () => this.openIssue(), disabledReason: null },
+          };
+        }
+        return { icon: 'check-circle', tone: 'ok', title: 'All done', sub: 'Confirmed, paid in full' + (this.invoice() ? ` and invoiced (${this.invoice()!.number})` : '') + '. Nothing else needs you.' };
       case 'PendingConfirmation':
         return { icon: 'hourglass', tone: 'info', title: 'Waiting for the supplier', sub: 'The hold request is in flight; the agency will see the payment deadline once it lands.' };
       case 'Draft':
@@ -145,6 +172,51 @@ export class AdminBookingDetail {
   paymentNote = '';
 
   readonly paymentMethods = PAYMENT_METHODS;
+
+  openIssue(): void {
+    this.invoiceForm = { vatTreatment: 'MarginScheme', exemptionGrounds: '', dueInDays: 14 };
+    this.error.set(null);
+    this.issueOpen.set(true);
+  }
+
+  invoiceValid(): boolean {
+    const f = this.invoiceForm;
+    return f.dueInDays >= 0 && f.dueInDays <= 60 && (f.vatTreatment !== 'Exempt' || !!f.exemptionGrounds.trim());
+  }
+
+  async issueInvoice(): Promise<void> {
+    const b = this.booking();
+    if (!b || !this.invoiceValid()) return;
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const doc = await firstValueFrom(this.http.post<OperatorDocumentDto>('/api/v1/documents/invoices', {
+        bookingId: b.id, vatTreatment: this.invoiceForm.vatTreatment,
+        exemptionGrounds: this.invoiceForm.exemptionGrounds.trim() || null, dueInDays: Number(this.invoiceForm.dueInDays),
+      }));
+      this.issueOpen.set(false);
+      this.toasts.show(`Invoice ${doc.number} issued · available to the agency`);
+      this.documents.reload();
+    } catch (err) {
+      this.error.set(problemMessage(err, 'The invoice could not be issued.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async downloadDocument(doc: OperatorDocumentDto): Promise<void> {
+    try {
+      const blob = await firstValueFrom(this.http.get(`/api/v1/documents/${doc.id}/pdf`, { responseType: 'blob' }));
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${doc.kind}-${doc.number}.pdf`;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      this.toasts.show(`Download of ${doc.number} failed`, { tone: 'bad' });
+    }
+  }
 
   methodLabel(method: string): string {
     return METHOD_LABELS[method] ?? method;
