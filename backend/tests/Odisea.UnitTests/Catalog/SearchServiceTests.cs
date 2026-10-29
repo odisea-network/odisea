@@ -85,8 +85,10 @@ public class SearchServiceTests
         _program = new CatalogProgram
         {
             Name = "Antalya Easter 2027",
+            Slug = "antalya-easter-2027",
             DestinationId = destination.Id,
             ProviderCode = "mock",
+            Content = CatalogFixtures.FullContent(),
         };
         _departure = new ProgramDeparture
         {
@@ -98,7 +100,7 @@ public class SearchServiceTests
         _program.Hotels.Add(new ProgramHotel { ProgramId = _program.Id, HotelId = _mappedHotel.Id });
         _program.Hotels.Add(new ProgramHotel { ProgramId = _program.Id, HotelId = unmapped.Id });
         if (publish)
-            _program.Publish();
+            _program.Publish(ProgramReadiness.Evaluate(_program, CatalogFixtures.Gallery(), mappedHotels: 2, CatalogFixtures.Today));
         _catalog.Programs.Add(_program);
         _catalog.SaveChanges();
     }
