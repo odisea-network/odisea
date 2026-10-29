@@ -47,7 +47,7 @@ One deployable (`Odisea.Api`), six modules, hard boundaries:
 | Module | Owns | Depends on (PublicApi only) |
 |---|---|---|
 | **Agencies** | Identity & authentication (JWT for people, API keys for partner systems), agencies, users, roles, credit limits, commission levels, **plans and feature entitlements** (`IAgencyEntitlements`), the DataProtection key ring | — |
-| **Catalog** | Destinations, hotels, programs, departures, allowed-hotel lists, **hotel/location mappings** (internal ↔ provider codes), live search with protected offer envelopes | Integrations (provider search, token protection), Pricing (sell price) |
+| **Catalog** | Destinations, hotels, programs, departures, allowed-hotel lists, **hotel/location mappings** (internal ↔ provider codes), live search with protected offer envelopes; **program content** (tagline, summary, Markdown sections, inclusions/exclusions, itinerary, policies, tags, slug), **image gallery** stored in the schema and served anonymously by unguessable id, **readiness checklist** whose required checks gate publishing | Integrations (provider search, token protection), Pricing (sell price) |
 | **Pricing** | Pricing rules (markup/fee/commission), exchange rates, the pure pricing engine | — |
 | **Booking** | Reservation lifecycle (state machine with actors), passengers with encrypted travel documents, payments, operator oversight | Agencies (agency active check, policies), Catalog (program refs), Pricing (breakdown), Integrations (re-price/book/cancel) |
 | **Integrations** | `IReservationProvider` contract, provider adapters (Mock now, real later), offer-token protection, call logs | — |

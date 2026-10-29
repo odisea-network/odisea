@@ -18,7 +18,7 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("catalog")
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -184,8 +184,8 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
+                        .HasMaxLength(20000)
+                        .HasColumnType("character varying(20000)")
                         .HasColumnName("description");
 
                     b.Property<Guid>("DestinationId")
@@ -209,6 +209,12 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("season");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("slug");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -220,6 +226,10 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
 
                     b.HasIndex("DestinationId")
                         .HasDatabaseName("ix_programs_destination_id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_programs_slug");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_programs_status");
@@ -296,6 +306,133 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
                     b.ToTable("program_hotels", "catalog");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Catalog.Domain.ProgramImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("alt_text");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("caption");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("data");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<bool>("IsCover")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_cover");
+
+                    b.Property<Guid>("ProgramId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_id");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sha256");
+
+                    b.Property<int>("SizeBytes")
+                        .HasColumnType("integer")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_program_images");
+
+                    b.HasIndex("ProgramId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_program_images_cover")
+                        .HasFilter("is_cover");
+
+                    b.HasIndex("ProgramId", "SortOrder")
+                        .HasDatabaseName("ix_program_images_program_id_sort_order");
+
+                    b.ToTable("program_images", "catalog");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Catalog.Domain.ProgramItineraryDay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("integer")
+                        .HasColumnName("day");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Meals")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("meals");
+
+                    b.Property<string>("Overnight")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("overnight");
+
+                    b.Property<Guid>("ProgramId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_program_itinerary_days");
+
+                    b.HasIndex("ProgramId", "Day")
+                        .IsUnique()
+                        .HasDatabaseName("ix_program_itinerary_days_program_id_day");
+
+                    b.ToTable("program_itinerary_days", "catalog");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Catalog.Domain.Hotel", b =>
                 {
                     b.HasOne("Odisea.Modules.Catalog.Domain.Destination", null)
@@ -334,6 +471,103 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_programs_destinations_destination_id");
+
+                    b.OwnsOne("Odisea.Modules.Catalog.Domain.ProgramContent", "Content", b1 =>
+                        {
+                            b1.Property<Guid>("ProgramId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("CancellationPolicy")
+                                .HasMaxLength(8000)
+                                .HasColumnType("character varying(8000)")
+                                .HasColumnName("cancellation_policy");
+
+                            b1.Property<string>("ChildPolicy")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("child_policy");
+
+                            b1.Property<string>("DeparturePoint")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("departure_point");
+
+                            b1.PrimitiveCollection<string[]>("Exclusions")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("exclusions");
+
+                            b1.PrimitiveCollection<string[]>("Highlights")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("highlights");
+
+                            b1.PrimitiveCollection<string[]>("Inclusions")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("inclusions");
+
+                            b1.Property<string>("InsurancePolicy")
+                                .HasMaxLength(4000)
+                                .HasColumnType("character varying(4000)")
+                                .HasColumnName("insurance_policy");
+
+                            b1.Property<int?>("MaxGroupSize")
+                                .HasColumnType("integer")
+                                .HasColumnName("max_group_size");
+
+                            b1.Property<int?>("MinGroupSize")
+                                .HasColumnType("integer")
+                                .HasColumnName("min_group_size");
+
+                            b1.Property<string>("PaymentTerms")
+                                .HasMaxLength(4000)
+                                .HasColumnType("character varying(4000)")
+                                .HasColumnName("payment_terms");
+
+                            b1.Property<string>("PracticalInfo")
+                                .HasMaxLength(8000)
+                                .HasColumnType("character varying(8000)")
+                                .HasColumnName("practical_info");
+
+                            b1.Property<string>("Summary")
+                                .HasMaxLength(600)
+                                .HasColumnType("character varying(600)")
+                                .HasColumnName("summary");
+
+                            b1.Property<string>("Tagline")
+                                .HasMaxLength(160)
+                                .HasColumnType("character varying(160)")
+                                .HasColumnName("tagline");
+
+                            b1.PrimitiveCollection<string[]>("Tags")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("tags");
+
+                            b1.Property<string>("TransportDetails")
+                                .HasMaxLength(4000)
+                                .HasColumnType("character varying(4000)")
+                                .HasColumnName("transport_details");
+
+                            b1.Property<string>("TransportMode")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("transport_mode");
+
+                            b1.HasKey("ProgramId");
+
+                            b1.ToTable("programs", "catalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProgramId")
+                                .HasConstraintName("fk_programs_programs_id");
+                        });
+
+                    b.Navigation("Content")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Odisea.Modules.Catalog.Domain.ProgramDeparture", b =>
@@ -363,11 +597,33 @@ namespace Odisea.Modules.Catalog.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_program_hotels_programs_program_id");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Catalog.Domain.ProgramImage", b =>
+                {
+                    b.HasOne("Odisea.Modules.Catalog.Domain.Program", null)
+                        .WithMany()
+                        .HasForeignKey("ProgramId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_program_images_programs_program_id");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Catalog.Domain.ProgramItineraryDay", b =>
+                {
+                    b.HasOne("Odisea.Modules.Catalog.Domain.Program", null)
+                        .WithMany("Itinerary")
+                        .HasForeignKey("ProgramId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_program_itinerary_days_programs_program_id");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Catalog.Domain.Program", b =>
                 {
                     b.Navigation("Departures");
 
                     b.Navigation("Hotels");
+
+                    b.Navigation("Itinerary");
                 });
 #pragma warning restore 612, 618
         }
