@@ -30,7 +30,7 @@ jobs:
     env:
       ODISEA_TEST_CONNECTION: "Host=localhost;Port=5433;Database=odisea_test;Username=odisea;Password=odisea"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
@@ -47,7 +47,7 @@ jobs:
       run:
         working-directory: frontend/portal
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
