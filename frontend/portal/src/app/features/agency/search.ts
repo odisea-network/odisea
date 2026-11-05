@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, resource, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   HotelOffer, ProgramDetail, ProgramListItem, SearchResponse,
@@ -35,7 +35,7 @@ export function sortOffers(offers: HotelOffer[], sort: Sort): HotelOffer[] {
 @Component({
   selector: 'app-agency-search',
   imports: [
-    FormsModule, MoneyPipe, OdDatePipe, OfferCard,
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe, OfferCard,
     Banner, ButtonDirective, Card, EmptyState, Icon, InputDirective, PageHeader, Pill, Segmented, Skeleton,
   ],
   templateUrl: './search.html',
@@ -46,6 +46,10 @@ export class AgencySearch {
   private readonly router = inject(Router);
   private readonly draft = inject(BookingDraftService);
   private readonly viewport = inject(ViewportService);
+
+  /** `?program=` and `?departure=` from a program page preselect the form. */
+  readonly program = input<string | undefined>();
+  readonly departure = input<string | undefined>();
 
   // Signals, not plain fields: canSearch() must recompute when these change.
   readonly programId = signal('');
@@ -80,6 +84,11 @@ export class AgencySearch {
       firstValueFrom(this.http.get<ProgramDetail>(`/api/v1/catalog/programs/${params.id}`)),
   });
 
+  readonly cover = computed(() => {
+    const images = this.detail.value()?.images ?? [];
+    return images.find(i => i.isCover) ?? images[0] ?? null;
+  });
+
   readonly canSearch = computed(() => this.programId() !== '' && this.departureId() !== '');
   readonly phone = this.viewport.isPhone;
   readonly showCards = computed(() => this.view() === 'cards' || this.phone());
@@ -92,6 +101,15 @@ export class AgencySearch {
   readonly compareFull = computed(() => this.compare().length >= MAX_COMPARE);
 
   constructor() {
+    effect(() => {
+      const program = this.program();
+      const departure = this.departure();
+      untracked(() => {
+        if (!program || program === this.programId()) return;
+        this.selectProgram(program);
+        if (departure) this.departureId.set(departure);
+      });
+    });
     effect(() => {
       const dialog = this.compareDialog()?.nativeElement;
       if (!dialog) return;

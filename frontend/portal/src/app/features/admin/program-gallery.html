@@ -1,0 +1,66 @@
+<div class="row between head">
+  <div>
+    <h2 class="h2">Gallery</h2>
+    <p class="small muted">PNG, JPEG or WebP up to 5 MB, at most {{ limits.maxImages }}. The cover leads every card; {{ limits.coverMinWidth }} px wide or more stays sharp. Alt text describes each photo for screen readers.</p>
+  </div>
+  <button type="button" uiButton size="sm" (click)="pick()" [disabled]="busy() || full()"><ui-icon name="plus" />Upload images</button>
+  <input #picker type="file" class="sr-only" tabindex="-1" aria-hidden="true" [accept]="accept" multiple (change)="picked($event)" />
+</div>
+
+@if (error(); as message) {
+  <ui-banner tone="bad">{{ message }}</ui-banner>
+}
+@if (progress(); as text) {
+  <p class="small strong" role="status">{{ text }}</p>
+}
+
+<div class="drop" [class.drop--on]="dragging()" (dragover)="dragOver($event)" (dragleave)="dragging.set(false)" (drop)="drop($event)">
+  @if (images().length === 0) {
+    <div class="drop__empty col">
+      <ui-icon name="plus" />
+      <b>No images yet</b>
+      <span class="small muted">Drop photos here or use Upload images. The first one becomes the cover.</span>
+    </div>
+  } @else {
+    <ul class="grid">
+      @for (img of images(); track img.id; let i = $index, first = $first, last = $last) {
+        @let e = edit(img);
+        <li class="tile">
+          <div class="tile__img">
+            <img [src]="img.url" [alt]="img.altText ?? ''" [width]="img.width" [height]="img.height" loading="lazy" />
+            @if (img.isCover) {
+              <ui-pill tone="brand" class="tile__cover">Cover</ui-pill>
+            }
+          </div>
+          <span class="small muted num">
+            {{ img.width }} × {{ img.height }} · {{ kb(img.sizeBytes) }}
+            @if (img.isCover && img.width < limits.coverMinWidth) {
+              · <span class="u-soon">narrower than {{ limits.coverMinWidth }} px</span>
+            }
+          </span>
+          <ui-field label="Alt text" [for]="'img-alt-' + img.id" [hint]="e.altText.trim() ? null : 'Missing: describe what the photo shows'">
+            <input uiInput [id]="'img-alt-' + img.id" [(ngModel)]="e.altText" maxlength="300" placeholder="e.g. Hotel pool with sea view at sunset" />
+          </ui-field>
+          <ui-field label="Caption" [for]="'img-cap-' + img.id" optional>
+            <input uiInput [id]="'img-cap-' + img.id" [(ngModel)]="e.caption" maxlength="200" />
+          </ui-field>
+          <div class="row between tile__tools">
+            <div class="row">
+              <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'Move image ' + (i + 1) + ' earlier'" [disabled]="busy() || first" (click)="move(i, -1)"><ui-icon name="chevron-left" size="sm" /></button>
+              <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'Move image ' + (i + 1) + ' later'" [disabled]="busy() || last" (click)="move(i, 1)"><ui-icon name="chevron-right" size="sm" /></button>
+              @if (!img.isCover) {
+                <button type="button" uiButton="ghost" size="sm" [disabled]="busy()" (click)="makeCover(img)">Make cover</button>
+              }
+            </div>
+            <div class="row">
+              @if (dirty(img)) {
+                <button type="button" uiButton="primary" size="sm" [disabled]="busy()" (click)="save(img)">Save</button>
+              }
+              <button type="button" uiButton="danger-quiet" size="sm" iconOnly [attr.aria-label]="'Delete image ' + (i + 1)" [disabled]="busy()" (click)="remove(img)"><ui-icon name="x" size="sm" /></button>
+            </div>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>

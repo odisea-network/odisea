@@ -7,15 +7,15 @@
   <ui-page-header
     [title]="p.name"
     [crumbs]="[{ label: 'Programs', link: '/admin/programs' }, { label: p.name }]"
-    [sub]="(destination() ? destination()!.name + ', ' + destination()!.country + ' · ' : '') + 'supplier ' + p.providerCode + (p.season ? ' · ' + p.season : '') + ' · ' + p.departures.length + (p.departures.length === 1 ? ' departure · ' : ' departures · ') + p.hotelIds.length + (p.hotelIds.length === 1 ? ' hotel' : ' hotels')"
+    [sub]="(p.destination ? place(p.destination.name, p.destination.country) + ' · ' : '') + 'supplier ' + p.providerCode + (p.season ? ' · ' + p.season : '') + ' · /' + p.slug"
   >
     <ui-pill status [tone]="tone(p.status)">{{ p.status }}@if (p.status === 'Draft') { · not visible to agencies}</ui-pill>
-    <button actions type="button" uiButton (click)="openEdit()">Edit details</button>
+    <button actions type="button" uiButton (click)="openEdit()">Name &amp; description</button>
     @if (p.status === 'Draft') {
       <div actions class="col publish">
         <button type="button" uiButton="primary" (click)="publish()" [disabled]="busy() || !canPublish()">Publish</button>
-        @if (!canPublish()) {
-          <span class="why"><ui-icon name="lock" size="sm" />Needs a departure and a hotel</span>
+        @if (publishBlockedBy(); as why) {
+          <span class="why"><ui-icon name="lock" size="sm" />{{ why }}</span>
         }
       </div>
     }
@@ -28,6 +28,33 @@
   <div class="layout">
     <ui-card flush class="main">
       <ui-tabs [tabs]="tabs()" [value]="tab()" (valueChange)="setTab($event)" />
+
+      @if (draft(); as d) {
+        @if (tab() === 'content') {
+          <app-program-content-form [draft]="d" />
+        }
+        @if (tab() === 'itinerary') {
+          <app-program-itinerary [draft]="d" [expected]="expected()" />
+        }
+        @if ((tab() === 'content' || tab() === 'itinerary') && dirty()) {
+          <div class="savebar row between" role="region" aria-label="Unsaved changes">
+            <span class="small strong">
+              Unsaved changes
+              @if (problems().length > 0) {
+                <span class="u-over"> · {{ problems()[0] }}</span>
+              }
+            </span>
+            <div class="row savebar__actions">
+              <button type="button" uiButton size="sm" (click)="discard()" [disabled]="busy()">Discard</button>
+              <button type="button" uiButton="primary" size="sm" (click)="saveContent()" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save content' }}</button>
+            </div>
+          </div>
+        }
+      }
+
+      @if (tab() === 'gallery') {
+        <app-program-gallery [programId]="p.id" [images]="p.images" (changed)="reload()" />
+      }
 
       @if (tab() === 'departures') {
         <div class="departures">
@@ -60,7 +87,7 @@
               <button type="button" uiButton size="sm" (click)="openDeparture()"><ui-icon name="plus" />Add departure</button>
             </div>
             @if (p.departures.length === 0) {
-              <p class="small muted">No departures yet — agencies can only search dates you add here.</p>
+              <p class="small muted">No departures yet. Agencies can only search dates you add here.</p>
             } @else {
               <div class="tw deplist__table">
                 <table class="tbl tbl--dense">
@@ -93,14 +120,14 @@
           <div><h2 class="h2">Allowed hotels</h2><p class="small muted">Only these hotels appear in search results for this program.</p></div>
           <button type="button" uiButton size="sm" (click)="openHotel()" [disabled]="availableHotels().length === 0"><ui-icon name="plus" />Allow hotel</button>
         </div>
-        @if (attachedHotels().length === 0) {
+        @if (p.hotels.length === 0) {
           <p class="small muted pad">No hotels allowed yet.@if (availableHotels().length === 0) { Add hotels to the destination first.}</p>
         } @else {
           <div class="tw">
             <table class="tbl">
               <thead><tr><th>Hotel</th><th>Stars</th><th>Supplier mapping</th></tr></thead>
               <tbody>
-                @for (h of attachedHotels(); track h.id) {
+                @for (h of p.hotels; track h.id) {
                   <tr>
                     <td><b>{{ h.name }}</b></td>
                     <td class="num">{{ h.stars }}★</td>
@@ -119,43 +146,20 @@
           </div>
         }
       }
-
-      @if (tab() === 'general') {
-        <div class="general">
-          <dl class="kv">
-            <dt>Name</dt><dd>{{ p.name }}</dd>
-            <dt>Destination</dt><dd>{{ destination() ? destination()!.name + ', ' + destination()!.country : '—' }}</dd>
-            <dt>Supplier</dt><dd class="mono">{{ p.providerCode }}</dd>
-            <dt>Season</dt><dd>{{ p.season ?? '—' }}</dd>
-            <dt>Description</dt><dd class="prose">{{ p.description ?? '—' }}</dd>
-          </dl>
-        </div>
-      }
     </ui-card>
 
-    <ui-card class="ready">
-      <div class="row between"><h2 class="h2">Ready to publish?</h2><span class="small strong">{{ checksPassed() }} of {{ checks().length }}</span></div>
-      <ui-progress [value]="checksPassed()" [max]="checks().length" />
-      <ul class="checks">
-        @for (c of checks(); track c.title) {
-          <li class="check">
-            <span class="check__dot" [class.check__dot--ok]="c.ok"><ui-icon [name]="checkIcon(c.ok)" size="sm" /></span>
-            <div class="col grow"><b class="small">{{ c.title }}</b><span class="small muted">{{ c.sub }}</span></div>
-          </li>
-        }
-      </ul>
-      <p class="small muted">
-        @if (p.status === 'Published') { Published — every active agency can search it. }
-        @else { Publishing makes this program searchable by every active agency. Existing bookings stay. }
-      </p>
-    </ui-card>
+    @if (readiness(); as r) {
+      <app-program-readiness class="side" [readiness]="r" [status]="p.status" (go)="go($event)" />
+    }
   </div>
 
-  <ui-sheet [(open)]="editOpen" title="Edit program">
+  <ui-sheet [(open)]="editOpen" title="Name and description" sub="The description is the body of the program page agencies read.">
     <form id="edit-program" (ngSubmit)="saveEdit()">
-      <ui-field label="Name" for="pe-name"><input uiInput id="pe-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
+      <ui-field label="Name" for="pe-name" hint="10–70 characters reads best on cards"><input uiInput id="pe-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
       <ui-field label="Season" for="pe-season" optional><input uiInput id="pe-season" name="season" [(ngModel)]="edit.season" maxlength="50" /></ui-field>
-      <ui-field label="Description" for="pe-desc" optional><textarea uiInput id="pe-desc" name="description" [(ngModel)]="edit.description" maxlength="2000"></textarea></ui-field>
+      <ui-field label="Description" for="pe-desc" optional [hint]="'300+ characters recommended · Markdown: ## heading, - list, **bold** · ' + (edit.description?.length ?? 0) + ' / ' + descriptionMax">
+        <textarea uiInput id="pe-desc" name="description" rows="14" [(ngModel)]="edit.description" [maxlength]="descriptionMax"></textarea>
+      </ui-field>
     </form>
     <button sheetActions type="button" uiButton (click)="editOpen.set(false)">Cancel</button>
     <button sheetActions type="submit" form="edit-program" uiButton="primary" [disabled]="busy() || !edit.name.trim()">Save</button>
@@ -173,7 +177,7 @@
     <button sheetActions type="submit" form="add-departure" uiButton="primary" [disabled]="busy() || !departureValid()">Add departure</button>
   </ui-sheet>
 
-  <ui-sheet [(open)]="hotelOpen" title="Allow a hotel" [sub]="'Hotels in ' + (destination()?.name ?? 'this destination') + ' not yet in the program.'">
+  <ui-sheet [(open)]="hotelOpen" title="Allow a hotel" [sub]="'Hotels in ' + (p.destination?.name ?? 'this destination') + ' not yet in the program.'">
     <form id="attach-hotel" (ngSubmit)="attachHotel()">
       <ui-field label="Hotel" for="ah-hotel">
         <select uiInput id="ah-hotel" name="hotelId" [(ngModel)]="hotelToAttach">

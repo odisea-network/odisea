@@ -1,0 +1,78 @@
+<ui-page-header title="Programs" sub="What the operator sells. Open a program for the itinerary, what's included and the policies." />
+
+@if (programs.error()) {
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load programs" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="programs.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (programs.isLoading()) {
+  <div class="grid">
+    @for (n of [1, 2, 3]; track n) {
+      <div class="pcard pcard--loading"><ui-skeleton [lines]="4" /></div>
+    }
+  </div>
+} @else if (programs.value(); as all) {
+  @if (all.length === 0) {
+    <ui-empty-state icon="layers" title="No programs on sale yet" description="The operator has not published any programs. Check back soon." />
+  } @else {
+    <div class="filters">
+      <label class="filters__q">
+        <ui-icon name="search" size="sm" />
+        <input uiInput type="search" placeholder="Search by name, place or tag" aria-label="Search programs"
+          [ngModel]="query()" (ngModelChange)="query.set($event)" />
+      </label>
+      @if (tags().length > 0) {
+        <div class="row wrap filters__tags" role="group" aria-label="Filter by tag">
+          @for (t of tags(); track t) {
+            <button type="button" class="chip" [class.chip--on]="tag() === t" [attr.aria-pressed]="tag() === t" (click)="toggleTag(t)">{{ t }}</button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (filtered().length === 0) {
+      <ui-empty-state icon="search" title="No program matches" description="Try fewer words or another tag.">
+        <button type="button" uiButton size="sm" (click)="clear()">Clear filters</button>
+      </ui-empty-state>
+    } @else {
+      <ul class="grid">
+        @for (p of filtered(); track p.id) {
+          <li>
+            <a class="pcard" [routerLink]="['/agency/programs', p.id]">
+              <div class="pcard__img">
+                @if (p.coverImageUrl) {
+                  <img [src]="p.coverImageUrl" alt="" loading="lazy" />
+                } @else {
+                  <ui-icon name="map-pin" />
+                }
+              </div>
+              <div class="pcard__body">
+                @if (p.destinationName) {
+                  <span class="eyebrow">{{ place(p.destinationName, p.country) }}</span>
+                }
+                <h2 class="pcard__name">{{ p.name }}</h2>
+                @if (p.tagline) {
+                  <p class="small muted pcard__tag">{{ p.tagline }}</p>
+                }
+                <div class="row wrap pcard__meta">
+                  @if (p.nextDeparture) {
+                    <span class="small strong row"><ui-icon name="calendar" size="sm" />From {{ p.nextDeparture | odDate }}</span>
+                    <span class="small muted">{{ p.upcomingDepartures }} {{ p.upcomingDepartures === 1 ? 'date' : 'dates' }}</span>
+                  } @else {
+                    <span class="small muted">No upcoming dates</span>
+                  }
+                </div>
+                @if (p.tags.length > 0) {
+                  <div class="row wrap pcard__pills">
+                    @for (t of p.tags.slice(0, 3); track t) {
+                      <ui-pill>{{ t }}</ui-pill>
+                    }
+                  </div>
+                }
+              </div>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  }
+}

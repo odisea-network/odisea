@@ -23,9 +23,26 @@
   min-width: 0;
 }
 
-.ready {
+.side {
   flex: 1 1 320px;
-  gap: 14px;
+  position: sticky;
+  top: 16px;
+}
+
+.savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+
+.savebar__actions {
+  gap: 8px;
 }
 
 .departures {
@@ -133,50 +150,6 @@ tr.past td {
 
 .maplink {
   margin-left: 8px;
-}
-
-.general {
-  padding: 20px;
-}
-
-.prose {
-  white-space: pre-wrap;
-}
-
-.checks {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.check {
-  display: flex;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-  align-items: flex-start;
-
-  &:last-child {
-    border-bottom: 0;
-  }
-}
-
-.check__dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  flex: none;
-  background: var(--warn-bg);
-  color: var(--warn);
-
-  &--ok {
-    background: var(--ok-bg);
-    color: var(--ok);
-  }
 }
 
 form {

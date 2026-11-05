@@ -3,8 +3,9 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { CreateProgramRequest, DestinationDto, ProgramDetail, ProgramDto } from '../../core/api.types';
+import { CreateProgramRequest, DestinationDto, ProgramDetail, ProgramListItem } from '../../core/api.types';
 import { problemMessage } from '../../core/problem';
+import { placeName } from '../../core/program-format';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import {
   Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, SegmentOption,
@@ -40,7 +41,7 @@ export class AdminPrograms {
   private readonly toasts = inject(ToastService);
 
   readonly programs = resource({
-    loader: () => firstValueFrom(this.http.get<ProgramDto[]>('/api/v1/programs')),
+    loader: () => firstValueFrom(this.http.get<ProgramListItem[]>('/api/v1/programs')),
   });
   readonly destinations = resource({
     loader: () => firstValueFrom(this.http.get<DestinationDto[]>('/api/v1/destinations')),
@@ -52,9 +53,7 @@ export class AdminPrograms {
   readonly error = signal<string | null>(null);
 
   readonly tone = programTone;
-
-  readonly destinationNames = computed(() =>
-    new Map((this.destinations.value() ?? []).map(d => [d.id, `${d.name}, ${d.country}`])));
+  readonly place = placeName;
 
   readonly views = computed<SegmentOption[]>(() => {
     const list = this.programs.value() ?? [];
@@ -74,15 +73,11 @@ export class AdminPrograms {
 
   form: CreateProgramRequest = { name: '', destinationId: '', providerCode: 'mock', season: '', description: '' };
 
-  destinationName(id: string): string {
-    return this.destinationNames().get(id) ?? '—';
-  }
-
   setView(value: string): void {
     this.view.set(value as View);
   }
 
-  open(p: ProgramDto): void {
+  open(p: ProgramListItem): void {
     void this.router.navigate(['/admin/programs', p.id]);
   }
 

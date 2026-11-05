@@ -1,0 +1,104 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.head {
+  gap: 12px;
+  flex-wrap: wrap;
+
+  p {
+    margin: 2px 0 0;
+  }
+}
+
+.h2 {
+  margin: 0;
+}
+
+.empty {
+  @include inset;
+  padding: 16px;
+  gap: 10px;
+  align-items: flex-start;
+
+  p {
+    margin: 0;
+  }
+}
+
+.days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  align-items: flex-start;
+
+  @include below($bp-sm) {
+    flex-wrap: wrap;
+  }
+}
+
+.day__n {
+  flex: none;
+  width: 52px;
+  padding-top: 26px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-ink);
+  @include tabular;
+
+  @include below($bp-sm) {
+    padding-top: 0;
+  }
+}
+
+.day__body {
+  gap: 10px;
+  min-width: 0;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 10px;
+
+  @include below($bp-sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.meals {
+  gap: 16px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  legend {
+    float: left;
+    margin-right: 4px;
+  }
+
+  label {
+    gap: 6px;
+  }
+}
+
+.day__tools {
+  gap: 2px;
+  padding-top: 20px;
+}

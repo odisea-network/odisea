@@ -63,6 +63,21 @@
   </form>
 }
 
+@if (detail.value(); as chosen) {
+  <div class="chosen">
+    @if (cover(); as img) {
+      <img class="chosen__img" [src]="img.url" alt="" width="96" height="60" />
+    }
+    <div class="col chosen__text">
+      <b>{{ chosen.name }}</b>
+      @if (chosen.content.tagline) {
+        <span class="small muted">{{ chosen.content.tagline }}</span>
+      }
+    </div>
+    <a uiButton="ghost" size="sm" [routerLink]="['/agency/programs', chosen.id]">Program details<ui-icon name="arrow-right" size="sm" /></a>
+  </div>
+}
+
 @if (error(); as message) {
   <ui-banner tone="bad">{{ message }}</ui-banner>
 }
