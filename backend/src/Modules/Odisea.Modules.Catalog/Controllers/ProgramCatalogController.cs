@@ -15,22 +15,8 @@ namespace Odisea.Modules.Catalog.Controllers;
 public class ProgramCatalogController(CatalogDbContext db, ProgramService programs) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<ProgramDto>>> List(CancellationToken ct)
-    {
-        var rows = await db.Programs
-            .Where(p => p.Status == ProgramStatus.Published)
-            .OrderBy(p => p.Name)
-            .Select(p => new
-            {
-                Program = p,
-                CoverId = db.ProgramImages
-                    .Where(i => i.ProgramId == p.Id && i.IsCover)
-                    .Select(i => (Guid?)i.Id)
-                    .FirstOrDefault(),
-            })
-            .ToListAsync(ct);
-        return Ok(rows.Select(r => r.Program.ToDto(r.CoverId)).ToList());
-    }
+    public async Task<ActionResult<List<ProgramDto>>> List(CancellationToken ct) =>
+        Ok(await programs.ListAsync(db.Programs.Where(p => p.Status == ProgramStatus.Published), ct));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProgramDetailDto>> Get(Guid id, CancellationToken ct)

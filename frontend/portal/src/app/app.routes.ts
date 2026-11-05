@@ -18,6 +18,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/agency/search').then(m => m.AgencySearch),
       },
       {
+        path: 'programs',
+        loadComponent: () => import('./features/agency/programs').then(m => m.AgencyPrograms),
+      },
+      {
+        path: 'programs/:id',
+        loadComponent: () => import('./features/agency/program').then(m => m.AgencyProgram),
+      },
+      {
         path: 'book',
         loadComponent: () => import('./features/agency/book').then(m => m.AgencyBook),
       },

@@ -12,6 +12,7 @@ export class AgencyShell {
 
   readonly tabs: NavItem[] = [
     { label: 'Search', link: '/agency/search', icon: 'search' },
+    { label: 'Programs', link: '/agency/programs', icon: 'layers' },
     { label: 'Bookings', link: '/agency/bookings', icon: 'bookings' },
     { label: 'Docs', link: '/agency/documents', icon: 'documents' },
   ];
@@ -20,6 +21,7 @@ export class AgencyShell {
     {
       items: [
         { label: 'Search', link: '/agency/search', icon: 'search' },
+        { label: 'Programs', link: '/agency/programs', icon: 'layers' },
         { label: 'Bookings', link: '/agency/bookings', icon: 'bookings' },
         { label: 'Documents', link: '/agency/documents', icon: 'documents' },
       ],

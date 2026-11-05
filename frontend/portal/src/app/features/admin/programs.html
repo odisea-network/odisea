@@ -22,21 +22,34 @@
         <div class="tw">
           <table class="tbl">
             <thead>
-              <tr><th>Program</th><th>Destination</th><th>Supplier</th><th>Status</th><th>Created</th></tr>
+              <tr><th>Program</th><th>Destination</th><th>Next departure</th><th>Supplier</th><th>Status</th></tr>
             </thead>
             <tbody>
               @for (p of filtered(); track p.id) {
                 <tr class="clickable" (click)="open(p)">
                   <td>
-                    <a class="ref ref--ink" [routerLink]="['/admin/programs', p.id]" (click)="$event.stopPropagation()">{{ p.name }}</a>
-                    @if (p.season) {
-                      <div class="sub-line">{{ p.season }}</div>
+                    <div class="row prog">
+                      @if (p.coverImageUrl) {
+                        <img class="prog__cover" [src]="p.coverImageUrl" alt="" width="64" height="40" loading="lazy" />
+                      } @else {
+                        <span class="prog__cover prog__cover--none" title="No cover image"><ui-icon name="alert-triangle" size="sm" /></span>
+                      }
+                      <div class="col">
+                        <a class="ref ref--ink" [routerLink]="['/admin/programs', p.id]" (click)="$event.stopPropagation()">{{ p.name }}</a>
+                        <div class="sub-line">{{ p.tagline ?? p.season ?? '' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ place(p.destinationName, p.country) || '—' }}</td>
+                  <td class="num">
+                    @if (p.nextDeparture) {
+                      {{ p.nextDeparture | odDate }}<div class="sub-line">{{ p.upcomingDepartures }} upcoming</div>
+                    } @else {
+                      <span class="muted">None upcoming</span>
                     }
                   </td>
-                  <td>{{ destinationName(p.destinationId) }}</td>
                   <td class="mono">{{ p.providerCode }}</td>
                   <td><ui-pill [tone]="tone(p.status)">{{ p.status }}</ui-pill></td>
-                  <td class="muted num">{{ p.createdAt | odDate }}</td>
                 </tr>
               }
             </tbody>
@@ -64,7 +77,7 @@
       <ui-field label="Supplier" for="pg-provider" hint="Reservation provider code"><input uiInput id="pg-provider" name="providerCode" class="mono" [(ngModel)]="form.providerCode" required maxlength="30" /></ui-field>
       <ui-field label="Season" for="pg-season" optional><input uiInput id="pg-season" name="season" [(ngModel)]="form.season" maxlength="50" placeholder="e.g. Summer 2027" /></ui-field>
     </div>
-    <ui-field label="Description" for="pg-desc" optional><textarea uiInput id="pg-desc" name="description" [(ngModel)]="form.description" maxlength="2000"></textarea></ui-field>
+    <ui-field label="Description" for="pg-desc" optional hint="You can write it later, with the rest of the content"><textarea uiInput id="pg-desc" name="description" [(ngModel)]="form.description" maxlength="20000"></textarea></ui-field>
   </form>
   <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
   <button sheetActions type="submit" form="create-program" uiButton="primary" [disabled]="busy() || !formValid()">{{ busy() ? 'Creating…' : 'Create draft' }}</button>

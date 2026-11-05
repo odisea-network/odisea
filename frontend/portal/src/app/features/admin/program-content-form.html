@@ -1,0 +1,95 @@
+@let d = draft();
+<section class="sec">
+  <h2 class="h2">Selling points</h2>
+  <p class="small muted">What agencies read first on the program card and page.</p>
+  <ui-field label="Tagline" for="pc-tagline" optional [hint]="length(d.tagline, limits.tagline, 'One line under the name · ')">
+    <input uiInput id="pc-tagline" [(ngModel)]="d.tagline" [maxlength]="limits.tagline"
+      placeholder="e.g. Seven sunny nights on the Turkish Riviera, flights and transfers included" />
+  </ui-field>
+  <ui-field label="Summary" for="pc-summary" [hint]="length(d.summary, limits.summary, 'Needed to publish (50+ characters) · 2–3 sentences: where, how long, what is bundled, who it suits · ')">
+    <textarea uiInput id="pc-summary" rows="3" [(ngModel)]="d.summary" [maxlength]="limits.summary"></textarea>
+  </ui-field>
+  <ui-field label="Highlights" for="pc-highlights" optional [hint]="items(d.highlights, limits.highlights, 'Aim for 3–6 · ')">
+    <textarea uiInput id="pc-highlights" rows="5" [(ngModel)]="d.highlights"
+      placeholder="Direct charter from Sofia&#10;Three beachfront hotels to choose from"></textarea>
+  </ui-field>
+  <ui-field label="Tags" for="pc-tags" optional hint="Comma-separated, e.g. all-inclusive, family, beach">
+    <input uiInput id="pc-tags" [(ngModel)]="d.tags" />
+  </ui-field>
+  @if (tags(d.tags).length > 0) {
+    <div class="row wrap tags">
+      @for (t of tags(d.tags); track t) {
+        <ui-pill>{{ t }}</ui-pill>
+      }
+    </div>
+  }
+</section>
+
+<section class="sec">
+  <h2 class="h2">What's included</h2>
+  <div class="two">
+    <ui-field label="Included" for="pc-incl" [hint]="items(d.inclusions, limits.listItems, 'Needed to publish · ')">
+      <textarea uiInput id="pc-incl" rows="7" [(ngModel)]="d.inclusions"
+        placeholder="Return flight Sofia–Antalya&#10;7 nights, board as booked&#10;Airport transfers"></textarea>
+    </ui-field>
+    <ui-field label="Not included" for="pc-excl" optional [hint]="items(d.exclusions, limits.listItems)">
+      <textarea uiInput id="pc-excl" rows="7" [(ngModel)]="d.exclusions"
+        placeholder="Optional excursions&#10;Tourist tax, paid at the hotel"></textarea>
+    </ui-field>
+  </div>
+</section>
+
+<section class="sec">
+  <h2 class="h2">Getting there</h2>
+  <div class="two">
+    <ui-field label="Transport" for="pc-mode">
+      <select uiInput id="pc-mode" [(ngModel)]="d.transportMode">
+        @for (m of modes; track m.value) {
+          <option [value]="m.value">{{ m.label }}</option>
+        }
+      </select>
+    </ui-field>
+    <ui-field label="Departure point" for="pc-from" optional>
+      <input uiInput id="pc-from" [(ngModel)]="d.departurePoint" [maxlength]="limits.departurePoint" placeholder="e.g. Sofia Airport (SOF)" />
+    </ui-field>
+  </div>
+  <ui-field label="Transport details" for="pc-transport" optional [hint]="length(d.transportDetails, limits.transportDetails, markdownHint + ' · ')">
+    <textarea uiInput id="pc-transport" rows="5" [(ngModel)]="d.transportDetails" [maxlength]="limits.transportDetails"
+      placeholder="Carrier, route, indicative times, baggage allowance"></textarea>
+  </ui-field>
+  <div class="two">
+    <ui-field label="Minimum group" for="pc-min" optional hint="Travellers needed for the trip to run">
+      <input uiInput id="pc-min" type="number" min="1" max="999" [(ngModel)]="d.minGroupSize" />
+    </ui-field>
+    <ui-field label="Maximum group" for="pc-max" optional>
+      <input uiInput id="pc-max" type="number" min="1" max="999" [(ngModel)]="d.maxGroupSize" />
+    </ui-field>
+  </div>
+</section>
+
+<section class="sec">
+  <h2 class="h2">Policies</h2>
+  <p class="small muted">Shown to agencies before they book. Write only what the operator actually offers.</p>
+  <ui-field label="Cancellation policy" for="pc-cancel" [hint]="length(d.cancellationPolicy, limits.cancellationPolicy, 'Needed to publish · ' + markdownHint + ' · ')">
+    <textarea uiInput id="pc-cancel" rows="5" [(ngModel)]="d.cancellationPolicy" [maxlength]="limits.cancellationPolicy"></textarea>
+  </ui-field>
+  <ui-field label="Payment terms" for="pc-pay" optional [hint]="length(d.paymentTerms, limits.paymentTerms)">
+    <textarea uiInput id="pc-pay" rows="3" [(ngModel)]="d.paymentTerms" [maxlength]="limits.paymentTerms"></textarea>
+  </ui-field>
+  <ui-field label="Insurance" for="pc-ins" optional [hint]="length(d.insurancePolicy, limits.insurancePolicy)">
+    <textarea uiInput id="pc-ins" rows="3" [(ngModel)]="d.insurancePolicy" [maxlength]="limits.insurancePolicy"></textarea>
+  </ui-field>
+  <ui-field label="Children" for="pc-child" optional [hint]="length(d.childPolicy, limits.childPolicy)">
+    <textarea uiInput id="pc-child" rows="3" [(ngModel)]="d.childPolicy" [maxlength]="limits.childPolicy"></textarea>
+  </ui-field>
+</section>
+
+<section class="sec">
+  <h2 class="h2">Practical information</h2>
+  <ui-field label="Before you travel" for="pc-practical" optional [hint]="length(d.practicalInfo, limits.practicalInfo, 'Documents, currency, weather, time zone, health · ' + markdownHint + ' · ')">
+    <textarea uiInput id="pc-practical" rows="7" [(ngModel)]="d.practicalInfo" [maxlength]="limits.practicalInfo"></textarea>
+  </ui-field>
+  <ui-field label="Web address" for="pc-slug" hint="Lowercase letters, digits and hyphens. Changing it breaks links already shared.">
+    <input uiInput id="pc-slug" class="mono" [(ngModel)]="d.slug" maxlength="120" />
+  </ui-field>
+</section>

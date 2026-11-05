@@ -6,7 +6,10 @@ namespace Odisea.Modules.Catalog.Features.Programs;
 public record ProgramDto(
     Guid Id, string Name, string Slug, Guid DestinationId, string ProviderCode,
     string? Season, string? Description, string? Tagline, string? Summary, IReadOnlyList<string> Tags,
-    string? CoverImageUrl, string Status, DateTimeOffset CreatedAt);
+    string? CoverImageUrl, string Status, DateTimeOffset CreatedAt,
+    string? DestinationName, string? Country,
+    // Departures starting today or later.
+    DateOnly? NextDeparture, int UpcomingDepartures);
 
 public record ProgramDetailDto(
     Guid Id, string Name, string Slug, Guid DestinationId, string ProviderCode,
@@ -17,7 +20,13 @@ public record ProgramDetailDto(
     IReadOnlyList<DepartureDto> Departures,
     IReadOnlyList<Guid> HotelIds,
     // Operator view only; null in the agency catalogue.
-    ProgramReadinessDto? Readiness);
+    ProgramReadinessDto? Readiness,
+    ProgramDestinationDto? Destination,
+    IReadOnlyList<ProgramHotelDto> Hotels);
+
+public record ProgramDestinationDto(Guid Id, string Name, string Country);
+
+public record ProgramHotelDto(Guid Id, string Name, int Stars);
 
 public record ProgramContentDto(
     string? Tagline,
@@ -110,11 +119,16 @@ public static class ProgramDtoMapping
 
     public static string ImageUrl(Guid imageId) => PublicImagePath + imageId;
 
-    public static ProgramDto ToDto(this Domain.Program p, Guid? coverImageId) => new(
-        p.Id, p.Name, p.Slug, p.DestinationId, p.ProviderCode, p.Season, p.Description,
-        p.Content.Tagline, p.Content.Summary, p.Content.Tags,
-        coverImageId is { } cover ? ImageUrl(cover) : null,
-        p.Status.ToString(), p.CreatedAt);
+    public static ProgramDto ToDto(this ProgramListRow r)
+    {
+        var p = r.Program;
+        return new(
+            p.Id, p.Name, p.Slug, p.DestinationId, p.ProviderCode, p.Season, p.Description,
+            p.Content.Tagline, p.Content.Summary, p.Content.Tags,
+            r.CoverId is { } cover ? ImageUrl(cover) : null,
+            p.Status.ToString(), p.CreatedAt,
+            r.DestinationName, r.Country, r.NextDeparture, r.UpcomingDepartures);
+    }
 
     public static DepartureDto ToDto(this ProgramDeparture d) =>
         new(d.Id, d.StartDate, d.EndDate, d.Period.Nights, d.TransportNote);
@@ -133,12 +147,20 @@ public static class ProgramDtoMapping
         new(r.Score, r.CanPublish, [.. r.Checks.Select(c => c.ToDto())]);
 
     public static ProgramDetailDto ToDetailDto(
-        this Domain.Program p, IReadOnlyList<ProgramImageDto> images, ProgramReadinessDto? readiness) => new(
+        this Domain.Program p, IReadOnlyList<ProgramImageDto> images, ProgramReadinessDto? readiness,
+        ProgramDestinationDto? destination, IReadOnlyList<ProgramHotelDto> hotels) => new(
         p.Id, p.Name, p.Slug, p.DestinationId, p.ProviderCode, p.Season, p.Description, p.Status.ToString(),
         p.Content.ToDto(),
         [.. p.Itinerary.OrderBy(d => d.Day).Select(d => d.ToDto())],
         images,
         [.. p.Departures.OrderBy(d => d.StartDate).Select(d => d.ToDto())],
         [.. p.Hotels.Select(h => h.HotelId)],
-        readiness);
+        readiness,
+        destination,
+        hotels);
 }
+
+/// One program plus the facts its list row shows, read in a single query.
+public sealed record ProgramListRow(
+    Domain.Program Program, Guid? CoverId, string? DestinationName, string? Country,
+    DateOnly? NextDeparture, int UpcomingDepartures);

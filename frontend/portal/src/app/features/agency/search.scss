@@ -215,3 +215,27 @@
   grid-template-columns: auto 1fr;
   font-size: 13px;
 }
+
+.chosen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line);
+}
+
+.chosen__img {
+  width: 96px;
+  height: 60px;
+  flex: none;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+}
+
+.chosen__text {
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}

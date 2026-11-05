@@ -30,7 +30,11 @@ src/
                  with drift acceptance -> submit -> result; resumes a saved draft via ?bookingId),
                  booking-detail (/agency/bookings/:id: next step, travellers with masked documents,
                  package, documents, payment, history, cancel while unpaid), bookings (saved views,
-                 card list on phones), documents (invoices + PDF download)
+                 card list on phones), documents (invoices + PDF download), programs (/agency/programs:
+                 cards with cover, place, next date and tags; text and tag filters), program
+                 (/agency/programs/:id: photos, summary, highlights, description, day by day,
+                 included / not included, transport, hotels, practical info, policies, upcoming
+                 dates linking into search with ?program=&departure= preselected)
       admin/     dashboard (Today: KPIs, attention queue, period figures, top agencies from
                  /api/v1/admin/dashboard), bookings oversight over /api/v1/admin/bookings: filtered, paged list across agencies;
                  detail with a "next step" card, net cost, price breakdown, payments (inline record
@@ -40,14 +44,18 @@ src/
                  agencies (list, create), agency-detail (profile and billing, users, API keys issued once
                  and revoked, plan), branding (Settings: name, colours with live preview and contrast
                  check, logo, support and legal footer; publishing re-themes the running portal),
-                 programs (list, create), program-detail (departures calendar and table, allowed hotels
-                 with supplier-mapping status, publish checklist and publish), hotels and destinations
+                 programs (list with cover and next departure, create), program-detail (tabs: content
+                 form for every sell-ready section, itinerary editor, gallery with upload / cover /
+                 alt text / order, departures calendar, allowed hotels with supplier-mapping status;
+                 the server's readiness report with Fix links gates Publish), hotels and destinations
                  (lists, create, supplier code mappings), pricing (rules by kind with scope, value,
                  validity and an active switch; create/edit/delete sheet; exchange rates), documents
                  (invoices and credit notes with filters, PDF, issue invoice for a confirmed booking,
                  credit note, annul with reason), company (Settings: the operator's requisites printed
                  as supplier on every invoice); the booking detail issues the invoice once confirmed
       placeholder.ts for the remaining admin routes whose API already exists but UI doesn't yet
+    shared/ui/markdown  ui-markdown renders the Markdown subset program content is written in
+                 (headings, lists, bold, italic) through bindings only: no HTML reaches the DOM
 ```
 
 Routing: `/login`, `/agency/**` (agencyGuard), `/admin/**` (adminGuard), lazy `loadComponent` everywhere, route `data.title` bound via component input binding.

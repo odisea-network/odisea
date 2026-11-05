@@ -15,6 +15,26 @@
   color: var(--ink);
 }
 
+.prog {
+  gap: 12px;
+}
+
+.prog__cover {
+  width: 64px;
+  height: 40px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--fill);
+
+  &--none {
+    display: grid;
+    place-items: center;
+    color: var(--warn);
+    background: var(--warn-bg);
+  }
+}
+
 form {
   display: flex;
   flex-direction: column;

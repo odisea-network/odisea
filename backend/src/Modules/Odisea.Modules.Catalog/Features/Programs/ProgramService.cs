@@ -16,12 +16,44 @@ public class ProgramService(CatalogDbContext db, ProgramImageService images, ICl
         return await ToDetailAsync(program, withReadiness, ct);
     }
 
+    /// List rows for the operator screens and the agency catalogue. Image bytes are never loaded.
+    public async Task<List<ProgramDto>> ListAsync(IQueryable<Domain.Program> query, CancellationToken ct)
+    {
+        var today = Today();
+        var rows = await query
+            .AsNoTracking()
+            .OrderBy(p => p.Name)
+            .Select(p => new ProgramListRow(
+                p,
+                db.ProgramImages.Where(i => i.ProgramId == p.Id && i.IsCover).Select(i => (Guid?)i.Id).FirstOrDefault(),
+                db.Destinations.Where(d => d.Id == p.DestinationId).Select(d => d.Name).FirstOrDefault(),
+                db.Destinations.Where(d => d.Id == p.DestinationId).Select(d => d.Country).FirstOrDefault(),
+                p.Departures.Where(d => d.StartDate >= today).Min(d => (DateOnly?)d.StartDate),
+                p.Departures.Count(d => d.StartDate >= today)))
+            .ToListAsync(ct);
+        return [.. rows.Select(r => r.ToDto())];
+    }
+
     public async Task<ProgramDetailDto> ToDetailAsync(Domain.Program program, bool withReadiness, CancellationToken ct)
     {
         var gallery = await images.ListAsync(program.Id, ct);
         var readiness = withReadiness ? (await ReadinessAsync(program, ct)).ToDto() : null;
-        return program.ToDetailDto(gallery, readiness);
+        var destination = await db.Destinations
+            .Where(d => d.Id == program.DestinationId)
+            .Select(d => new ProgramDestinationDto(d.Id, d.Name, d.Country))
+            .FirstOrDefaultAsync(ct);
+        var hotelIds = program.Hotels.Select(h => h.HotelId).ToList();
+        var hotels = hotelIds.Count == 0
+            ? []
+            : await db.Hotels
+                .Where(h => hotelIds.Contains(h.Id))
+                .OrderByDescending(h => h.Stars).ThenBy(h => h.Name)
+                .Select(h => new ProgramHotelDto(h.Id, h.Name, h.Stars))
+                .ToListAsync(ct);
+        return program.ToDetailDto(gallery, readiness, destination, hotels);
     }
+
+    private DateOnly Today() => DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
 
     public async Task<ReadinessReport> ReadinessAsync(Domain.Program program, CancellationToken ct)
     {
@@ -31,7 +63,7 @@ public class ProgramService(CatalogDbContext db, ProgramImageService images, ICl
             : await db.HotelMappings.CountAsync(
                 m => hotelIds.Contains(m.HotelId) && m.ProviderCode == program.ProviderCode, ct);
         var gallery = await images.InfoAsync(program.Id, ct);
-        return ProgramReadiness.Evaluate(program, gallery, mapped, DateOnly.FromDateTime(clock.UtcNow.UtcDateTime));
+        return ProgramReadiness.Evaluate(program, gallery, mapped, Today());
     }
 
     public async Task<ReadinessReport> ReadinessAsync(Guid id, CancellationToken ct) =>

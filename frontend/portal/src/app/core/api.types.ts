@@ -14,14 +14,26 @@ export interface BrandingDto {
   updatedAt: string | null;
 }
 
+/** A row of the operator program list or the agency catalogue. */
 export interface ProgramListItem {
   id: string;
   name: string;
+  slug: string;
   destinationId: string;
   providerCode: string;
   season: string | null;
   description: string | null;
+  tagline: string | null;
+  summary: string | null;
+  tags: string[];
+  coverImageUrl: string | null;
   status: string;
+  createdAt: string;
+  destinationName: string | null;
+  country: string | null;
+  /** First departure starting today or later. */
+  nextDeparture: string | null;
+  upcomingDepartures: number;
 }
 
 export interface DepartureDto {
@@ -32,9 +44,101 @@ export interface DepartureDto {
   transportNote: string | null;
 }
 
-export interface ProgramDetail extends ProgramListItem {
+export type TransportMode = 'Unspecified' | 'Flight' | 'Bus' | 'Train' | 'Ship' | 'OwnTransport' | 'Mixed';
+
+/** Flags over the wire: 'None', 'Breakfast' or e.g. 'Breakfast, Dinner'. */
+export type MealPlan = string;
+
+export interface ProgramContentDto {
+  tagline: string | null;
+  summary: string | null;
+  highlights: string[];
+  inclusions: string[];
+  exclusions: string[];
+  tags: string[];
+  transportMode: TransportMode;
+  transportDetails: string | null;
+  departurePoint: string | null;
+  minGroupSize: number | null;
+  maxGroupSize: number | null;
+  practicalInfo: string | null;
+  cancellationPolicy: string | null;
+  paymentTerms: string | null;
+  insurancePolicy: string | null;
+  childPolicy: string | null;
+}
+
+export interface ItineraryDayDto {
+  id: string;
+  day: number;
+  title: string;
+  description: string | null;
+  meals: MealPlan;
+  overnight: string | null;
+}
+
+export interface ProgramImageDto {
+  id: string;
+  /** Public, cacheable URL; works in an <img> without the bearer token. */
+  url: string;
+  contentType: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
+  caption: string | null;
+  altText: string | null;
+  sortOrder: number;
+  isCover: boolean;
+  createdAt: string;
+}
+
+export interface ReadinessCheckDto {
+  code: string;
+  title: string;
+  detail: string;
+  required: boolean;
+  passed: boolean;
+}
+
+export interface ProgramReadinessDto {
+  score: number;
+  canPublish: boolean;
+  checks: ReadinessCheckDto[];
+}
+
+export interface ProgramDetail {
+  id: string;
+  name: string;
+  slug: string;
+  destinationId: string;
+  providerCode: string;
+  season: string | null;
+  description: string | null;
+  status: string;
+  content: ProgramContentDto;
+  itinerary: ItineraryDayDto[];
+  images: ProgramImageDto[];
   departures: DepartureDto[];
   hotelIds: string[];
+  /** Operator view only; null in the agency catalogue. */
+  readiness: ProgramReadinessDto | null;
+  destination: { id: string; name: string; country: string } | null;
+  hotels: { id: string; name: string; stars: number }[];
+}
+
+export interface ItineraryDayRequest {
+  day: number;
+  title: string;
+  description: string | null;
+  meals: MealPlan;
+  overnight: string | null;
+}
+
+/** Replaces the whole content block and the itinerary. */
+export interface SaveProgramContentRequest extends ProgramContentDto {
+  itinerary: ItineraryDayRequest[];
+  /** Null keeps the current slug. */
+  slug: string | null;
 }
 
 export interface HotelOffer {
@@ -372,10 +476,6 @@ export interface HotelMappingDto {
   hotelId: string;
   providerCode: string;
   externalHotelCode: string;
-}
-
-export interface ProgramDto extends ProgramListItem {
-  createdAt: string;
 }
 
 export interface CreateProgramRequest {

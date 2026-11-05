@@ -1,0 +1,40 @@
+:host {
+  display: block;
+  color: var(--ink-2);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 10px;
+}
+
+ul,
+ol {
+  padding-left: 20px;
+}
+
+li + li {
+  margin-top: 4px;
+}
+
+.md-h {
+  margin: 16px 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+
+  &--sub {
+    font-size: 14px;
+  }
+}
+
+:host > :first-child {
+  margin-top: 0;
+}
+
+:host > :last-child {
+  margin-bottom: 0;
+}

@@ -1,65 +1,35 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
-  CreateDepartureRequest, DepartureDto, DestinationDto, HotelDto, HotelMappingDto, ProgramDetail,
-  UpdateProgramRequest,
+  CreateDepartureRequest, DepartureDto, HotelDto, HotelMappingDto, ProgramDetail, UpdateProgramRequest,
 } from '../../core/api.types';
 import { problemMessage } from '../../core/problem';
+import { placeName } from '../../core/program-format';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import {
-  Banner, ButtonDirective, Card, DialogService, EmptyState, Field, Icon, IconName, InputDirective, PageHeader,
-  Pill, Progress, Sheet, Skeleton, TabOption, Tabs, ToastService,
+  Banner, ButtonDirective, Card, DialogService, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet,
+  Skeleton, TabOption, Tabs, ToastService,
 } from '../../shared/ui';
 import { MonthGrid, monthGrid, nightsBetween, shiftMonth } from './calendar';
+import {
+  CONTENT_LIMITS, ContentDraft, ProgramTab, draftFrom, draftProblems, expectedDays, toRequest,
+} from './program-content.model';
+import { ProgramContentForm } from './program-content-form';
+import { ProgramGallery } from './program-gallery';
+import { ProgramItinerary } from './program-itinerary';
+import { AdminProgramReadiness } from './program-readiness';
 import { programTone } from './programs';
 
-type Tab = 'departures' | 'hotels' | 'general';
-
-export interface PublishCheck {
-  title: string;
-  sub: string;
-  ok: boolean;
-}
-
-/** Mirrors what the API will insist on at publish, plus the soft checks operations care about. */
-export function publishChecks(
-  program: Pick<ProgramDetail, 'name' | 'destinationId' | 'departures' | 'hotelIds'>,
-  mappedHotels: number | null,
-  departuresOnOrAfter: string,
-): PublishCheck[] {
-  const future = program.departures.filter(d => d.startDate >= departuresOnOrAfter);
-  const noTransport = program.departures.filter(d => !d.transportNote?.trim()).length;
-  return [
-    { title: 'Name and destination', sub: program.name, ok: program.name.trim().length > 0 && !!program.destinationId },
-    {
-      title: 'At least one upcoming departure',
-      sub: future.length > 0 ? `${future.length} upcoming of ${program.departures.length}` : 'None yet',
-      ok: future.length > 0,
-    },
-    { title: 'At least one allowed hotel', sub: `${program.hotelIds.length} allowed`, ok: program.hotelIds.length > 0 },
-    {
-      title: 'Transport on every departure',
-      sub: noTransport === 0 ? 'All departures have a transport note' : `${noTransport} without a transport note`,
-      ok: noTransport === 0,
-    },
-    {
-      title: 'Hotels mapped to the supplier',
-      sub: mappedHotels === null ? 'Checking…' : `${mappedHotels} of ${program.hotelIds.length} mapped`,
-      ok: mappedHotels !== null && mappedHotels === program.hotelIds.length && program.hotelIds.length > 0,
-    },
-  ];
-}
-
-/** One program: its departures, the hotels agencies can pick, and whether it is ready to go live. */
+/** One program: what agencies read, its photos, the departures and hotels they can book, and whether it can go live. */
 @Component({
   selector: 'app-admin-program-detail',
   imports: [
     FormsModule, RouterLink, OdDatePipe,
-    Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Progress, Sheet,
-    Skeleton, Tabs,
+    Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton, Tabs,
+    AdminProgramReadiness, ProgramContentForm, ProgramGallery, ProgramItinerary,
   ],
   templateUrl: './program-detail.html',
   styleUrl: './program-detail.scss',
@@ -71,7 +41,7 @@ export class AdminProgramDetail {
 
   readonly id = input.required<string>();
 
-  readonly tab = signal<Tab>('departures');
+  readonly tab = signal<ProgramTab>('content');
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly editOpen = signal(false);
@@ -80,21 +50,15 @@ export class AdminProgramDetail {
   readonly calendar = signal<{ year: number; month: number } | null>(null);
 
   readonly tone = programTone;
+  readonly place = placeName;
   readonly today = new Date().toISOString().slice(0, 10);
+  readonly descriptionMax = CONTENT_LIMITS.description;
 
   readonly loaded = resource({
     params: () => ({ id: this.id() }),
     loader: ({ params }) => firstValueFrom(this.http.get<ProgramDetail>(`/api/v1/programs/${params.id}`)),
   });
   readonly program = computed(() => this.loaded.value() ?? null);
-
-  readonly destinations = resource({
-    loader: () => firstValueFrom(this.http.get<DestinationDto[]>('/api/v1/destinations')),
-  });
-  readonly destination = computed(() => {
-    const p = this.program();
-    return p ? this.destinations.value()?.find(d => d.id === p.destinationId) ?? null : null;
-  });
 
   /** Every hotel of the destination; attached ones are filtered from it. */
   readonly hotels = resource({
@@ -105,16 +69,12 @@ export class AdminProgramDetail {
     loader: ({ params }) => firstValueFrom(this.http.get<HotelDto[]>(
       '/api/v1/hotels', { params: new HttpParams().set('destinationId', params.destinationId) })),
   });
-  readonly attachedHotels = computed(() => {
-    const ids = new Set(this.program()?.hotelIds ?? []);
-    return (this.hotels.value() ?? []).filter(h => ids.has(h.id));
-  });
   readonly availableHotels = computed(() => {
     const ids = new Set(this.program()?.hotelIds ?? []);
     return (this.hotels.value() ?? []).filter(h => !ids.has(h.id));
   });
 
-  /** Supplier mappings of the attached hotels, for the publish checklist. */
+  /** Which attached hotels have a code at the program's supplier. */
   readonly mappings = resource({
     params: () => {
       const p = this.program();
@@ -130,30 +90,29 @@ export class AdminProgramDetail {
       return mapped;
     },
   });
-  readonly mappedCount = computed(() => {
+
+  /** The content and itinerary being edited; saved together with one PUT. */
+  readonly draft = signal<ContentDraft | null>(null);
+  private baseline = '';
+
+  readonly readiness = computed(() => this.program()?.readiness ?? null);
+  readonly blocking = computed(() =>
+    (this.readiness()?.checks ?? []).filter(c => c.required && !c.passed).map(c => c.title.toLowerCase()));
+  readonly expected = computed(() => {
     const p = this.program();
-    if (!p) return null;
-    if (p.hotelIds.length === 0) return 0;
-    const mapped = this.mappings.value();
-    return mapped ? mapped.size : null;
+    return p ? expectedDays(p) : null;
   });
 
-  readonly checks = computed(() => {
+  readonly tabs = computed<TabOption[]>(() => {
     const p = this.program();
-    return p ? publishChecks(p, this.mappedCount(), this.today) : [];
+    return [
+      { value: 'content', label: 'Content' },
+      { value: 'itinerary', label: 'Itinerary', count: this.draft()?.itinerary.length ?? null },
+      { value: 'gallery', label: 'Gallery', count: p?.images.length ?? null },
+      { value: 'departures', label: 'Departures', count: p?.departures.length ?? null },
+      { value: 'hotels', label: 'Hotels', count: p?.hotelIds.length ?? null },
+    ];
   });
-  readonly checksPassed = computed(() => this.checks().filter(c => c.ok).length);
-  /** Only the API's own rules block the button; the rest are advice. */
-  readonly canPublish = computed(() => {
-    const p = this.program();
-    return !!p && p.status === 'Draft' && p.departures.length > 0 && p.hotelIds.length > 0;
-  });
-
-  readonly tabs = computed<TabOption[]>(() => [
-    { value: 'departures', label: 'Departures', count: this.program()?.departures.length ?? null },
-    { value: 'hotels', label: 'Allowed hotels', count: this.program()?.hotelIds.length ?? null },
-    { value: 'general', label: 'General' },
-  ]);
 
   readonly grid = computed<MonthGrid | null>(() => {
     const p = this.program();
@@ -170,13 +129,43 @@ export class AdminProgramDetail {
   departure: CreateDepartureRequest = { startDate: '', endDate: '', transportNote: '' };
   hotelToAttach = '';
 
+  constructor() {
+    // A reload (after any save) refreshes the draft unless the operator has unsaved edits.
+    effect(() => {
+      const p = this.program();
+      if (!p) return;
+      untracked(() => {
+        if (this.draft() === null || !this.dirty()) this.resetDraft(p);
+      });
+    });
+  }
+
+  /** Called from the template on every change detection; the draft is a plain object edited by ngModel. */
+  dirty(): boolean {
+    const d = this.draft();
+    const p = this.program();
+    return !!d && !!p && JSON.stringify(toRequest(d, p.slug)) !== this.baseline;
+  }
+
+  problems(): string[] {
+    const d = this.draft();
+    return d ? draftProblems(d) : [];
+  }
+
+  canPublish(): boolean {
+    const p = this.program();
+    return !!p && p.status === 'Draft' && !!p.readiness?.canPublish && !this.dirty();
+  }
+
+  publishBlockedBy(): string | null {
+    if (this.dirty()) return 'Save your changes first';
+    const missing = this.blocking();
+    return missing.length > 0 ? `Missing: ${missing.join(', ')}` : null;
+  }
+
   isMapped(hotelId: string): boolean | null {
     const mapped = this.mappings.value();
     return mapped ? mapped.has(hotelId) : null;
-  }
-
-  checkIcon(ok: boolean): IconName {
-    return ok ? 'check' : 'alert-circle';
   }
 
   nights(): number {
@@ -184,12 +173,40 @@ export class AdminProgramDetail {
   }
 
   setTab(value: string): void {
-    this.tab.set(value as Tab);
+    this.tab.set(value as ProgramTab);
+  }
+
+  go(target: ProgramTab | 'details'): void {
+    if (target === 'details') this.openEdit();
+    else this.tab.set(target);
   }
 
   shift(by: number): void {
     const g = this.grid();
     if (g) this.calendar.set(shiftMonth(g.year, g.month, by));
+  }
+
+  discard(): void {
+    const p = this.program();
+    if (p) this.resetDraft(p);
+    this.error.set(null);
+  }
+
+  async saveContent(): Promise<void> {
+    const p = this.program();
+    const d = this.draft();
+    if (!p || !d) return;
+    const problems = draftProblems(d);
+    if (problems.length > 0) {
+      this.error.set(problems.join(' '));
+      return;
+    }
+    const request = toRequest(d, p.slug);
+    await this.act(async () => {
+      const saved = await firstValueFrom(this.http.put<ProgramDetail>(`/api/v1/programs/${p.id}/content`, request));
+      // The server normalises (trims, lowercases tags); start again from what it stored.
+      this.resetDraft(saved);
+    }, 'Content saved');
   }
 
   openEdit(): void {
@@ -243,17 +260,28 @@ export class AdminProgramDetail {
   async publish(): Promise<void> {
     const p = this.program();
     if (!p || !this.canPublish()) return;
-    const failing = this.checks().filter(c => !c.ok);
+    const open = (p.readiness?.checks ?? []).filter(c => !c.required && !c.passed);
     const decision = await this.dialogs.confirm({
       title: `Publish ${p.name}?`,
-      message: failing.length > 0
-        ? `Every active agency can search it from now on. ${failing.length} advisory ${failing.length === 1 ? 'check is' : 'checks are'} still open: ${failing.map(c => c.title.toLowerCase()).join(', ')}.`
+      message: open.length > 0
+        ? `Every active agency can search it from now on. ${open.length} recommended ${open.length === 1 ? 'item is' : 'items are'} still open: ${open.map(c => c.title.toLowerCase()).join(', ')}.`
         : 'Every active agency can search it from now on. Existing bookings are not affected.',
+      facts: [{ label: 'Readiness score', value: `${p.readiness?.score ?? 0} / 100` }],
       confirmLabel: 'Publish',
     });
     if (!decision) return;
     await this.act(() => firstValueFrom(this.http.post<ProgramDetail>(`/api/v1/programs/${p.id}/publish`, {})),
       `${p.name} is live`);
+  }
+
+  reload(): void {
+    this.loaded.reload();
+  }
+
+  private resetDraft(p: ProgramDetail): void {
+    const draft = draftFrom(p);
+    this.baseline = JSON.stringify(toRequest(draft, p.slug));
+    this.draft.set(draft);
   }
 
   private defaultMonth(departures: DepartureDto[]): { year: number; month: number } {
