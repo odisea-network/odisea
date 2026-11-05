@@ -49,7 +49,36 @@ export const routes: Routes = [
         path: 'bookings/:id',
         loadComponent: () => import('./features/admin/booking-detail').then(m => m.AdminBookingDetail),
       },
-      ...['agencies', 'programs', 'pricing', 'documents'].map(section => ({
+      {
+        path: 'agencies',
+        loadComponent: () => import('./features/admin/agencies').then(m => m.AdminAgencies),
+      },
+      {
+        path: 'agencies/:id',
+        loadComponent: () => import('./features/admin/agency-detail').then(m => m.AdminAgencyDetail),
+      },
+      { path: 'settings', pathMatch: 'full', redirectTo: 'settings/branding' },
+      {
+        path: 'settings/branding',
+        loadComponent: () => import('./features/admin/branding').then(m => m.AdminBranding),
+      },
+      {
+        path: 'programs',
+        loadComponent: () => import('./features/admin/programs').then(m => m.AdminPrograms),
+      },
+      {
+        path: 'programs/:id',
+        loadComponent: () => import('./features/admin/program-detail').then(m => m.AdminProgramDetail),
+      },
+      {
+        path: 'hotels',
+        loadComponent: () => import('./features/admin/hotels').then(m => m.AdminHotels),
+      },
+      {
+        path: 'destinations',
+        loadComponent: () => import('./features/admin/destinations').then(m => m.AdminDestinations),
+      },
+      ...['pricing', 'documents'].map(section => ({
         path: section,
         loadComponent: () => import('./features/placeholder').then(m => m.Placeholder),
         data: { title: section[0].toUpperCase() + section.slice(1) },

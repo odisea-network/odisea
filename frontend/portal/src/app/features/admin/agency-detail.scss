@@ -1,0 +1,148 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: 12px;
+}
+
+.tile {
+  @include glass;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tile__v {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.tile__link {
+  height: 24px;
+  padding: 0 6px;
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tabhead {
+  padding: 16px 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pad {
+  padding: 0 20px 20px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pw {
+  position: relative;
+  display: block;
+
+  input {
+    padding-right: 44px;
+  }
+}
+
+.pw__eye {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+}
+
+.danger-text {
+  color: var(--bad);
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 20, 28, 0.26);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 96px 24px 24px;
+  z-index: var(--z-scrim);
+}
+
+.secret {
+  width: min(540px, 100%);
+  padding: 24px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-pop);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.secret__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.secret__title {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.secret__box {
+  @include inset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+}
+
+.secret__code {
+  flex: 1 1 auto;
+  word-break: break-all;
+}
+
+.stored {
+  gap: 10px;
+  cursor: pointer;
+}
+
+.secret__foot {
+  justify-content: flex-end;
+  gap: 8px;
+}

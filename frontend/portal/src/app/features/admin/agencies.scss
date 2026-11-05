@@ -1,0 +1,64 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search {
+  @include inset;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  flex: 0 1 280px;
+  color: var(--mute);
+
+  input {
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    color: var(--ink);
+  }
+}
+
+.none {
+  padding: 24px;
+  text-align: center;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.who__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #d5dae2;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink-2);
+  flex: none;
+}
+
+.ref--ink {
+  color: var(--ink);
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

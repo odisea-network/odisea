@@ -1,0 +1,77 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search {
+  @include inset;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  flex: 0 1 240px;
+  color: var(--mute);
+
+  input {
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    color: var(--ink);
+  }
+}
+
+.dest {
+  width: auto;
+  max-width: 240px;
+}
+
+.pad {
+  padding: 16px;
+}
+
+.none {
+  padding: 24px;
+  text-align: center;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  color: #d29a1e;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.maps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

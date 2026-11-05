@@ -1,0 +1,74 @@
+<ui-page-header title="Destinations" sub="Where programs go. Supplier codes connect each destination to the provider's locations.">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />Add destination</button>
+</ui-page-header>
+
+@if (destinations.error()) {
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load destinations" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="destinations.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (destinations.isLoading()) {
+  <ui-card><ui-skeleton [lines]="4" /></ui-card>
+} @else if (destinations.value(); as list) {
+  @if (list.length === 0) {
+    <ui-empty-state icon="map-pin" title="No destinations yet" description="Add one before hotels and programs.">
+      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">Add destination</button>
+    </ui-empty-state>
+  } @else {
+    <ui-card flush>
+      <div class="tw">
+        <table class="tbl">
+          <thead><tr><th>Destination</th><th>Country</th><th class="r">Hotels</th><th>Supplier codes</th></tr></thead>
+          <tbody>
+            @for (d of list; track d.id) {
+              <tr>
+                <td><b>{{ d.name }}</b></td>
+                <td>{{ d.country }}</td>
+                <td class="r num">{{ hotelCount(d.id) }}</td>
+                <td><button type="button" uiButton="ghost" size="sm" (click)="openMappings(d)"><ui-icon name="box" />Mappings</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </ui-card>
+  }
+}
+
+<ui-sheet [(open)]="createOpen" title="Add destination">
+  <form id="create-destination" (ngSubmit)="create()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field label="Name" for="ds-name"><input uiInput id="ds-name" name="name" [(ngModel)]="form.name" required maxlength="200" placeholder="e.g. Antalya" /></ui-field>
+    <ui-field label="Country" for="ds-country" hint="2-letter code"><input uiInput id="ds-country" name="country" [(ngModel)]="form.country" maxlength="2" /></ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
+  <button sheetActions type="submit" form="create-destination" uiButton="primary" [disabled]="busy() || !formValid()">Add destination</button>
+</ui-sheet>
+
+<ui-sheet [open]="mappingFor() !== null" (openChange)="closeMappings($event)" [title]="'Supplier codes · ' + (mappingFor()?.name ?? '')" sub="One code per provider. Unmapped destinations never return offers.">
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+  @if (mappings.value(); as list) {
+    @if (list.length === 0) {
+      <p class="small muted">No supplier codes yet.</p>
+    } @else {
+      <ul class="maps">
+        @for (m of list; track m.id) {
+          <li class="map"><ui-pill>{{ m.providerCode }}</ui-pill><span class="mono">{{ m.externalLocationCode }}</span></li>
+        }
+      </ul>
+    }
+  } @else {
+    <ui-skeleton [lines]="2" />
+  }
+  <form id="add-location-mapping" (ngSubmit)="addMapping()">
+    <div class="two">
+      <ui-field label="Provider" for="lm-provider"><input uiInput id="lm-provider" name="providerCode" class="mono" [(ngModel)]="mapping.providerCode" required maxlength="30" /></ui-field>
+      <ui-field label="External location code" for="lm-code"><input uiInput id="lm-code" name="externalLocationCode" class="mono" [(ngModel)]="mapping.externalLocationCode" required maxlength="100" /></ui-field>
+    </div>
+  </form>
+  <button sheetActions type="button" uiButton (click)="mappingFor.set(null)">Close</button>
+  <button sheetActions type="submit" form="add-location-mapping" uiButton="primary" [disabled]="busy() || !mappingValid()">Add code</button>
+</ui-sheet>

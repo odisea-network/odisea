@@ -1,0 +1,100 @@
+<ui-page-header title="Agencies" [sub]="(agencies.value()?.length ?? 0) + ' partner agencies'">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />Add agency</button>
+</ui-page-header>
+
+@if (agencies.error()) {
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load agencies" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="agencies.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (agencies.isLoading()) {
+  <ui-card><ui-skeleton [lines]="5" /></ui-card>
+} @else if (agencies.value(); as all) {
+  @if (all.length === 0) {
+    <ui-empty-state icon="building" title="No agencies yet" description="Add your first partner agency to let them search and book.">
+      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">Add agency</button>
+    </ui-empty-state>
+  } @else {
+    <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" />
+
+    <ui-card flush>
+      <div class="toolbar">
+        <label class="search">
+          <ui-icon name="search" size="sm" />
+          <input name="q" placeholder="Name, email, legal name or EIK" aria-label="Search agencies" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+        </label>
+        <div class="grow"></div>
+        <span class="small muted num">{{ filtered().length }} shown</span>
+      </div>
+      @if (filtered().length === 0) {
+        <div class="none">No agencies match.</div>
+      } @else {
+        <div class="tw">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Agency</th>
+                <th>Status</th>
+                <th>Plan</th>
+                <th class="r">Credit limit</th>
+                <th>Contact</th>
+                <th>Partner since</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of filtered(); track a.id) {
+                <tr class="clickable" (click)="open(a)">
+                  <td>
+                    <div class="who">
+                      <span class="who__avatar" aria-hidden="true">{{ initials(a.name) }}</span>
+                      <div class="col">
+                        <a class="ref ref--ink" [routerLink]="['/admin/agencies', a.id]" (click)="$event.stopPropagation()">{{ a.name }}</a>
+                        <span class="small muted">{{ a.billing?.city ? a.billing?.city + ', ' : '' }}{{ a.country }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (a.status === 'Active') {
+                      <ui-pill tone="ok"><ui-icon name="check-circle" size="sm" />Active</ui-pill>
+                    } @else {
+                      <ui-pill tone="bad"><ui-icon name="slash-circle" size="sm" />Suspended</ui-pill>
+                    }
+                  </td>
+                  <td>{{ a.plan }}</td>
+                  <td class="r m">{{ a.creditLimit | money }}</td>
+                  <td class="muted">{{ a.contactEmail ?? '—' }}</td>
+                  <td class="muted num">{{ a.createdAt | odDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </ui-card>
+  }
+}
+
+<ui-sheet [(open)]="createOpen" title="Add agency" sub="They can sign in once you add a user.">
+  <form id="create-agency" (ngSubmit)="create()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field label="Agency name" for="ag-name">
+      <input uiInput id="ag-name" name="name" [(ngModel)]="form.name" required maxlength="200" />
+    </ui-field>
+    <div class="two">
+      <ui-field label="Country" for="ag-country" hint="2-letter code">
+        <input uiInput id="ag-country" name="country" [(ngModel)]="form.country" maxlength="2" placeholder="BG" />
+      </ui-field>
+      <ui-field label="Credit limit" for="ag-credit" hint="EUR, 0 for none">
+        <input uiInput id="ag-credit" name="creditLimit" type="number" min="0" step="100" class="m" [(ngModel)]="form.creditLimit" />
+      </ui-field>
+    </div>
+    <ui-field label="Contact email" for="ag-email" optional>
+      <input uiInput id="ag-email" name="contactEmail" type="email" [(ngModel)]="form.contactEmail" />
+    </ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
+  <button sheetActions type="submit" form="create-agency" uiButton="primary" [disabled]="busy() || !formValid()">
+    {{ busy() ? 'Adding…' : 'Add agency' }}
+  </button>
+</ui-sheet>

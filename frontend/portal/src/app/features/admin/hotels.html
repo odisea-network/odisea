@@ -1,0 +1,113 @@
+<ui-page-header title="Hotels" sub="The hotels programs can allow. Each needs a supplier code to return offers.">
+  <button actions type="button" uiButton="primary" (click)="openCreate()" [disabled]="(destinations.value()?.length ?? 0) === 0"><ui-icon name="plus" />Add hotel</button>
+</ui-page-header>
+
+@if (hotels.error()) {
+  <ui-empty-state tone="error" icon="refresh" title="Couldn't load hotels" description="Check your connection and try again.">
+    <button type="button" uiButton size="sm" (click)="hotels.reload()">Retry</button>
+  </ui-empty-state>
+} @else if (hotels.isLoading()) {
+  <ui-card><ui-skeleton [lines]="4" /></ui-card>
+} @else if (hotels.value(); as all) {
+  <ui-card flush>
+    <div class="toolbar">
+      <label class="search">
+        <ui-icon name="search" size="sm" />
+        <input name="q" placeholder="Hotel name" aria-label="Search hotels" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+      </label>
+      <select uiInput size="sm" class="dest" aria-label="Destination" [ngModel]="destinationFilter()" (ngModelChange)="destinationFilter.set($event)">
+        <option value="">All destinations</option>
+        @for (d of destinations.value(); track d.id) {
+          <option [value]="d.id">{{ d.name }}, {{ d.country }}</option>
+        }
+      </select>
+      <div class="grow"></div>
+      <span class="small muted num">{{ filtered().length }} of {{ all.length }}</span>
+    </div>
+    @if (all.length === 0) {
+      <div class="pad">
+        <ui-empty-state icon="hotel" title="No hotels yet" [description]="(destinations.value()?.length ?? 0) === 0 ? 'Add a destination first.' : 'Add the hotels your programs will offer.'">
+          @if ((destinations.value()?.length ?? 0) > 0) {
+            <button type="button" uiButton="primary" size="sm" (click)="openCreate()">Add hotel</button>
+          }
+        </ui-empty-state>
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="none">No hotels match.</div>
+    } @else {
+      <div class="tw">
+        <table class="tbl">
+          <thead><tr><th>Hotel</th><th>Stars</th><th>Destination</th><th>Supplier codes</th></tr></thead>
+          <tbody>
+            @for (h of filtered(); track h.id) {
+              <tr>
+                <td><b>{{ h.name }}</b></td>
+                <td>
+                  <span class="stars" role="img" [attr.aria-label]="h.stars + ' stars'">
+                    @for (s of stars(h.stars); track $index) { <ui-icon name="star" size="sm" /> }
+                  </span>
+                </td>
+                <td>{{ destinationName(h.destinationId) }}</td>
+                <td><button type="button" uiButton="ghost" size="sm" (click)="openMappings(h)"><ui-icon name="box" />Mappings</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </ui-card>
+}
+
+<ui-sheet [(open)]="createOpen" title="Add hotel">
+  <form id="create-hotel" (ngSubmit)="create()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field label="Name" for="ht-name"><input uiInput id="ht-name" name="name" [(ngModel)]="form.name" required maxlength="200" /></ui-field>
+    <ui-field label="Destination" for="ht-dest">
+      <select uiInput id="ht-dest" name="destinationId" [(ngModel)]="form.destinationId">
+        @for (d of destinations.value(); track d.id) {
+          <option [value]="d.id">{{ d.name }}, {{ d.country }}</option>
+        }
+      </select>
+    </ui-field>
+    <ui-field label="Stars" for="ht-stars">
+      <select uiInput id="ht-stars" name="stars" [(ngModel)]="form.stars">
+        <option [ngValue]="5">5 stars</option>
+        <option [ngValue]="4">4 stars</option>
+        <option [ngValue]="3">3 stars</option>
+        <option [ngValue]="2">2 stars</option>
+        <option [ngValue]="1">1 star</option>
+      </select>
+    </ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
+  <button sheetActions type="submit" form="create-hotel" uiButton="primary" [disabled]="busy() || !formValid()">Add hotel</button>
+</ui-sheet>
+
+<ui-sheet [open]="mappingFor() !== null" (openChange)="closeMappings($event)" [title]="'Supplier codes · ' + (mappingFor()?.name ?? '')" sub="One code per provider. A hotel without a code for the program's supplier returns no offers.">
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+  @if (mappings.value(); as list) {
+    @if (list.length === 0) {
+      <p class="small muted">No supplier codes yet.</p>
+    } @else {
+      <ul class="maps">
+        @for (m of list; track m.id) {
+          <li class="map"><ui-pill>{{ m.providerCode }}</ui-pill><span class="mono">{{ m.externalHotelCode }}</span></li>
+        }
+      </ul>
+    }
+  } @else {
+    <ui-skeleton [lines]="2" />
+  }
+  <form id="add-hotel-mapping" (ngSubmit)="addMapping()">
+    <div class="two">
+      <ui-field label="Provider" for="hm-provider"><input uiInput id="hm-provider" name="providerCode" class="mono" [(ngModel)]="mapping.providerCode" required maxlength="30" /></ui-field>
+      <ui-field label="External hotel code" for="hm-code"><input uiInput id="hm-code" name="externalHotelCode" class="mono" [(ngModel)]="mapping.externalHotelCode" required maxlength="100" /></ui-field>
+    </div>
+  </form>
+  <button sheetActions type="button" uiButton (click)="mappingFor.set(null)">Close</button>
+  <button sheetActions type="submit" form="add-hotel-mapping" uiButton="primary" [disabled]="busy() || !mappingValid()">Add code</button>
+</ui-sheet>
