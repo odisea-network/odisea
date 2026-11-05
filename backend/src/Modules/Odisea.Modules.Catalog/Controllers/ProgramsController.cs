@@ -21,18 +21,7 @@ public class ProgramsController(CatalogDbContext db, ProgramService programs, IP
         var query = db.Programs.AsQueryable();
         if (status is { } s)
             query = query.Where(p => p.Status == s);
-        var rows = await query
-            .OrderBy(p => p.Name)
-            .Select(p => new
-            {
-                Program = p,
-                CoverId = db.ProgramImages
-                    .Where(i => i.ProgramId == p.Id && i.IsCover)
-                    .Select(i => (Guid?)i.Id)
-                    .FirstOrDefault(),
-            })
-            .ToListAsync(ct);
-        return Ok(rows.Select(r => r.Program.ToDto(r.CoverId)).ToList());
+        return Ok(await programs.ListAsync(query, ct));
     }
 
     [HttpGet("{id:guid}")]

@@ -154,6 +154,8 @@ public class ProgramContentTests(OdiseaApiFactory factory)
         Assert.Equal(image.Url, card.CoverImageUrl);
         Assert.Equal(["all-inclusive", "family"], card.Tags);
         Assert.NotNull(card.Summary);
+        Assert.Equal((destination.Name, destination.Country), (card.DestinationName, card.Country));
+        Assert.Equal((new DateOnly(2027, 5, 1), 1), (card.NextDeparture, card.UpcomingDepartures));
 
         var detail = await agent.GetFromJsonAsync<ProgramDetailDto>($"/api/v1/catalog/programs/{program.Id}", Json.Options);
         Assert.NotNull(detail);
@@ -161,6 +163,8 @@ public class ProgramContentTests(OdiseaApiFactory factory)
         Assert.Single(detail.Images);
         Assert.Equal("Free until 30 days before departure", detail.Content.CancellationPolicy);
         Assert.Equal("Arrival", detail.Itinerary[0].Title);
+        Assert.Equal(destination.Id, detail.Destination?.Id);
+        Assert.Equal(hotels[0].Id, Assert.Single(detail.Hotels).Id);
 
         // Deleting the image takes the public bytes with it.
         var deleted = await op.DeleteAsync($"/api/v1/programs/{program.Id}/images/{image.Id}");
