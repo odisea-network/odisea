@@ -1,12 +1,21 @@
-@if (!context) {
+@if (loading()) {
+  <ui-card><ui-skeleton [lines]="5" /></ui-card>
+} @else if (!context()) {
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
   <ui-empty-state icon="search" title="No offer selected" description="Pick a package from Search to start a booking.">
     <a uiButton="primary" size="sm" routerLink="/agency/search">Search packages</a>
   </ui-empty-state>
-} @else {
+} @else if (context(); as ctx) {
   <ui-page-header
     [title]="title()"
-    [crumbs]="[{ label: 'Search', link: '/agency/search' }, { label: context.offer.hotelName }]"
-  />
+    [crumbs]="[{ label: 'Search', link: '/agency/search' }, { label: ctx.offer.hotelName }]"
+  >
+    @if (booking(); as b) {
+      <span status class="small muted saved"><ui-icon name="check" size="sm" />Draft {{ b.ref }} saved</span>
+    }
+  </ui-page-header>
 
   <ol class="steps" aria-label="Progress">
     @for (s of steps; track s.key; let i = $index) {
@@ -32,7 +41,7 @@
     <div class="wizard__main">
       @if (step() === 'passengers') {
         @for (p of passengers; track $index; let i = $index) {
-          <ui-card [title]="slotLabel(i) + (typeHint(p) ? ' · ' + typeHint(p) + ' at check-in' : '')">
+          <ui-card [title]="cardTitle(i, p)">
             <label cardActions class="lead" [class.lead--on]="i === leadIndex">
               <input type="radio" class="ui-chk" name="lead" [value]="i" [(ngModel)]="leadIndex" />
               Lead traveller
@@ -59,7 +68,7 @@
                 <input uiInput id="ln{{ i }}" name="ln{{ i }}" [(ngModel)]="p.lastName" autocomplete="off" />
               </ui-field>
               <ui-field label="Birth date" [for]="'bd' + i">
-                <input uiInput id="bd{{ i }}" name="bd{{ i }}" type="date" [(ngModel)]="p.birthDate" [max]="context.checkIn" />
+                <input uiInput id="bd{{ i }}" name="bd{{ i }}" type="date" [(ngModel)]="p.birthDate" [max]="ctx.checkIn" />
               </ui-field>
               <ui-field label="Nationality" [for]="'nat' + i" hint="2-letter code, e.g. BG">
                 <input uiInput id="nat{{ i }}" name="nat{{ i }}" [(ngModel)]="p.nationality" maxlength="2" placeholder="BG" />
@@ -81,7 +90,7 @@
                 <input uiInput id="dc{{ i }}" name="dc{{ i }}" [(ngModel)]="p.documentIssuingCountry" maxlength="2" placeholder="BG" />
               </ui-field>
               <ui-field label="Expiry" [for]="'de' + i" hint="Must be valid after the trip">
-                <input uiInput id="de{{ i }}" name="de{{ i }}" type="date" [(ngModel)]="p.documentExpiryDate" [min]="context.checkOut" />
+                <input uiInput id="de{{ i }}" name="de{{ i }}" type="date" [(ngModel)]="p.documentExpiryDate" [min]="ctx.checkOut" />
               </ui-field>
             </div>
 
@@ -113,11 +122,16 @@
 
         <div class="wizard__nav">
           <span class="small muted">
-            Search price <b class="m">{{ context.searchSellPrice | money: context.offer.currency }}</b> — re-checked with the supplier next.
+            Search price <b class="m">{{ ctx.searchSellPrice | money: ctx.offer.currency }}</b> — re-checked with the supplier next.
           </span>
-          <button type="button" uiButton="primary" (click)="continueToPrice()" [disabled]="busy() || problems().length > 0">
-            {{ busy() ? 'Checking price…' : 'Continue' }}
-          </button>
+          <div class="row">
+            @if (booking()) {
+              <a uiButton="ghost" routerLink="/agency/bookings">Save draft &amp; exit</a>
+            }
+            <button type="button" uiButton="primary" (click)="continueToPrice()" [disabled]="busy() || problems().length > 0">
+              {{ busy() ? 'Checking price…' : 'Continue' }}
+            </button>
+          </div>
         </div>
       }
 
@@ -126,7 +140,7 @@
           @if (drifted()) {
             <ui-banner tone="warn">
               <b>The price changed since your search.</b>
-              Was {{ context.searchSellPrice | money: b.currency }}, now {{ b.sellPrice | money: b.currency }}.
+              Was {{ ctx.searchSellPrice | money: b.currency }}, now {{ b.sellPrice | money: b.currency }}.
               Check with your client before you continue.
             </ui-banner>
           } @else {
@@ -134,10 +148,14 @@
           }
           <div class="price">
             <div class="price__row">
+              <span>{{ ctx.adults }} {{ ctx.adults === 1 ? 'adult' : 'adults' }}@if (ctx.children > 0) {, {{ ctx.children }} {{ ctx.children === 1 ? 'child' : 'children' }}} · {{ ctx.nights }} nights</span>
+              <span class="m">{{ b.sellPrice | money: b.currency }}</span>
+            </div>
+            <div class="price__row">
               <b>Total sell price</b>
               <span class="row">
                 @if (drifted()) {
-                  <s class="m muted small">{{ context.searchSellPrice | money: b.currency }}</s>
+                  <s class="m muted small">{{ ctx.searchSellPrice | money: b.currency }}</s>
                 }
                 <b class="m price__total">{{ b.sellPrice | money: b.currency }}</b>
               </span>
@@ -146,23 +164,48 @@
               <span>Your commission</span>
               <span class="m strong price__ok">{{ b.agencyCommission | money: b.currency }}</span>
             </div>
-            <div class="price__row small muted">
-              <span>Reservation</span>
-              <span class="num">{{ b.ref }}</span>
-            </div>
           </div>
-          <p class="small muted">
-            Submitting asks the supplier to hold the rooms. You then get a payment deadline; nothing is charged
-            until then. The operator confirms the booking once the payment is received.
-          </p>
+          @if (drifted()) {
+            <label class="row accept">
+              <input type="checkbox" class="ui-chk" [checked]="accepted()" (change)="accepted.set(!accepted())" />
+              <span>I confirm the new total of <b class="m">{{ b.sellPrice | money: b.currency }}</b> with my client</span>
+            </label>
+          }
         </ui-card>
 
         <div class="wizard__nav">
-          <button type="button" uiButton (click)="editPassengers()" [disabled]="busy()">Back</button>
+          <button type="button" uiButton (click)="back()" [disabled]="busy()">Back</button>
+          <div class="row">
+            <a uiButton="ghost" routerLink="/agency/bookings">Save draft &amp; exit</a>
+            <button type="button" uiButton="primary" (click)="continueToSubmit()" [disabled]="busy() || (drifted() && !accepted())">
+              Continue
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (step() === 'submit' && booking(); as b) {
+        <ui-card title="Submit to the operator">
+          <p class="muted">
+            We’ll ask the supplier to hold the rooms and seats. If it works you get a payment deadline;
+            nothing is charged until then. The operator confirms the booking once the payment is received.
+          </p>
+          <dl class="kv summary__kv inset submit__kv">
+            <dt>Package</dt><dd>{{ ctx.offer.hotelName }}@if (ctx.offer.roomType) { · {{ ctx.offer.roomType }} · {{ ctx.offer.board }}}</dd>
+            <dt>Program</dt><dd>{{ ctx.programName }}</dd>
+            <dt>Dates</dt><dd>{{ ctx.checkIn | odDate }} → {{ ctx.checkOut | odDate }} · {{ ctx.nights }} nights</dd>
+            <dt>Travellers</dt><dd>{{ travellerNames() }}</dd>
+            <dt>Total</dt><dd class="m strong">{{ b.sellPrice | money: b.currency }}</dd>
+            <dt>Reservation</dt><dd class="num">{{ b.ref }}</dd>
+          </dl>
+        </ui-card>
+
+        <div class="wizard__nav">
+          <button type="button" uiButton (click)="back()" [disabled]="busy()">Back</button>
           <div class="row">
             <button type="button" uiButton="danger-quiet" (click)="cancel()" [disabled]="busy()">Discard</button>
             <button type="button" uiButton="primary" (click)="submit()" [disabled]="busy()">
-              {{ busy() ? 'Submitting…' : 'Submit reservation' }}
+              {{ busy() ? 'Submitting…' : 'Submit booking' }}
             </button>
           </div>
         </div>
@@ -188,19 +231,17 @@
                 <span class="small muted">Pay by</span>
                 <ui-deadline [at]="b.paymentDueAt" />
               </div>
-              @if (b.providerBookingRef) {
-                <div class="fact">
-                  <span class="small muted">Supplier reference</span>
-                  <div class="mono">{{ b.providerBookingRef }}</div>
-                </div>
-              }
+              <div class="fact">
+                <span class="small muted">Payment reference</span>
+                <div class="mono strong">{{ b.ref }}</div>
+              </div>
             </div>
             <p class="small muted">
               The operator records your payment when it arrives and confirms the booking. Use the booking
-              reference <b class="mono">{{ b.ref }}</b> on the transfer.
+              reference on the transfer.
             </p>
             <div class="row wrap">
-              <a uiButton="primary" routerLink="/agency/bookings">Open bookings</a>
+              <a uiButton="primary" [routerLink]="['/agency/bookings', b.id]">Open booking</a>
               <a uiButton routerLink="/agency/search">New booking</a>
             </div>
           } @else if (b.status === 'Failed') {
@@ -216,7 +257,7 @@
             }
             <div class="row wrap">
               <a uiButton="primary" routerLink="/agency/search">Find similar offers</a>
-              <a uiButton routerLink="/agency/bookings">Open bookings</a>
+              <a uiButton [routerLink]="['/agency/bookings', b.id]">Open booking</a>
             </div>
           } @else {
             <div class="result">
@@ -224,10 +265,10 @@
               <div class="col result__text">
                 <ui-status-chip [status]="b.status" />
                 <h2 class="result__title">Reservation {{ b.ref }}</h2>
-                <p class="muted">See Bookings for the details and history.</p>
+                <p class="muted">See the booking for the details and history.</p>
               </div>
             </div>
-            <a uiButton="primary" routerLink="/agency/bookings">Open bookings</a>
+            <a uiButton="primary" [routerLink]="['/agency/bookings', b.id]">Open booking</a>
           }
         </ui-card>
       }
@@ -240,27 +281,31 @@
     <aside class="wizard__aside">
       <ui-card class="summary">
         <div class="col summary__hotel">
-          <b>{{ context.offer.hotelName }}</b>
-          <span class="stars" role="img" [attr.aria-label]="context.offer.stars + ' stars'">
-            @for (star of stars(context.offer.stars); track $index) {
-              <ui-icon name="star" size="sm" />
-            }
-          </span>
-          <span class="small muted">{{ context.offer.roomType }} · {{ context.offer.board }}</span>
+          <b>{{ ctx.offer.hotelName }}</b>
+          @if (ctx.offer.stars > 0) {
+            <span class="stars" role="img" [attr.aria-label]="ctx.offer.stars + ' stars'">
+              @for (star of stars(ctx.offer.stars); track $index) {
+                <ui-icon name="star" size="sm" />
+              }
+            </span>
+          }
+          @if (ctx.offer.roomType) {
+            <span class="small muted">{{ ctx.offer.roomType }} · {{ ctx.offer.board }}</span>
+          }
         </div>
         <dl class="kv summary__kv">
-          <dt>Program</dt><dd>{{ context.programName }}</dd>
-          <dt>Dates</dt><dd>{{ context.checkIn | odDate }} → {{ context.checkOut | odDate }} · {{ context.nights }} nights</dd>
-          <dt>Travellers</dt><dd>{{ context.adults }} {{ context.adults === 1 ? 'adult' : 'adults' }}@if (context.children > 0) {, {{ context.children }} {{ context.children === 1 ? 'child' : 'children' }}}</dd>
+          <dt>Program</dt><dd>{{ ctx.programName }}</dd>
+          <dt>Dates</dt><dd>{{ ctx.checkIn | odDate }} → {{ ctx.checkOut | odDate }} · {{ ctx.nights }} nights</dd>
+          <dt>Travellers</dt><dd>{{ ctx.adults }} {{ ctx.adults === 1 ? 'adult' : 'adults' }}@if (ctx.children > 0) {, {{ ctx.children }} {{ ctx.children === 1 ? 'child' : 'children' }}}</dd>
         </dl>
         <hr class="hr" />
         <div class="row between">
           <span class="muted">Total</span>
-          <b class="m summary__total">{{ total() | money: context.offer.currency }}</b>
+          <b class="m summary__total">{{ total() | money: ctx.offer.currency }}</b>
         </div>
         <div class="row between small">
           <span class="muted">You earn</span>
-          <span class="m strong">{{ commission() | money: context.offer.currency }}</span>
+          <span class="m strong">{{ commission() | money: ctx.offer.currency }}</span>
         </div>
       </ui-card>
     </aside>

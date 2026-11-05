@@ -18,24 +18,16 @@
   }
 
   @if (next(); as step) {
-    <ui-card class="next">
-      <span class="next__icon" [class]="'next__icon next__icon--' + step.tone"><ui-icon [name]="step.icon" size="lg" /></span>
-      <div class="next__text">
-        <span class="eyebrow">Next step</span>
-        <b class="next__title">{{ step.title }}</b>
-        <span class="small muted">{{ step.sub }}</span>
-      </div>
+    <ui-next-step [icon]="step.icon" [tone]="step.tone" [title]="step.title" [sub]="step.sub">
       @if (step.action; as action) {
-        <div class="next__action">
-          <button type="button" uiButton="primary" (click)="action.run()" [disabled]="busy() || !!action.disabledReason">
-            {{ action.label }}
-          </button>
-          @if (action.disabledReason; as why) {
-            <span class="small muted row why"><ui-icon name="lock" size="sm" />{{ why }}</span>
-          }
-        </div>
+        <button type="button" uiButton="primary" (click)="action.run()" [disabled]="busy() || !!action.disabledReason">
+          {{ action.label }}
+        </button>
+        @if (action.disabledReason; as why) {
+          <span class="why"><ui-icon name="lock" size="sm" />{{ why }}</span>
+        }
       }
-    </ui-card>
+    </ui-next-step>
   }
 
   <div class="detail">

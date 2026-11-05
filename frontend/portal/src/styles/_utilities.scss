@@ -114,6 +114,15 @@
   }
 }
 
+// Reason next to a disabled action (lock icon + text).
+.why {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--mute);
+}
+
 // Deadlines: urgency is told by words and position, colour only reinforces it.
 .u-over {
   color: var(--bad);

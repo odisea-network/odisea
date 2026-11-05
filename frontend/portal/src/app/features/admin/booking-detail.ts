@@ -13,7 +13,7 @@ import { OdDatePipe, OdDateTimePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import {
   Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Field, Icon, IconName, InputDirective,
-  Masked, PageHeader, Pill, Progress, SegmentOption, Segmented, Skeleton, StatusChip, Timeline, ToastService,
+  Masked, NextStep, PageHeader, Pill, Progress, SegmentOption, Segmented, Skeleton, StatusChip, Timeline, ToastService,
   bookingStatusLabel,
 } from '../../shared/ui';
 import { operatorActions, parseBreakdown } from './booking-actions';
@@ -29,7 +29,7 @@ const METHOD_LABELS: Record<string, string> = {
   BankTransfer: 'Bank transfer', Card: 'Card', Cash: 'Cash', Other: 'Other',
 };
 
-interface NextStep {
+interface NextAction {
   icon: IconName;
   tone: 'warn' | 'ok' | 'info' | 'neutral';
   title: string;
@@ -42,8 +42,8 @@ interface NextStep {
   selector: 'app-admin-booking-detail',
   imports: [
     FormsModule, MoneyPipe, OdDatePipe, OdDateTimePipe,
-    Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, Masked, PageHeader, Pill,
-    Progress, Segmented, Skeleton, StatusChip, Timeline,
+    Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, Masked, NextStep, PageHeader,
+    Pill, Progress, Segmented, Skeleton, StatusChip, Timeline,
   ],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
@@ -100,7 +100,7 @@ export class AdminBookingDetail {
   });
 
   /** What the operator should do next, and why the button is locked if it is. */
-  readonly next = computed<NextStep | null>(() => {
+  readonly next = computed<NextAction | null>(() => {
     const b = this.booking();
     const a = this.actions();
     if (!b || !a) return null;

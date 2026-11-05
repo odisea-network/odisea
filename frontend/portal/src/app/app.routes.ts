@@ -26,6 +26,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/agency/bookings').then(m => m.AgencyBookings),
       },
       {
+        path: 'bookings/:id',
+        loadComponent: () => import('./features/agency/booking-detail').then(m => m.AgencyBookingDetail),
+      },
+      {
         path: 'documents',
         loadComponent: () => import('./features/agency/documents').then(m => m.AgencyDocuments),
       },

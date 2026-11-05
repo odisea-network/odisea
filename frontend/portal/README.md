@@ -19,16 +19,18 @@ src/
                  booking-history (status history -> timeline), problem (ProblemDetails)
     shared/ui/   the component kit, one folder per component with its own .scss (see below)
     shared/pipes/ money, odDate, odDateTime - thin wrappers over core/format
-    layout/      Shell (sidebar on wide screens, top bar + drawer below 900px, legal footer),
+    layout/      Shell (sidebar on wide screens, top bar + drawer below 900px, bottom tab bar on phones
+                 for the agency area, legal footer),
                  SideNav (brand block, one primary action, grouped links, signed-in user),
                  AgencyShell / AdminShell supply the navigation groups
     features/
       auth/      login page, branded; error and lockout states; redirects by user_type claim
-      agency/    search (program/departure/pax -> live-priced offers), book (wizard: occupancy-sized
-                 passenger form with travel documents and one lead -> draft -> re-price with drift
-                 warning -> submit -> awaiting payment), bookings (saved views, status chips with
-                 deadlines, expandable travellers/history/payment, cancel while unpaid),
-                 documents (invoices + PDF download)
+      agency/    search (program/departure/pax -> live-priced offers as cards or a table, sort,
+                 compare up to three side by side), book (4-step wizard: travellers -> live price
+                 with drift acceptance -> submit -> result; resumes a saved draft via ?bookingId),
+                 booking-detail (/agency/bookings/:id: next step, travellers with masked documents,
+                 package, documents, payment, history, cancel while unpaid), bookings (saved views,
+                 card list on phones), documents (invoices + PDF download)
       admin/     bookings oversight over /api/v1/admin/bookings: filtered, paged list across agencies;
                  detail with a "next step" card, net cost, price breakdown, payments (inline record
                  form), travellers with masked document numbers, decisions and the actor timeline

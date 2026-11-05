@@ -1,15 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, resource, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BookingDto, PassengerDto } from '../../core/api.types';
-import { historyTimeline } from '../../core/booking-history';
 import { problemMessage } from '../../core/problem';
+import { ViewportService } from '../../core/viewport';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import {
-  Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Icon, Masked, PageHeader, Pill,
-  SegmentOption, Segmented, Skeleton, StatusChip, Timeline, ToastService,
+  Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Icon, PageHeader, SegmentOption, Segmented,
+  Skeleton, StatusChip, ToastService,
 } from '../../shared/ui';
 
 /** Agencies may withdraw until money has been received; after that the operator decides. */
@@ -37,8 +37,7 @@ export function matchesView(b: BookingDto, view: View, today: string): boolean {
   selector: 'app-agency-bookings',
   imports: [
     RouterLink, MoneyPipe, OdDatePipe,
-    Banner, ButtonDirective, Card, Deadline, EmptyState, Icon, Masked, PageHeader, Pill, Segmented, Skeleton,
-    StatusChip, Timeline,
+    Banner, ButtonDirective, Card, Deadline, EmptyState, Icon, PageHeader, Segmented, Skeleton, StatusChip,
   ],
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
@@ -47,8 +46,9 @@ export class AgencyBookings {
   private readonly http = inject(HttpClient);
   private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
+  private readonly router = inject(Router);
 
-  readonly expanded = signal<string | null>(null);
+  readonly phone = inject(ViewportService).isPhone;
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly view = signal<View>('all');
@@ -82,12 +82,8 @@ export class AgencyBookings {
     return b.passengers.find(p => p.isLead) ?? b.passengers[0];
   }
 
-  timeline(b: BookingDto) {
-    return historyTimeline(b.history);
-  }
-
-  toggle(id: string): void {
-    this.expanded.set(this.expanded() === id ? null : id);
+  open(b: BookingDto): void {
+    void this.router.navigate(['/agency/bookings', b.id]);
   }
 
   setView(view: string): void {

@@ -1,4 +1,4 @@
-<div class="shell" [class.shell--drawer]="drawerOpen()">
+<div class="shell" [class.shell--drawer]="drawerOpen()" [class.shell--tabs]="tabs().length > 0">
   <header class="topbar">
     <button
       type="button"
@@ -60,4 +60,14 @@
       }
     }
   </main>
+
+  @if (tabs().length > 0) {
+    <nav class="tabbar" aria-label="Primary">
+      @for (tab of tabs(); track tab.link) {
+        <a class="tabbar__item" [routerLink]="tab.link" routerLinkActive="tabbar__item--on" ariaCurrentWhenActive="page">
+          <ui-icon [name]="tab.icon" />{{ tab.label }}
+        </a>
+      }
+    </nav>
+  }
 </div>

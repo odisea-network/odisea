@@ -1,11 +1,11 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../core/auth.service';
 import { BrandingService } from '../core/branding.service';
 import { ButtonDirective, Icon } from '../shared/ui';
-import { NavAction, NavGroup, SideNav } from './side-nav';
+import { NavAction, NavGroup, NavItem, SideNav } from './side-nav';
 
 /**
  * Page frame for both areas: sticky sidebar on wide screens, a top bar with a
@@ -13,7 +13,7 @@ import { NavAction, NavGroup, SideNav } from './side-nav';
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, SideNav, ButtonDirective, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SideNav, ButtonDirective, Icon],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -25,6 +25,8 @@ export class Shell {
   readonly area = input.required<string>();
   readonly groups = input.required<NavGroup[]>();
   readonly primaryAction = input<NavAction | null>(null);
+  /** Bottom tab bar on phones; empty means none (operator area). */
+  readonly tabs = input<NavItem[]>([]);
 
   protected readonly drawerOpen = signal(false);
 
