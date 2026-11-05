@@ -30,13 +30,65 @@ public class ProgramConfiguration : IEntityTypeConfiguration<Domain.Program>
     {
         builder.Property(p => p.Name).HasMaxLength(200);
         builder.Property(p => p.ProviderCode).HasMaxLength(30);
+        builder.Property(p => p.Slug).HasMaxLength(Slug.MaxLength);
         builder.Property(p => p.Season).HasMaxLength(50);
-        builder.Property(p => p.Description).HasMaxLength(2000);
+        builder.Property(p => p.Description).HasMaxLength(Domain.Program.MaxDescriptionLength);
         builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
         builder.HasOne<Destination>().WithMany().HasForeignKey(p => p.DestinationId);
         builder.HasMany(p => p.Departures).WithOne().HasForeignKey(d => d.ProgramId);
         builder.HasMany(p => p.Hotels).WithOne().HasForeignKey(h => h.ProgramId);
+        builder.HasMany(p => p.Itinerary).WithOne().HasForeignKey(d => d.ProgramId);
         builder.HasIndex(p => p.Status);
+        builder.HasIndex(p => p.Slug).IsUnique();
+
+        // Same table, plain column names (no content_ prefix): the content is part of the program.
+        builder.OwnsOne(p => p.Content, content =>
+        {
+            content.Property(c => c.Tagline).HasColumnName("tagline").HasMaxLength(160);
+            content.Property(c => c.Summary).HasColumnName("summary").HasMaxLength(600);
+            content.Property(c => c.Highlights).HasColumnName("highlights");
+            content.Property(c => c.Inclusions).HasColumnName("inclusions");
+            content.Property(c => c.Exclusions).HasColumnName("exclusions");
+            content.Property(c => c.Tags).HasColumnName("tags");
+            content.Property(c => c.TransportMode).HasColumnName("transport_mode").HasConversion<string>().HasMaxLength(20);
+            content.Property(c => c.TransportDetails).HasColumnName("transport_details").HasMaxLength(4000);
+            content.Property(c => c.DeparturePoint).HasColumnName("departure_point").HasMaxLength(200);
+            content.Property(c => c.MinGroupSize).HasColumnName("min_group_size");
+            content.Property(c => c.MaxGroupSize).HasColumnName("max_group_size");
+            content.Property(c => c.PracticalInfo).HasColumnName("practical_info").HasMaxLength(8000);
+            content.Property(c => c.CancellationPolicy).HasColumnName("cancellation_policy").HasMaxLength(8000);
+            content.Property(c => c.PaymentTerms).HasColumnName("payment_terms").HasMaxLength(4000);
+            content.Property(c => c.InsurancePolicy).HasColumnName("insurance_policy").HasMaxLength(4000);
+            content.Property(c => c.ChildPolicy).HasColumnName("child_policy").HasMaxLength(2000);
+        });
+        builder.Navigation(p => p.Content).IsRequired();
+    }
+}
+
+public class ProgramItineraryDayConfiguration : IEntityTypeConfiguration<ProgramItineraryDay>
+{
+    public void Configure(EntityTypeBuilder<ProgramItineraryDay> builder)
+    {
+        builder.Property(d => d.Title).HasMaxLength(200);
+        builder.Property(d => d.Description).HasMaxLength(4000);
+        builder.Property(d => d.Meals).HasConversion<string>().HasMaxLength(40);
+        builder.Property(d => d.Overnight).HasMaxLength(200);
+        builder.HasIndex(d => new { d.ProgramId, d.Day }).IsUnique();
+    }
+}
+
+public class ProgramImageConfiguration : IEntityTypeConfiguration<ProgramImage>
+{
+    public void Configure(EntityTypeBuilder<ProgramImage> builder)
+    {
+        builder.Property(i => i.ContentType).HasMaxLength(40);
+        builder.Property(i => i.Sha256).HasMaxLength(64);
+        builder.Property(i => i.Caption).HasMaxLength(200);
+        builder.Property(i => i.AltText).HasMaxLength(300);
+        builder.HasOne<Domain.Program>().WithMany().HasForeignKey(i => i.ProgramId);
+        builder.HasIndex(i => new { i.ProgramId, i.SortOrder });
+        // One cover per program, enforced by the database.
+        builder.HasIndex(i => i.ProgramId).IsUnique().HasFilter("is_cover").HasDatabaseName("ix_program_images_cover");
     }
 }
 
