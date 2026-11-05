@@ -31,7 +31,8 @@ src/
                  booking-detail (/agency/bookings/:id: next step, travellers with masked documents,
                  package, documents, payment, history, cancel while unpaid), bookings (saved views,
                  card list on phones), documents (invoices + PDF download)
-      admin/     bookings oversight over /api/v1/admin/bookings: filtered, paged list across agencies;
+      admin/     dashboard (Today: KPIs, attention queue, period figures, top agencies from
+                 /api/v1/admin/dashboard), bookings oversight over /api/v1/admin/bookings: filtered, paged list across agencies;
                  detail with a "next step" card, net cost, price breakdown, payments (inline record
                  form), travellers with masked document numbers, decisions and the actor timeline
                  (booking-actions.ts mirrors the API's state + role rules so a button only shows

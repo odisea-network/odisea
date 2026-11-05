@@ -26,6 +26,7 @@ public static class BookingModule
         services.AddScoped<IBookingRefGenerator, PostgresBookingRefGenerator>();
         services.AddScoped<BookingService>();
         services.AddScoped<OperatorBookingService>();
+        services.AddScoped<OperatorDashboardService>();
         services.AddScoped<PublicApi.IBookingLookup, BookingLookup>();
 
         return services;

@@ -491,3 +491,48 @@ export interface CompanyProfileDto {
   iban: string | null;
   bankName: string | null;
 }
+
+// --- Operator dashboard (served by /api/v1/admin/dashboard) ---
+
+export interface OperatorDashboardKpi {
+  count: number;
+  amount: number;
+  currency: string;
+}
+
+export type AttentionKind = 'overdue' | 'failed' | 'ready' | 'soon' | 'partial';
+
+export interface OperatorAttentionItem {
+  id: string;
+  ref: string;
+  agencyId: string;
+  kind: AttentionKind | string;
+  text: string;
+  amount: number;
+  currency: string;
+  at: string | null;
+}
+
+export interface OperatorAgencyFigure {
+  agencyId: string;
+  bookings: number;
+  sell: number;
+  currency: string;
+}
+
+export interface OperatorDashboardDto {
+  asOf: string;
+  days: number;
+  readyToConfirm: OperatorDashboardKpi;
+  dueSoon: OperatorDashboardKpi;
+  overdue: OperatorDashboardKpi;
+  failedHolds: OperatorDashboardKpi;
+  queue: OperatorAttentionItem[];
+  created: number;
+  createdPrevious: number;
+  createdViaApi: number;
+  confirmedSell: number;
+  confirmedMargin: number;
+  currency: string;
+  topAgencies: OperatorAgencyFigure[];
+}

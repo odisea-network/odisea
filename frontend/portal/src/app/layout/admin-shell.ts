@@ -9,7 +9,12 @@ import { NavGroup } from './side-nav';
 })
 export class AdminShell {
   readonly groups: NavGroup[] = [
-    { items: [{ label: 'Bookings', link: '/admin/bookings', icon: 'bookings' }] },
+    {
+      items: [
+        { label: 'Today', link: '/admin/today', icon: 'home' },
+        { label: 'Bookings', link: '/admin/bookings', icon: 'bookings' },
+      ],
+    },
     { label: 'Partners', items: [{ label: 'Agencies', link: '/admin/agencies', icon: 'building' }] },
     {
       label: 'Catalogue',
