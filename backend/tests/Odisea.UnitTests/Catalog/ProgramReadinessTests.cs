@@ -41,6 +41,19 @@ public class ProgramReadinessTests
     }
 
     [Fact]
+    public void Details_use_the_singular_for_one()
+    {
+        var program = CatalogFixtures.Ready();
+        program.Content.Inclusions = ["Flight"];
+        program.Content.Tags = ["beach"];
+
+        var report = ProgramReadiness.Evaluate(program, CatalogFixtures.Gallery(count: 1), 1, CatalogFixtures.Today);
+        Assert.Equal("1 item", Check(report, "inclusions").Detail);
+        Assert.Equal("1 tag", Check(report, "tags").Detail);
+        Assert.Equal("1 image (at least 3)", Check(report, "gallery").Detail);
+    }
+
+    [Fact]
     public void Departures_that_already_started_do_not_count()
     {
         var program = CatalogFixtures.Ready();

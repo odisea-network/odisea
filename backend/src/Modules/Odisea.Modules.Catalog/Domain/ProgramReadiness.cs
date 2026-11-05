@@ -32,30 +32,30 @@ public static class ProgramReadiness
             Required("hotels", "At least one allowed hotel",
                 $"{program.Hotels.Count} allowed", program.Hotels.Count > 0),
             Required("summary", "Summary",
-                $"{Length(c.Summary)} characters (at least {MinSummaryLength})",
+                $"{Count(Length(c.Summary), "character")} (at least {MinSummaryLength})",
                 Length(c.Summary) >= MinSummaryLength),
             Required("cover", "Cover image",
                 cover is null ? "No cover chosen" : $"{cover.Width}×{cover.Height}", cover is not null),
             Required("inclusions", "What's included",
-                $"{c.Inclusions.Length} items", c.Inclusions.Length > 0),
+                Count(c.Inclusions.Length, "item"), c.Inclusions.Length > 0),
             Required("cancellation", "Cancellation policy",
                 Present(c.CancellationPolicy), !string.IsNullOrWhiteSpace(c.CancellationPolicy)),
 
             Recommended("title", "Title length",
-                $"{program.Name.Length} characters ({MinTitleLength}–{MaxTitleLength})",
+                $"{Count(program.Name.Length, "character")} ({MinTitleLength}–{MaxTitleLength})",
                 program.Name.Length is >= MinTitleLength and <= MaxTitleLength),
             Recommended("tagline", "Tagline", Present(c.Tagline), !string.IsNullOrWhiteSpace(c.Tagline)),
             Recommended("description", "Full description",
-                $"{Length(program.Description)} characters (at least {MinDescriptionLength})",
+                $"{Count(Length(program.Description), "character")} (at least {MinDescriptionLength})",
                 Length(program.Description) >= MinDescriptionLength),
             Recommended("highlights", "Highlights",
                 $"{c.Highlights.Length} (at least {MinHighlights})", c.Highlights.Length >= MinHighlights),
             Recommended("exclusions", "What's not included",
-                $"{c.Exclusions.Length} items", c.Exclusions.Length > 0),
+                Count(c.Exclusions.Length, "item"), c.Exclusions.Length > 0),
             Recommended("itinerary", "Day-by-day itinerary",
                 programDays > 0
-                    ? $"{itineraryDays} days described for a {programDays}-day program"
-                    : $"{itineraryDays} days described",
+                    ? $"{Count(itineraryDays, "day")} described for a {programDays}-day program"
+                    : $"{Count(itineraryDays, "day")} described",
                 programDays > 0 ? itineraryDays == programDays : itineraryDays > 0),
             Recommended("transport", "Transport",
                 c.TransportMode == TransportMode.Unspecified
@@ -77,13 +77,13 @@ public static class ProgramReadiness
                 Present(c.InsurancePolicy), !string.IsNullOrWhiteSpace(c.InsurancePolicy)),
             Recommended("children", "Child policy", Present(c.ChildPolicy), !string.IsNullOrWhiteSpace(c.ChildPolicy)),
             Recommended("gallery", "Gallery",
-                $"{images.Count} images (at least {MinGalleryImages})", images.Count >= MinGalleryImages),
+                $"{Count(images.Count, "image")} (at least {MinGalleryImages})", images.Count >= MinGalleryImages),
             Recommended("alt-text", "Alt text on every image",
                 images.Count == 0 ? "No images" : withoutAlt == 0 ? "All images have it" : $"{withoutAlt} without",
                 images.Count > 0 && withoutAlt == 0),
             Recommended("cover-size", "Cover at least " + MinCoverWidth + " px wide",
                 cover is null ? "No cover" : $"{cover.Width} px", cover is { Width: >= MinCoverWidth }),
-            Recommended("tags", "Tags", $"{c.Tags.Length} tags", c.Tags.Length > 0),
+            Recommended("tags", "Tags", Count(c.Tags.Length, "tag"), c.Tags.Length > 0),
         ];
 
         return new ReadinessReport(checks);
@@ -96,6 +96,8 @@ public static class ProgramReadiness
         new(code, title, detail, Required: false, passed);
 
     private static int Length(string? text) => text?.Trim().Length ?? 0;
+
+    private static string Count(int n, string noun) => $"{n} {noun}{(n == 1 ? "" : "s")}";
 
     private static string Present(string? text) => string.IsNullOrWhiteSpace(text) ? "Missing" : "Given";
 }
