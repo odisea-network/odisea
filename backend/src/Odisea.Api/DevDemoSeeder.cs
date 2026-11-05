@@ -25,6 +25,8 @@ public static class DevDemoSeeder
         var catalog = services.GetRequiredService<CatalogDbContext>();
         if (!await catalog.Programs.AnyAsync())
             await SeedCatalogAsync(catalog);
+        else
+            await BackfillProgramContentAsync(catalog);
 
         await SeedPricingAsync(services);
         await SeedAgencyAsync(services);
@@ -67,11 +69,13 @@ public static class DevDemoSeeder
 
         var program = new Odisea.Modules.Catalog.Domain.Program
         {
-            Name = "Antalya Easter 2027",
+            Name = DemoProgram.Name,
+            Slug = DemoProgram.Slug,
             DestinationId = antalya.Id,
             ProviderCode = MockReservationProvider.Code,
             Season = "Easter 2027",
-            Description = "7 nights, charter flight, transfers and insurance included.",
+            Description = DemoProgram.Description,
+            Content = DemoProgram.Content(),
         };
         program.Departures.Add(new ProgramDeparture
         {
@@ -82,8 +86,36 @@ public static class DevDemoSeeder
         });
         foreach (var hotel in hotels)
             program.Hotels.Add(new ProgramHotel { ProgramId = program.Id, HotelId = hotel.Id });
-        program.Publish();
+        program.Itinerary.AddRange(DemoProgram.Itinerary(program.Id));
+        var images = DemoProgram.Images(program.Id).ToList();
+        catalog.ProgramImages.AddRange(images);
+
+        program.Publish(ProgramReadiness.Evaluate(
+            program,
+            [.. images.Select(i => new ProgramImageInfo(i.Id, i.IsCover, i.Width, i.Height, i.AltText is not null))],
+            mappedHotels: hotels.Count,
+            DateOnly.FromDateTime(DateTime.UtcNow)));
         catalog.Programs.Add(program);
+        await catalog.SaveChangesAsync();
+    }
+
+    /// Gives the demo program seeded before content existed its text, itinerary and pictures.
+    private static async Task BackfillProgramContentAsync(CatalogDbContext catalog)
+    {
+        var program = await catalog.Programs
+            .Include(p => p.Itinerary)
+            .FirstOrDefaultAsync(p => p.Name == DemoProgram.Name && p.Content.Summary == null);
+        if (program is null)
+            return;
+
+        program.Content = DemoProgram.Content();
+        program.Description = DemoProgram.Description;
+        if (!await catalog.Programs.AnyAsync(p => p.Slug == DemoProgram.Slug))
+            program.Slug = DemoProgram.Slug;
+        if (program.Itinerary.Count == 0)
+            catalog.ProgramItineraryDays.AddRange(DemoProgram.Itinerary(program.Id));
+        if (!await catalog.ProgramImages.AnyAsync(i => i.ProgramId == program.Id))
+            catalog.ProgramImages.AddRange(DemoProgram.Images(program.Id));
         await catalog.SaveChangesAsync();
     }
 
