@@ -12,6 +12,8 @@ public class CatalogDbContext(DbContextOptions<CatalogDbContext> options) : DbCo
     public DbSet<Domain.Program> Programs => Set<Domain.Program>();
     public DbSet<ProgramDeparture> ProgramDepartures => Set<ProgramDeparture>();
     public DbSet<ProgramHotel> ProgramHotels => Set<ProgramHotel>();
+    public DbSet<ProgramItineraryDay> ProgramItineraryDays => Set<ProgramItineraryDay>();
+    public DbSet<ProgramImage> ProgramImages => Set<ProgramImage>();
     public DbSet<HotelMapping> HotelMappings => Set<HotelMapping>();
     public DbSet<LocationMapping> LocationMappings => Set<LocationMapping>();
 
