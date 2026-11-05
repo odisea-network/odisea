@@ -60,7 +60,7 @@ Open **http://localhost:8080/swagger**, call `POST /api/v1/auth/login` (dev: `ad
 | `backend/src/**/README.md` | Each project's purpose and relations |
 | [Project board](https://github.com/orgs/odisea-network/projects/1) | Task-level source of truth |
 
-Repo workflow skills for Claude Code live in [.claude/skills/](.claude/skills/) (`run-stack`, `add-migration`, `new-module`, `pick-task`, `start-feature`, `commit-changes`, `finish-feature`).
+Repo workflow skills for Claude Code live in [.claude/skills/](.claude/skills/) (`run-stack`, `add-migration`, `new-module`, `pick-task`, `start-feature`, `commit-changes`, `finish-feature`), plus `create-program`, which turns an operator's brief into a complete program through the API (content guide, spec format, import script).
 
 ## Status
 
