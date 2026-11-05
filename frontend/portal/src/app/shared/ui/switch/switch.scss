@@ -1,0 +1,45 @@
+:host {
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: rgba(118, 118, 128, 0.3);
+  position: relative;
+  cursor: pointer;
+  flex: none;
+  vertical-align: middle;
+  transition: background 0.2s;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+  }
+}
+
+:host(.sw--on) {
+  background: var(--primary);
+
+  &::after {
+    transform: translateX(18px);
+  }
+}
+
+:host(.sw--disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  :host::after {
+    transition: none;
+  }
+}

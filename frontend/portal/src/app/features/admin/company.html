@@ -1,0 +1,49 @@
+<ui-page-header
+  title="Company profile"
+  [crumbs]="[{ label: 'Settings' }, { label: 'Company' }]"
+  sub="Your legal requisites. They are printed as the supplier on every invoice and credit note."
+>
+  <app-settings-nav actions />
+</ui-page-header>
+
+@if (loaded.error()) {
+  <ui-banner tone="bad">Couldn’t load the company profile. Check your connection and reload.</ui-banner>
+} @else if (loaded.isLoading()) {
+  <ui-card><ui-skeleton [lines]="5" /></ui-card>
+} @else {
+  @if (isNew()) {
+    <ui-banner tone="warn"><b>No company profile yet.</b> Invoices cannot be issued until it is saved.</ui-banner>
+  }
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+  <ui-card class="form">
+    <form id="company-form" (ngSubmit)="save()">
+      <section class="section">
+        <h2 class="h2">Legal entity</h2>
+        <ui-field label="Legal name" for="co-name"><input uiInput id="co-name" name="name" [(ngModel)]="form.name" required maxlength="200" /></ui-field>
+        <div class="two">
+          <ui-field label="EIK" for="co-eik" hint="9 digits (13 for branches)"><input uiInput id="co-eik" name="eik" class="mono" [(ngModel)]="form.eik" required /></ui-field>
+          <ui-field label="VAT number" for="co-vat" optional hint="BG + 9–10 digits"><input uiInput id="co-vat" name="vatNumber" class="mono" [(ngModel)]="form.vatNumber" placeholder="BG…" /></ui-field>
+        </div>
+        <ui-field label="Address" for="co-address"><input uiInput id="co-address" name="address" [(ngModel)]="form.address" required maxlength="300" /></ui-field>
+        <div class="two">
+          <ui-field label="City" for="co-city"><input uiInput id="co-city" name="city" [(ngModel)]="form.city" required maxlength="100" /></ui-field>
+          <ui-field label="MOL" for="co-mol" hint="Person in charge, as registered"><input uiInput id="co-mol" name="mol" [(ngModel)]="form.mol" required maxlength="200" /></ui-field>
+        </div>
+      </section>
+      <hr class="hr" />
+      <section class="section">
+        <h2 class="h2">Bank account</h2>
+        <p class="small muted">Printed on invoices so agencies know where to pay.</p>
+        <div class="two">
+          <ui-field label="IBAN" for="co-iban" optional><input uiInput id="co-iban" name="iban" class="mono" [(ngModel)]="form.iban" placeholder="BG80 BNBG 9661 1020 3456 78" /></ui-field>
+          <ui-field label="Bank" for="co-bank" optional><input uiInput id="co-bank" name="bankName" [(ngModel)]="form.bankName" maxlength="100" /></ui-field>
+        </div>
+      </section>
+      <div class="actions">
+        <button type="submit" uiButton="primary" [disabled]="busy() || !valid()">{{ busy() ? 'Saving…' : 'Save profile' }}</button>
+      </div>
+    </form>
+  </ui-card>
+}

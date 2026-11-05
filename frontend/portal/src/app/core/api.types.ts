@@ -397,3 +397,97 @@ export interface CreateDepartureRequest {
   endDate: string;
   transportNote: string | null;
 }
+
+// --- Pricing admin (served by /api/v1/pricing-rules, /api/v1/exchange-rates) ---
+
+export type RuleScope = 'Global' | 'Program' | 'Agency';
+export type RuleKind = 'Markup' | 'Fee' | 'Commission';
+export type RuleValueType = 'Percent' | 'FixedAmount';
+
+export interface PricingRuleDto {
+  id: string;
+  name: string;
+  scope: RuleScope | string;
+  scopeId: string | null;
+  kind: RuleKind | string;
+  valueType: RuleValueType | string;
+  value: number;
+  priority: number;
+  validFrom: string | null;
+  validTo: string | null;
+  enabled: boolean;
+}
+
+export interface SavePricingRuleRequest {
+  name: string;
+  scope: RuleScope;
+  scopeId: string | null;
+  kind: RuleKind;
+  valueType: RuleValueType;
+  value: number;
+  priority: number;
+  validFrom: string | null;
+  validTo: string | null;
+  enabled: boolean;
+}
+
+export interface ExchangeRateDto {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  asOf: string;
+}
+
+export interface SaveExchangeRateRequest {
+  fromCurrency: string;
+  rate: number;
+  asOf: string;
+}
+
+// --- Documents admin (served by /api/v1/documents, /api/v1/company-profile) ---
+
+export interface PartyDto {
+  name: string;
+  eik: string;
+  vatNumber: string | null;
+  address: string;
+  city: string;
+  mol: string | null;
+}
+
+/** The operator's view carries both parties and the VAT lines; agencies get the trimmed FinancialDocumentDto. */
+export interface OperatorDocumentDto extends FinancialDocumentDto {
+  supplier: PartyDto;
+  recipient: PartyDto;
+  relatedDocumentDate: string | null;
+  vatTreatment: string;
+  vatRatePercent: number;
+  taxBase: number;
+  vatAmount: number;
+  legalNote: string | null;
+  annulmentReason: string | null;
+}
+
+export interface IssueInvoiceRequest {
+  bookingId: string;
+  vatTreatment: string;
+  exemptionGrounds: string | null;
+  dueInDays: number;
+}
+
+export interface IssueCreditNoteRequest {
+  invoiceId: string;
+  reason: string;
+}
+
+export interface CompanyProfileDto {
+  name: string;
+  eik: string;
+  vatNumber: string | null;
+  address: string;
+  city: string;
+  mol: string;
+  iban: string | null;
+  bankName: string | null;
+}

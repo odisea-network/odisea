@@ -1,0 +1,148 @@
+<ui-page-header title="Documents" sub="Invoices and credit notes in a gapless series. Documents are never deleted; annulling keeps the number.">
+  <button actions type="button" uiButton="primary" (click)="openIssue()"><ui-icon name="plus" />Issue invoice</button>
+</ui-page-header>
+
+@if (error(); as message) {
+  <ui-banner tone="bad">{{ message }}</ui-banner>
+}
+
+<ui-card flush>
+  <div class="toolbar">
+    <select uiInput size="sm" class="filter" aria-label="Type" [ngModel]="kind()" (ngModelChange)="kind.set($event)">
+      <option value="">All types</option>
+      <option value="Invoice">Invoices</option>
+      <option value="CreditNote">Credit notes</option>
+      <option value="DebitNote">Debit notes</option>
+      <option value="Proforma">Proformas</option>
+    </select>
+    <select uiInput size="sm" class="filter" aria-label="Agency" [ngModel]="agencyId()" (ngModelChange)="agencyId.set($event)">
+      <option value="">All agencies</option>
+      @for (a of agencies.value(); track a.id) {
+        <option [value]="a.id">{{ a.name }}</option>
+      }
+    </select>
+    <div class="grow"></div>
+    @if (documents.value(); as list) {
+      <span class="small muted num">{{ list.length }} {{ list.length === 1 ? 'document' : 'documents' }}</span>
+    }
+  </div>
+
+  @if (documents.error()) {
+    <div class="pad">
+      <ui-empty-state tone="error" icon="refresh" title="Couldn't load documents">
+        <button type="button" uiButton size="sm" (click)="documents.reload()">Retry</button>
+      </ui-empty-state>
+    </div>
+  } @else if (documents.isLoading() && !documents.hasValue()) {
+    <div class="pad"><ui-skeleton [lines]="5" /></div>
+  } @else if (documents.value(); as list) {
+    @if (list.length === 0) {
+      <div class="pad">
+        <ui-empty-state icon="file" title="No documents yet" description="Issue the first invoice for a confirmed booking.">
+          <button type="button" uiButton="primary" size="sm" (click)="openIssue()">Issue invoice</button>
+        </ui-empty-state>
+      </div>
+    } @else {
+      <div class="tw" [class.tw--stale]="documents.isLoading()">
+        <table class="tbl">
+          <thead>
+            <tr><th>Number</th><th>Type</th><th>Recipient</th><th>Booking</th><th>Date</th><th>VAT treatment</th><th class="r">Amount</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr>
+          </thead>
+          <tbody>
+            @for (d of list; track d.id) {
+              <tr [class.annulled]="d.status === 'Annulled'">
+                <td class="mono strong">{{ d.number }}</td>
+                <td>
+                  {{ kindLabel(d.kind) }}
+                  @if (d.relatedDocumentNumber) {
+                    <div class="sub-line">→ № {{ d.relatedDocumentNumber }}</div>
+                  }
+                </td>
+                <td>{{ d.recipient.name }}<div class="sub-line mono">{{ d.recipient.eik }}</div></td>
+                <td class="num">{{ d.bookingRef ?? '—' }}</td>
+                <td class="num">{{ d.issueDate | odDate }}</td>
+                <td class="small">{{ vatLabel(d.vatTreatment) }}</td>
+                <td class="r m strong">{{ d.total | money: d.currency }}</td>
+                <td>
+                  @if (d.status === 'Annulled') {
+                    <ui-pill>Annulled</ui-pill>
+                  } @else {
+                    <ui-pill tone="ok">Issued</ui-pill>
+                  }
+                </td>
+                <td class="r">
+                  <div class="actions">
+                    <button type="button" uiButton="ghost" size="sm" (click)="download(d)" [disabled]="downloading() === d.id" [attr.aria-label]="'Download PDF ' + d.number">
+                      <ui-icon name="download" />PDF
+                    </button>
+                    @if (d.status === 'Issued' && d.kind === 'Invoice') {
+                      <button type="button" uiButton="ghost" size="sm" (click)="openCredit(d)" [disabled]="busy()">Credit note</button>
+                    }
+                    @if (d.status === 'Issued') {
+                      <button type="button" uiButton="ghost" size="sm" class="danger-text" (click)="annul(d)" [disabled]="busy()">Annul</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</ui-card>
+
+<ui-banner tone="info">A credit note can only be issued against an invoice whose booking has been cancelled; annulling corrects a document issued by mistake.</ui-banner>
+
+<ui-sheet [(open)]="issueOpen" title="Issue invoice" sub="For a confirmed booking. The number is the next in the series.">
+  <form id="issue-invoice" (ngSubmit)="issueInvoice()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field label="Booking" for="iv-booking" hint="Confirmed bookings only">
+      <select uiInput id="iv-booking" name="bookingId" [(ngModel)]="issue.bookingId">
+        <option value="" disabled>{{ confirmed.isLoading() ? 'Loading…' : 'Choose a booking…' }}</option>
+        @for (b of confirmed.value()?.items; track b.id) {
+          <option [value]="b.id">{{ b.ref }} · {{ agencyName(b.agencyId) }} · {{ b.hotelName }}</option>
+        }
+      </select>
+    </ui-field>
+    <ui-field label="VAT treatment" for="iv-vat">
+      <select uiInput id="iv-vat" name="vatTreatment" [(ngModel)]="issue.vatTreatment">
+        @for (o of vatOptions; track o.value) {
+          <option [value]="o.value">{{ o.label }}</option>
+        }
+      </select>
+    </ui-field>
+    @if (issue.vatTreatment === 'Exempt') {
+      <ui-field label="Exemption grounds" for="iv-grounds" hint="The legal basis printed on the invoice">
+        <input uiInput id="iv-grounds" name="exemptionGrounds" [(ngModel)]="issue.exemptionGrounds" maxlength="300" required />
+      </ui-field>
+    }
+    <ui-field label="Due in days" for="iv-due" hint="0 to 60">
+      <input uiInput id="iv-due" name="dueInDays" type="number" min="0" max="60" class="m" [(ngModel)]="issue.dueInDays" required />
+    </ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="issueOpen.set(false)">Cancel</button>
+  <button sheetActions type="submit" form="issue-invoice" uiButton="primary" [disabled]="busy() || !issueValid()">{{ busy() ? 'Issuing…' : 'Issue invoice' }}</button>
+</ui-sheet>
+
+<ui-sheet [open]="creditFor() !== null" (openChange)="closeCredit($event)" [title]="'Credit note for ' + (creditFor()?.number ?? '')" sub="Reverses the invoice for a cancelled booking.">
+  <form id="issue-credit" (ngSubmit)="issueCreditNote()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    @if (creditFor(); as inv) {
+      <dl class="kv inset facts">
+        <dt>Invoice</dt><dd class="mono">{{ inv.number }}</dd>
+        <dt>Recipient</dt><dd>{{ inv.recipient.name }}</dd>
+        <dt>Amount</dt><dd class="m">{{ inv.total | money: inv.currency }}</dd>
+      </dl>
+    }
+    <ui-field label="Reason" for="cn-reason" hint="Printed on the credit note">
+      <textarea uiInput id="cn-reason" name="reason" [(ngModel)]="creditReason" maxlength="300" required></textarea>
+    </ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="creditFor.set(null)">Cancel</button>
+  <button sheetActions type="submit" form="issue-credit" uiButton="primary" [disabled]="busy() || !creditReason.trim()">Issue credit note</button>
+</ui-sheet>
