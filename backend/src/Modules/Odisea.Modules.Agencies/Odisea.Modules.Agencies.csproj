@@ -6,6 +6,7 @@
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" VersionOverride="10.0.14" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
