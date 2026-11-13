@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Booking.Domain;
@@ -52,7 +53,9 @@ public class OperatorBookingServiceTests
             Task.FromResult($"ODI-{year}-{++_n:D6}");
     }
 
+    private readonly string _dbName = Guid.NewGuid().ToString();
     private readonly BookingDbContext _db;
+    private readonly ScriptedProvider _supplier;
     private readonly FakeClock _clock = new();
     private readonly MockProviderOptions _mockOptions = new();
     private readonly OfferTokenProtector _protector = new(TestDataProtection.Provider);
@@ -67,9 +70,7 @@ public class OperatorBookingServiceTests
 
     public OperatorBookingServiceTests()
     {
-        _db = new BookingDbContext(
-            new DbContextOptionsBuilder<BookingDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options,
-            TestDataProtection.Provider);
+        _db = NewContext();
         var pricing = new PricingDbContext(new DbContextOptionsBuilder<PricingDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
         pricing.PricingRules.Add(new PricingRule
@@ -79,7 +80,8 @@ public class OperatorBookingServiceTests
         pricing.SaveChanges();
 
         _mock = new MockReservationProvider(Options.Create(_mockOptions), _clock);
-        _providers = new ProviderRegistry([_mock], new IntegrationsDbContext(
+        _supplier = new ScriptedProvider(_mock);
+        _providers = new ProviderRegistry([_supplier], new IntegrationsDbContext(
             new DbContextOptionsBuilder<IntegrationsDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options));
         _target = new BookingTarget(
@@ -90,9 +92,17 @@ public class OperatorBookingServiceTests
         _agencyService = new BookingService(
             _db, _providers, _protector, new PriceCalculator(pricing),
             new FakeAgencyLookup(), new FakeProgramLookup(_target), new FakeRefGenerator(),
-            Options.Create(new BookingOptions()), _clock);
-        _service = new OperatorBookingService(_db, _providers, _clock);
+            Options.Create(new BookingOptions()), _clock, Releases(_db));
+        _service = new OperatorBookingService(_db, Releases(_db), _clock);
     }
+
+    /// A second context over the same in-memory store: what another request would see.
+    private BookingDbContext NewContext() => new(
+        new DbContextOptionsBuilder<BookingDbContext>().UseInMemoryDatabase(_dbName).Options,
+        TestDataProtection.Provider);
+
+    private ProviderReleaseService Releases(BookingDbContext db) =>
+        new(db, _providers, _clock, NullLogger<ProviderReleaseService>.Instance);
 
     private async Task<BookingDto> DraftAsync()
     {
@@ -222,6 +232,117 @@ public class OperatorBookingServiceTests
         Assert.Equal("Agency asked to withdraw", rejected.History[^1].Note);
         await Assert.ThrowsAsync<InvalidBookingTransitionException>(
             () => _service.ConfirmAsync(booking.Id, _admin, CancellationToken.None));
+    }
+
+    private static Task<ProviderCancelResult> Refuse(string _) =>
+        Task.FromResult(new ProviderCancelResult(false, "Non-refundable after the option date"));
+
+    [Fact]
+    public async Task Reject_saves_the_closed_status_before_asking_the_supplier()
+    {
+        var booking = await AwaitingPaymentAsync();
+        BookingStatus? seenWhileReleasing = null;
+        _supplier.OnCancel = async _ =>
+        {
+            await using var other = NewContext();
+            seenWhileReleasing = (await other.Bookings.SingleAsync()).Status;
+            return new ProviderCancelResult(true, null);
+        };
+
+        var rejected = await _service.RejectAsync(booking.Id, "Overbooked", _admin, CancellationToken.None);
+
+        Assert.Equal(BookingStatus.Rejected, seenWhileReleasing);
+        Assert.Equal(("Released", 1), (rejected.ProviderRelease, rejected.ProviderReleaseAttempts));
+    }
+
+    [Fact]
+    public async Task A_supplier_refusal_closes_the_booking_and_waits_for_an_operator()
+    {
+        var booking = await AwaitingPaymentAsync();
+        _supplier.OnCancel = Refuse;
+
+        var rejected = await _service.RejectAsync(booking.Id, "Overbooked", _admin, CancellationToken.None);
+
+        Assert.Equal("Rejected", rejected.Status);
+        Assert.Equal("Failed", rejected.ProviderRelease);
+        Assert.Equal("Non-refundable after the option date", rejected.ProviderReleaseError);
+
+        // Sorted out with the supplier; the operator retries and it goes through.
+        _supplier.OnCancel = null;
+        var retried = await _service.RetryProviderReleaseAsync(booking.Id, CancellationToken.None);
+        Assert.Equal(("Released", 2), (retried.ProviderRelease, retried.ProviderReleaseAttempts));
+        Assert.Null(retried.ProviderReleaseError);
+    }
+
+    [Fact]
+    public async Task A_refusal_for_a_hold_the_supplier_already_dropped_counts_as_released()
+    {
+        var booking = await AwaitingPaymentAsync();
+        _supplier.OnCancel = Refuse;
+        _supplier.StateAfterRefusal = ProviderBookingState.Cancelled;
+
+        var cancelled = await _service.CancelAsync(booking.Id, "Customer withdrew", _admin, CancellationToken.None);
+
+        Assert.Equal("Released", cancelled.ProviderRelease);
+    }
+
+    [Fact]
+    public async Task An_unreachable_supplier_leaves_the_release_pending_without_failing_the_request()
+    {
+        var booking = await AwaitingPaymentAsync();
+        _supplier.OnCancel = _ => throw new HttpRequestException("503 from https://supplier.example/cancel?key=secret");
+
+        var cancelled = await _service.CancelAsync(booking.Id, "Customer withdrew", _admin, CancellationToken.None);
+
+        Assert.Equal("Cancelled", cancelled.Status);
+        Assert.Equal(("Pending", 1), (cancelled.ProviderRelease, cancelled.ProviderReleaseAttempts));
+        // Supplier error text can carry URLs and keys; only the exception type is kept.
+        Assert.Equal("The supplier could not be reached (HttpRequestException).", cancelled.ProviderReleaseError);
+    }
+
+    [Fact]
+    public async Task Agency_cancel_closes_first_and_a_refusal_no_longer_keeps_it_open()
+    {
+        var booking = await AwaitingPaymentAsync();
+        _supplier.OnCancel = Refuse;
+
+        var cancelled = await _agencyService.CancelAsync(booking.Id, _agencyId, _agent, CancellationToken.None);
+
+        Assert.Equal("Cancelled", cancelled.Status);
+        Assert.Equal("Failed", (await _service.GetAsync(booking.Id, CancellationToken.None))!.ProviderRelease);
+    }
+
+    [Fact]
+    public async Task A_hold_granted_after_a_rescue_cancel_is_released_not_orphaned()
+    {
+        var draft = await DraftAsync();
+        await _agencyService.RePriceAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
+        _supplier.DuringBook = async () =>
+        {
+            // An operator gives up on the stuck submission while the supplier is still answering.
+            await using var other = NewContext();
+            await new OperatorBookingService(other, Releases(other), _clock)
+                .CancelAsync(draft.Id, "Stuck in submission", _admin, CancellationToken.None);
+        };
+
+        var submitted = await _agencyService.SubmitAsync(draft.Id, _agencyId, _agent, CancellationToken.None);
+
+        Assert.Equal("Cancelled", submitted.Status);
+        var stored = await _service.GetAsync(draft.Id, CancellationToken.None);
+        Assert.NotNull(stored!.ProviderBookingRef);
+        Assert.Equal("Released", stored.ProviderRelease);
+        Assert.Equal([stored.ProviderBookingRef], _supplier.CancelCalls);
+        Assert.DoesNotContain(stored.History, h => h.To == "AwaitingPayment");
+    }
+
+    [Fact]
+    public async Task Retry_needs_a_release_to_retry()
+    {
+        var booking = await AwaitingPaymentAsync();
+
+        await Assert.ThrowsAsync<BookingStateException>(
+            () => _service.RetryProviderReleaseAsync(booking.Id, CancellationToken.None));
+        Assert.Empty(_supplier.CancelCalls);
     }
 
     [Fact]

@@ -37,6 +37,10 @@ public class BookingDbContext(DbContextOptions<BookingDbContext> options, IDataP
         booking.Property(b => b.SellAmount).HasPrecision(18, 2);
         booking.Property(b => b.CommissionAmount).HasPrecision(18, 2);
         booking.Property(b => b.BreakdownJson).HasColumnType("jsonb");
+        booking.Property(b => b.ProviderRelease).HasConversion<string>().HasMaxLength(10);
+        booking.Property(b => b.ProviderReleaseError).HasMaxLength(Domain.Booking.MaxProviderReleaseErrorLength);
+        // The maintenance job looks for releases still to do; almost every row is 'None'.
+        booking.HasIndex(b => b.ProviderRelease).HasFilter("provider_release IN ('Pending', 'Failed')");
         booking.HasMany(b => b.Passengers).WithOne().HasForeignKey(p => p.BookingId);
         booking.HasMany(b => b.Payments).WithOne().HasForeignKey(p => p.BookingId);
         booking.HasMany(b => b.History).WithOne().HasForeignKey(h => h.BookingId);
