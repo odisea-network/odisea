@@ -54,6 +54,9 @@ public class Booking : Entity
     /// Set when the provider holds the reservation; the operator must have the money by then.
     public DateTimeOffset? PaymentDueAt { get; set; }
 
+    /// Set once the agency has been reminded that the payment deadline is near.
+    public DateTimeOffset? PaymentReminderSentAt { get; set; }
+
     /// Optimistic concurrency token mapped to Postgres xmin: two operators cannot both act on
     /// the same stale row (second SaveChanges fails with DbUpdateConcurrencyException → 409).
     public uint Version { get; set; }

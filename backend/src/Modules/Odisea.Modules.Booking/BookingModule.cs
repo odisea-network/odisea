@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Odisea.Modules.Booking.Features.Bookings;
+using Odisea.Modules.Booking.Features.Maintenance;
 using Odisea.Modules.Booking.Infrastructure;
 
 namespace Odisea.Modules.Booking;
@@ -29,6 +30,13 @@ public static class BookingModule
         services.AddScoped<ProviderReleaseService>();
         services.AddScoped<OperatorDashboardService>();
         services.AddScoped<PublicApi.IBookingLookup, BookingLookup>();
+
+        services.AddOptions<BookingMaintenanceOptions>()
+            .Bind(configuration.GetSection(BookingMaintenanceOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddScoped<BookingMaintenanceRun>();
+        services.AddHostedService<BookingMaintenanceJob>();
 
         return services;
     }
