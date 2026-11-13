@@ -139,8 +139,8 @@ export class AdminBookingDetail {
         icon: 'refresh', tone: 'warn',
         title: 'Giving the hold back to the supplier',
         sub: b.providerReleaseError
-          ? `The last attempt failed: ${b.providerReleaseError} Retry once the supplier is reachable.`
-          : 'The release has not reached the supplier yet.',
+          ? `The last attempt failed: ${b.providerReleaseError} It is retried automatically (${b.providerReleaseAttempts} ${b.providerReleaseAttempts === 1 ? 'attempt' : 'attempts'} so far); you can retry now.`
+          : 'The release has not reached the supplier yet. It is retried automatically.',
         action: { label: 'Retry release', run: () => void this.retryRelease(), disabledReason: null },
       };
     }

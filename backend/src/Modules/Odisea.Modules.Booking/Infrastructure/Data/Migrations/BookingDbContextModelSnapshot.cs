@@ -104,6 +104,10 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("payment_due_at");
 
+                    b.Property<DateTimeOffset?>("PaymentReminderSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("payment_reminder_sent_at");
+
                     b.Property<Guid>("ProgramId")
                         .HasColumnType("uuid")
                         .HasColumnName("program_id");
