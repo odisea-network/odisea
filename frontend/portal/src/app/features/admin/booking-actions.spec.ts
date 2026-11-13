@@ -2,9 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { operatorActions, parseBreakdown } from './booking-actions';
 
 const now = new Date('2026-10-24T12:00:00Z');
-const awaiting = { status: 'AwaitingPayment', sellAmount: 1000, balanceDue: 1000, paymentDueAt: '2026-10-27T12:00:00Z' };
+const awaiting = {
+  status: 'AwaitingPayment', sellAmount: 1000, balanceDue: 1000, paymentDueAt: '2026-10-27T12:00:00Z',
+  providerRelease: 'None' as const,
+};
 
 describe('operatorActions', () => {
+  it('offers a release retry to any operator while the supplier still has to let go', () => {
+    expect(operatorActions(awaiting, false, now).retryRelease).toBe(false);
+    expect(operatorActions({ ...awaiting, status: 'Cancelled', providerRelease: 'Pending' }, false, now).retryRelease).toBe(true);
+    expect(operatorActions({ ...awaiting, status: 'Rejected', providerRelease: 'Failed' }, false, now).retryRelease).toBe(true);
+    expect(operatorActions({ ...awaiting, status: 'Expired', providerRelease: 'Released' }, false, now).retryRelease).toBe(false);
+  });
+
   it('lets any operator record payments and reject while awaiting payment, but not confirm', () => {
     const actions = operatorActions(awaiting, false, now);
     expect(actions.recordPayment).toBe(true);

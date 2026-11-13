@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Odisea.Modules.Agencies.PublicApi;
 using Odisea.Modules.Booking.Domain;
@@ -95,18 +96,23 @@ public class BookingServiceTests
             Guid.NewGuid(), "Mock Palace");
     }
 
-    private BookingService Service(bool agencyActive = true, bool resolvable = true) => new(
-        _db,
-        new ProviderRegistry([_mock], new IntegrationsDbContext(
+    private BookingService Service(bool agencyActive = true, bool resolvable = true)
+    {
+        var providers = new ProviderRegistry([_mock], new IntegrationsDbContext(
             new DbContextOptionsBuilder<IntegrationsDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options)),
-        _protector,
-        new PriceCalculator(_pricing),
-        new FakeAgencyLookup(agencyActive),
-        new FakeProgramLookup(resolvable ? _target : null),
-        new FakeRefGenerator(),
-        Options.Create(new BookingOptions()),
-        _clock);
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options));
+        return new(
+            _db,
+            providers,
+            _protector,
+            new PriceCalculator(_pricing),
+            new FakeAgencyLookup(agencyActive),
+            new FakeProgramLookup(resolvable ? _target : null),
+            new FakeRefGenerator(),
+            Options.Create(new BookingOptions()),
+            _clock,
+            new ProviderReleaseService(_db, providers, _clock, NullLogger<ProviderReleaseService>.Instance));
+    }
 
     private async Task<string> ProtectedOfferTokenAsync(Guid? agencyId = null, Guid? hotelId = null, int adults = 2)
     {

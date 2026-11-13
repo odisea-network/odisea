@@ -55,6 +55,24 @@ public class AdminBookingAuthorizationTests(OdiseaApiFactory factory)
     }
 
     [Fact]
+    public async Task Reject_records_the_supplier_release_and_retry_needs_something_to_retry()
+    {
+        var agent = factory.ClientAs(TestIdentity.Agent);
+        var ops = factory.ClientAs(TestIdentity.Operator);
+        var booking = await AgencyFlow.SubmittedBookingAsync(agent);
+
+        var rejected = await ops.PostAsJsonAsync($"/api/v1/admin/bookings/{booking.Id}/reject",
+            new OperatorNoteRequest("No availability after all"), Json.Options);
+        await rejected.ShouldBeAsync(HttpStatusCode.OK);
+        var stored = await OperatorFlow.GetAsync(ops, booking.Id);
+        Assert.Equal(("Rejected", "Released", 1), (stored.Status, stored.ProviderRelease, stored.ProviderReleaseAttempts));
+
+        var retry = $"/api/v1/admin/bookings/{booking.Id}/provider-release/retry";
+        await (await agent.PostAsync(retry, null)).ShouldBeAsync(HttpStatusCode.Forbidden);
+        await (await ops.PostAsync(retry, null)).ShouldBeAsync(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
     public async Task Unknown_bookings_are_404_for_operators()
     {
         var admin = factory.ClientAs(TestIdentity.Admin);

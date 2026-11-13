@@ -21,7 +21,8 @@ public class BookingService(
     IProgramLookup programLookup,
     IBookingRefGenerator refGenerator,
     IOptions<BookingOptions> options,
-    IClock clock)
+    IClock clock,
+    ProviderReleaseService releases)
 {
     public async Task<BookingDto> CreateDraftAsync(
         CreateBookingRequest request, Guid agencyId, BookingActor actor, CancellationToken ct)
@@ -135,7 +136,8 @@ public class BookingService(
     /// purpose: PendingConfirmation is persisted BEFORE the provider call, so a crash in between
     /// leaves a visible row operators can reconcile instead of a silently lost reservation.
     /// Provider exceptions (as opposed to a declined result) therefore leave the booking in
-    /// PendingConfirmation by design.
+    /// PendingConfirmation by design. An operator may close the booking while the supplier call
+    /// is in flight; a hold granted meanwhile is then released instead of being orphaned.
     public async Task<BookingDto> SubmitAsync(
         Guid bookingId, Guid agencyId, BookingActor actor, CancellationToken ct)
     {
@@ -156,6 +158,10 @@ public class BookingService(
         var result = await provider.BookAsync(
             new ProviderBookingRequest(booking.OfferToken, passengers, booking.Ref), ct);
 
+        await db.Entry(booking).ReloadAsync(ct);
+        if (booking.Status != BookingStatus.PendingConfirmation)
+            return await ReleaseLateHoldAsync(booking, result, ct);
+
         if (result.Success)
         {
             var dueAt = PaymentDeadline.Compute(clock.UtcNow, booking.CheckIn, options.Value);
@@ -169,7 +175,32 @@ public class BookingService(
             Transition(booking, BookingStatus.Failed, BookingActor.System, result.FailureReason);
         }
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException) when (result.Success)
+        {
+            // The same race, lost in the instant between the check above and this save.
+            db.ChangeTracker.Clear();
+            var current = await LoadOwnedAsync(bookingId, agencyId, ct);
+            if (current.Status == BookingStatus.PendingConfirmation)
+                throw;
+            return await ReleaseLateHoldAsync(current, result, ct);
+        }
+        return booking.ToDto();
+    }
+
+    private async Task<BookingDto> ReleaseLateHoldAsync(
+        Domain.Booking booking, ProviderBookingResult result, CancellationToken ct)
+    {
+        if (result.Success && result.ProviderBookingRef is { } providerRef)
+        {
+            booking.ProviderBookingRef = providerRef;
+            booking.RequestProviderRelease(clock.UtcNow);
+            await db.SaveChangesAsync(ct);
+            await releases.ReleaseAsync(booking, ct);
+        }
         return booking.ToDto();
     }
 
@@ -186,16 +217,12 @@ public class BookingService(
             throw new BookingStateException(
                 "Payments have already been recorded for this reservation; ask the operator to cancel and refund.");
 
-        if (booking.ProviderBookingRef is { } providerRef)
-        {
-            var result = await providers.Get(booking.ProviderCode).CancelAsync(providerRef, ct);
-            if (!result.Success)
-                throw new BookingValidationException(
-                    $"The provider refused the cancellation: {result.FailureReason}");
-        }
-
+        // Status first, supplier second: see ProviderReleaseService. A supplier refusal no longer
+        // keeps the reservation open; the operator sees the failed release and resolves it.
         Transition(booking, BookingStatus.Cancelled, actor, "Cancelled by the agency");
+        booking.RequestProviderRelease(clock.UtcNow);
         await db.SaveChangesAsync(ct);
+        await releases.ReleaseAsync(booking, ct);
         return booking.ToDto();
     }
 
