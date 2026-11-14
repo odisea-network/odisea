@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Odisea.Api;
 using Odisea.Modules.Agencies;
 using Odisea.Modules.Agencies.PublicApi;
@@ -118,19 +118,9 @@ try
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
         });
-        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
         {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer",
-                    },
-                },
-                []
-            },
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
         });
         // A second requirement object means "either": external agencies use a key, portal users a token.
         options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
@@ -140,19 +130,9 @@ try
             In = ParameterLocation.Header,
             Description = "Per-agency API key for external partners (odk_live_…)",
         });
-        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
         {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "ApiKey",
-                    },
-                },
-                []
-            },
+            [new OpenApiSecuritySchemeReference("ApiKey", document)] = [],
         });
     });
 
