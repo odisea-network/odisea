@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -34,6 +34,7 @@ export interface TimelineItem {
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './timeline.scss',
 })
 export class Timeline {

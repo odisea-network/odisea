@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ProgramImageDto } from '../../core/api.types';
 import { ButtonDirective, Icon } from '../../shared/ui';
 
@@ -30,6 +30,7 @@ import { ButtonDirective, Icon } from '../../shared/ui';
       }
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program-photos.scss',
 })
 export class ProgramPhotos {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 /** The Settings sections, shown as a segmented link group on every settings page. */
@@ -10,6 +10,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     <a class="seg__link" routerLink="/admin/settings/company" routerLinkActive="seg__link--on" ariaCurrentWhenActive="page">Company</a>
   `,
   styleUrl: './settings-nav.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { role: 'navigation', 'aria-label': 'Settings sections' },
 })
 export class SettingsNav {}

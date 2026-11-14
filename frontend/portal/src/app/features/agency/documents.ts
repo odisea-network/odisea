@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, resource, signal } from '@angular/core';
+import { Component, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { FinancialDocumentDto } from '../../core/api.types';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
@@ -20,6 +20,7 @@ const KIND_LABELS: Record<string, string> = {
   selector: 'app-agency-documents',
   imports: [MoneyPipe, OdDatePipe, ButtonDirective, Card, EmptyState, Icon, PageHeader, Pill, Skeleton],
   templateUrl: './documents.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './documents.scss',
 })
 export class AgencyDocuments {

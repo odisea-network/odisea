@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonDirective } from '../button/button.directive';
 import { Field } from '../field/field';
 import { InputDirective } from '../input/input.directive';
@@ -49,6 +49,7 @@ import { DialogService } from './dialog.service';
       }
     </dialog>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dialog-host.scss',
 })
 export class DialogHost {

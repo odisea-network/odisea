@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BookingDto, PassengerDto } from '../../core/api.types';
@@ -40,6 +40,7 @@ export function matchesView(b: BookingDto, view: View, today: string): boolean {
     Banner, ButtonDirective, Card, Deadline, EmptyState, Icon, PageHeader, Segmented, Skeleton, StatusChip,
   ],
   templateUrl: './bookings.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './bookings.scss',
 })
 export class AgencyBookings {

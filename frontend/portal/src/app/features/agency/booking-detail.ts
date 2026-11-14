@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, computed, inject, input, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BookingDto, FinancialDocumentDto } from '../../core/api.types';
@@ -32,6 +32,7 @@ interface NextAction {
     Skeleton, StatusChip, Timeline,
   ],
   templateUrl: './booking-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './booking-detail.scss',
 })
 export class AgencyBookingDetail {

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -27,6 +27,7 @@ export function agencyInitials(name: string): string {
     Skeleton,
   ],
   templateUrl: './agencies.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './agencies.scss',
 })
 export class AdminAgencies {

@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, signal, untracked, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -32,6 +32,7 @@ import { programTone } from './programs';
     AdminProgramReadiness, ProgramContentForm, ProgramGallery, ProgramItinerary,
   ],
   templateUrl: './program-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program-detail.scss',
 })
 export class AdminProgramDetail {

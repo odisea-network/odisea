@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 import { ToastService } from './toast.service';
 
@@ -23,6 +23,7 @@ import { ToastService } from './toast.service';
     }
   `,
   styleUrl: './toast-host.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { role: 'status', 'aria-live': 'polite' },
 })
 export class ToastHost {
