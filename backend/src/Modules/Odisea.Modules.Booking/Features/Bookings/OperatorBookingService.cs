@@ -1,14 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Odisea.Modules.Booking.Domain;
 using Odisea.Modules.Booking.Infrastructure;
-using Odisea.Modules.Integrations.PublicApi;
 using Odisea.SharedKernel;
 
 namespace Odisea.Modules.Booking.Features.Bookings;
 
 /// The operator side of a reservation: oversight across agencies, payments, and the
 /// decisions an agency cannot take itself (confirm, reject, expire, cancel after payment).
-public class OperatorBookingService(BookingDbContext db, IProviderRegistry providers, IClock clock)
+public class OperatorBookingService(BookingDbContext db, ProviderReleaseService releases, IClock clock)
 {
     public async Task<PagedResult<OperatorBookingSummaryDto>> ListAsync(BookingListQuery query, CancellationToken ct)
     {
@@ -68,13 +67,12 @@ public class OperatorBookingService(BookingDbContext db, IProviderRegistry provi
         if (booking.Status != BookingStatus.AwaitingPayment)
             throw new InvalidBookingTransitionException(booking.Status, BookingStatus.Rejected);
 
-        await ReleaseAtProviderAsync(booking, ct);
         Transition(booking, BookingStatus.Rejected, actor, note);
-        await db.SaveChangesAsync(ct);
+        await CloseAsync(booking, ct);
         return booking.ToOperatorDto();
     }
 
-    /// Manual for the MVP; a scheduled job can call the same path later.
+    /// Operators expire by hand; the maintenance job calls the same path with the System actor.
     public async Task<OperatorBookingDto> ExpireAsync(Guid bookingId, BookingActor actor, CancellationToken ct)
     {
         var booking = await LoadAsync(bookingId, ct);
@@ -83,9 +81,8 @@ public class OperatorBookingService(BookingDbContext db, IProviderRegistry provi
         if (booking.PaymentDueAt is not { } dueAt || dueAt > clock.UtcNow)
             throw new BookingStateException("The payment deadline has not passed yet.");
 
-        await ReleaseAtProviderAsync(booking, ct);
         Transition(booking, BookingStatus.Expired, actor, $"Payment deadline {dueAt:yyyy-MM-dd HH:mm} UTC passed");
-        await db.SaveChangesAsync(ct);
+        await CloseAsync(booking, ct);
         return booking.ToOperatorDto();
     }
 
@@ -97,9 +94,20 @@ public class OperatorBookingService(BookingDbContext db, IProviderRegistry provi
             or BookingStatus.AwaitingPayment or BookingStatus.Confirmed))
             throw new InvalidBookingTransitionException(booking.Status, BookingStatus.Cancelled);
 
-        await ReleaseAtProviderAsync(booking, ct);
         Transition(booking, BookingStatus.Cancelled, actor, note);
-        await db.SaveChangesAsync(ct);
+        await CloseAsync(booking, ct);
+        return booking.ToOperatorDto();
+    }
+
+    /// Tries the supplier release again: for a release still pending after a failed attempt, or
+    /// one the supplier refused that an operator has since sorted out with them.
+    public async Task<OperatorBookingDto> RetryProviderReleaseAsync(Guid bookingId, CancellationToken ct)
+    {
+        var booking = await LoadAsync(bookingId, ct);
+        if (booking.ProviderRelease is not (ProviderReleaseStatus.Pending or ProviderReleaseStatus.Failed))
+            throw new BookingStateException("There is no supplier release to retry for this booking.");
+
+        await releases.ReleaseAsync(booking, ct);
         return booking.ToOperatorDto();
     }
 
@@ -174,15 +182,13 @@ public class OperatorBookingService(BookingDbContext db, IProviderRegistry provi
     private void GuardBalanceWithConcurrencyToken(Domain.Booking booking) =>
         db.Entry(booking).State = EntityState.Modified;
 
-    /// Gives the inventory back when the provider is holding it; a refusal is surfaced, not hidden.
-    private async Task ReleaseAtProviderAsync(Domain.Booking booking, CancellationToken ct)
+    /// Saves the closing status first — a 409 here means nothing reached the supplier — and only
+    /// then gives the supplier hold back. A release that fails is recorded on the booking, not thrown.
+    private async Task CloseAsync(Domain.Booking booking, CancellationToken ct)
     {
-        if (booking.ProviderBookingRef is not { } providerRef)
-            return;
-
-        var result = await providers.Get(booking.ProviderCode).CancelAsync(providerRef, ct);
-        if (!result.Success)
-            throw new BookingValidationException($"The provider refused the cancellation: {result.FailureReason}");
+        booking.RequestProviderRelease(clock.UtcNow);
+        await db.SaveChangesAsync(ct);
+        await releases.ReleaseAsync(booking, ct);
     }
 
     private void Transition(Domain.Booking booking, BookingStatus next, BookingActor actor, string? note)

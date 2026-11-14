@@ -29,7 +29,27 @@ Enforced in one place: `Booking.TransitionTo(next, actor, note, now)` throws `In
 
 **Confirmation** is the operator's commercial decision, available only once the reservation is fully paid (`PaymentIncompleteException` → 409 with the balance). Documents reads this moment (`IBookingLookup.ConfirmedAt`) as the tax event for the invoice.
 
-**Agency cancellation** is allowed while Draft, PriceConfirmed or AwaitingPayment with no payment recorded yet (the provider hold is released). Once money has been received, once Confirmed, or while the provider call is in flight, cancelling means refunds, credit notes and possibly provider penalties, so it becomes an operator-admin action. Payment writes also mark the booking row modified so the `xmin` check covers them: two operators recording payments at the same time cannot overpay.
+**Releasing the supplier hold** (reject, expire, operator cancel, agency cancel): the closing status is saved **first**, then `ProviderReleaseService` asks the supplier to cancel and records the outcome on the booking (`ProviderRelease`: `None` / `Pending` / `Released` / `Failed`, plus attempts, last error and time). A concurrency 409 on the save therefore means nothing reached the supplier, instead of a released hold behind a still-active booking. A supplier refusal is checked against `GetBookingStateAsync`: already cancelled there counts as released, otherwise the release is `Failed` and an operator resolves it. A transport or adapter error leaves it `Pending` for a retry; only the exception type is stored, never supplier payload text. The status change itself is never undone by a supplier problem. Submit covers the opposite race: if an operator closed the booking while `BookAsync` was in flight, the late hold is recorded and released instead of being orphaned.
+
+**Agency cancellation** is allowed while Draft, PriceConfirmed or AwaitingPayment with no payment recorded yet (the provider hold is released as above). Once money has been received, once Confirmed, or while the provider call is in flight, cancelling means refunds, credit notes and possibly provider penalties, so it becomes an operator-admin action. Payment writes also mark the booking row modified so the `xmin` check covers them: two operators recording payments at the same time cannot overpay.
+
+## Maintenance job (`Features/Maintenance`)
+
+`BookingMaintenanceJob` (a hosted service) runs `BookingMaintenanceRun` once at startup and then every `IntervalMinutes`. Each pass, per booking, so one that changed meanwhile is skipped rather than failing the pass:
+
+1. **Expire** `AwaitingPayment` holds whose `PaymentDueAt` has passed **with no (non-voided) payment**, through `OperatorBookingService.ExpireAsync` with the `System` actor — so the supplier hold is released the same way an operator's expiry releases it. Partly paid holds are left to the operator: expiring them means a refund.
+2. **Retry supplier releases** still `Pending`, waiting 2, 4, 8 … minutes between attempts (capped at 6 hours) and stopping after `MaxReleaseAttempts`; the operator can still retry by hand.
+3. **Remind the agency** once, `ReminderHoursBeforeDeadline` before the deadline, at its contact e-mail through the Notifications outbox (`payment-reminder`, correlation id = booking ref). The mail carries the ref, program, hotel, dates, party size, balance and the deadline in Sofia time — no passenger names or documents. Bookings whose whole payment window is shorter than the lead time are not reminded; `PaymentReminderSentAt` prevents repeats.
+
+| `Booking:Maintenance` | Default | |
+|---|---|---|
+| `Enabled` | `true` | integration tests turn it off and run passes directly |
+| `IntervalMinutes` | 5 | |
+| `BatchSize` | 50 | bookings per step and pass |
+| `MaxReleaseAttempts` | 8 | automatic release retries |
+| `ReminderHoursBeforeDeadline` | 24 | 0 turns reminders off |
+
+Single-instance by design (one deployment per operator). A second instance cannot corrupt bookings (every write carries the `xmin` token) but could queue a second reminder.
 
 ## Operator oversight (`/api/v1/admin/bookings`)
 
@@ -38,9 +58,10 @@ Enforced in one place: `Booking.TransitionTo(next, actor, note, now)` throws `In
 | `GET ?status&agencyId&from&to&page&pageSize` | Operator | paged `OperatorBookingSummaryDto`; `from`/`to` filter check-in |
 | `GET {id}` | Operator | `OperatorBookingDto`: net cost, breakdown, payments, history with actors |
 | `POST {id}/confirm` | **OperatorAdmin** | 409 unless AwaitingPayment and fully paid |
-| `POST {id}/reject` `{note}` | Operator | releases the provider hold → Rejected |
-| `POST {id}/expire` | Operator | only once `PaymentDueAt` has passed → Expired |
+| `POST {id}/reject` `{note}` | Operator | → Rejected, then releases the supplier hold (see above) |
+| `POST {id}/expire` | Operator | only once `PaymentDueAt` has passed → Expired (the maintenance job does this for unpaid holds) |
 | `POST {id}/cancel` `{note}` | **OperatorAdmin** | from PendingConfirmation / AwaitingPayment / Confirmed |
+| `POST {id}/provider-release/retry` | Operator | retries a `Pending` or `Failed` supplier release; 409 when there is none |
 | `POST {id}/payments` | Operator | 201; AwaitingPayment only |
 | `POST {id}/payments/{paymentId}/void` `{reason}` | **OperatorAdmin** | soft void |
 

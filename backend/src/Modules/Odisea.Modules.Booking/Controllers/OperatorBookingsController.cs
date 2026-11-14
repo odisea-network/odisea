@@ -43,6 +43,11 @@ public class OperatorBookingsController(OperatorBookingService bookings, ICurren
     public Task<IActionResult> Cancel(Guid id, OperatorNoteRequest request, CancellationToken ct) =>
         Execute(async actor => Ok(await bookings.CancelAsync(id, request.Note, actor, ct)));
 
+    /// Retries giving the supplier hold back after a pending or refused release.
+    [HttpPost("{id:guid}/provider-release/retry")]
+    public Task<IActionResult> RetryProviderRelease(Guid id, CancellationToken ct) =>
+        Execute(async _ => Ok(await bookings.RetryProviderReleaseAsync(id, ct)));
+
     [HttpPost("{id:guid}/payments")]
     public Task<IActionResult> RecordPayment(Guid id, RecordPaymentRequest request, CancellationToken ct) =>
         Execute(async actor =>

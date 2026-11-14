@@ -43,7 +43,8 @@ public record OperatorBookingSummaryDto(
     decimal BalanceDue,
     string Currency,
     DateTimeOffset? PaymentDueAt,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string ProviderRelease);
 
 public record OperatorStatusHistoryDto(
     DateTimeOffset At, string From, string To, string? Note, string ActorType, Guid? ActorUserId);
@@ -91,7 +92,12 @@ public record OperatorBookingDto(
     DateTimeOffset CreatedAt,
     IReadOnlyList<PassengerDto> Passengers,
     IReadOnlyList<OperatorPaymentDto> Payments,
-    IReadOnlyList<OperatorStatusHistoryDto> History);
+    IReadOnlyList<OperatorStatusHistoryDto> History,
+    // None, Pending, Released or Failed: giving the supplier hold back after the booking closed.
+    string ProviderRelease,
+    int ProviderReleaseAttempts,
+    string? ProviderReleaseError,
+    DateTimeOffset? ProviderReleaseUpdatedAt);
 
 public record RecordPaymentRequest(
     [Range(0.01, 1_000_000)] decimal Amount,
@@ -110,7 +116,8 @@ public static class OperatorBookingDtoMapping
     public static OperatorBookingSummaryDto ToSummaryDto(this Domain.Booking b) => new(
         b.Id, b.Ref, b.Status.ToString(), b.AgencyId, b.ProgramName, b.HotelName,
         b.CheckIn, b.CheckOut, b.Adults, b.Children,
-        b.SellAmount, b.PaidAmount, b.BalanceDue, b.Currency, b.PaymentDueAt, b.CreatedAt);
+        b.SellAmount, b.PaidAmount, b.BalanceDue, b.Currency, b.PaymentDueAt, b.CreatedAt,
+        b.ProviderRelease.ToString());
 
     public static OperatorBookingDto ToOperatorDto(this Domain.Booking b) => new(
         b.Id, b.Ref, b.Status.ToString(), b.AgencyId, b.AgentUserId,
@@ -125,7 +132,8 @@ public static class OperatorBookingDtoMapping
             p.Id, p.Amount, p.Currency, p.Method.ToString(), p.Reference, p.ReceivedOn,
             p.RecordedByUserId, p.Note, p.CreatedAt, p.VoidedAt, p.VoidedByUserId, p.VoidReason))],
         [.. b.History.OrderBy(h => h.CreatedAt).Select(h => new OperatorStatusHistoryDto(
-            h.CreatedAt, h.FromStatus, h.ToStatus, h.Note, h.ActorType.ToString(), h.ActorUserId))]);
+            h.CreatedAt, h.FromStatus, h.ToStatus, h.Note, h.ActorType.ToString(), h.ActorUserId))],
+        b.ProviderRelease.ToString(), b.ProviderReleaseAttempts, b.ProviderReleaseError, b.ProviderReleaseUpdatedAt);
 
     private static JsonElement? ParseBreakdown(string? json)
     {

@@ -33,7 +33,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 interface NextAction {
   icon: IconName;
-  tone: 'warn' | 'ok' | 'info' | 'neutral';
+  tone: 'warn' | 'ok' | 'info' | 'neutral' | 'bad';
   title: string;
   sub: string;
   action?: { label: string; run: () => void; disabledReason: string | null };
@@ -125,6 +125,25 @@ export class AdminBookingDetail {
     const a = this.actions();
     if (!b || !a) return null;
     const money = (amount: number) => formatMoney(amount, b.currency);
+    // A hold the supplier still keeps for a closed booking costs money: it comes first.
+    if (b.providerRelease === 'Failed') {
+      return {
+        icon: 'alert-triangle', tone: 'bad',
+        title: 'The supplier still holds this booking',
+        sub: `Supplier ${b.providerCode} refused the release: ${b.providerReleaseError ?? 'no reason given'}. Sort it out with them, then retry.`,
+        action: { label: 'Retry release', run: () => void this.retryRelease(), disabledReason: null },
+      };
+    }
+    if (b.providerRelease === 'Pending') {
+      return {
+        icon: 'refresh', tone: 'warn',
+        title: 'Giving the hold back to the supplier',
+        sub: b.providerReleaseError
+          ? `The last attempt failed: ${b.providerReleaseError} It is retried automatically (${b.providerReleaseAttempts} ${b.providerReleaseAttempts === 1 ? 'attempt' : 'attempts'} so far); you can retry now.`
+          : 'The release has not reached the supplier yet. It is retried automatically.',
+        action: { label: 'Retry release', run: () => void this.retryRelease(), disabledReason: null },
+      };
+    }
     switch (b.status) {
       case 'AwaitingPayment':
         if (b.balanceDue > 0) {
@@ -283,6 +302,15 @@ export class AdminBookingDetail {
     });
     if (!decision) return;
     await this.act(`/api/v1/admin/bookings/${b.id}/expire`, {}, () => `${b.ref} expired`);
+  }
+
+  async retryRelease(): Promise<void> {
+    const b = this.booking();
+    if (!b) return;
+    await this.act(`/api/v1/admin/bookings/${b.id}/provider-release/retry`, {}, updated =>
+      updated.providerRelease === 'Released'
+        ? `${b.ref}: the supplier released the hold`
+        : `${b.ref}: the supplier has not released the hold yet`);
   }
 
   async voidPayment(payment: OperatorPayment): Promise<void> {

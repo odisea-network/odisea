@@ -104,6 +104,10 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("payment_due_at");
 
+                    b.Property<DateTimeOffset?>("PaymentReminderSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("payment_reminder_sent_at");
+
                     b.Property<Guid>("ProgramId")
                         .HasColumnType("uuid")
                         .HasColumnName("program_id");
@@ -124,6 +128,25 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("provider_code");
+
+                    b.Property<string>("ProviderRelease")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("provider_release");
+
+                    b.Property<int>("ProviderReleaseAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("provider_release_attempts");
+
+                    b.Property<string>("ProviderReleaseError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("provider_release_error");
+
+                    b.Property<DateTimeOffset?>("ProviderReleaseUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("provider_release_updated_at");
 
                     b.Property<string>("Ref")
                         .IsRequired()
@@ -150,6 +173,10 @@ namespace Odisea.Modules.Booking.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_bookings");
+
+                    b.HasIndex("ProviderRelease")
+                        .HasDatabaseName("ix_bookings_provider_release")
+                        .HasFilter("provider_release IN ('Pending', 'Failed')");
 
                     b.HasIndex("Ref")
                         .IsUnique()
