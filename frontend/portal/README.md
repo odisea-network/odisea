@@ -1,6 +1,6 @@
 # Odisea Portal
 
-The **B2B web app** — one Angular 21 application with two role-based areas over the same API: the agency portal (search, book, documents) and the operator back-office. Standalone components, signals, zoneless, Vitest.
+The **B2B web app** — one Angular 22 application with two role-based areas over the same API: the agency portal (search, book, documents) and the operator back-office. Standalone components, signals, zoneless, Vitest.
 
 ## Layout
 
@@ -85,6 +85,8 @@ figures, one primary action per view, status never carried by colour alone). Rul
   deployment never calls a third party from the login page.
 
 ## Run it
+
+Needs Node.js 22.22.3+ or 24.15+ (Angular 22's minimum; older Node makes `ng` exit straight away).
 
 ```bash
 # against a locally running API (http://localhost:8080):

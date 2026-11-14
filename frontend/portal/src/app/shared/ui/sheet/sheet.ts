@@ -1,4 +1,4 @@
-import { Component, ElementRef, effect, input, model, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, input, model, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonDirective } from '../button/button.directive';
 import { Icon } from '../icon/icon';
 
@@ -27,6 +27,7 @@ import { Icon } from '../icon/icon';
       <footer class="sheet__foot"><ng-content select="[sheetActions]" /></footer>
     </dialog>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sheet.scss',
 })
 export class Sheet {

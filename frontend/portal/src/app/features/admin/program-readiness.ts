@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ProgramReadinessDto, ReadinessCheckDto } from '../../core/api.types';
 import { ButtonDirective, Card, Icon, Progress } from '../../shared/ui';
 import { ProgramTab, checkTab } from './program-content.model';
@@ -59,6 +59,7 @@ import { ProgramTab, checkTab } from './program-content.model';
       </li>
     </ng-template>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program-readiness.scss',
 })
 export class AdminProgramReadiness {

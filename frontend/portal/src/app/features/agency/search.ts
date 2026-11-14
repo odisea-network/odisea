@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, computed, effect, inject, input, resource, signal, untracked, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, resource, signal, untracked, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -39,6 +39,7 @@ export function sortOffers(offers: HotelOffer[], sort: Sort): HotelOffer[] {
     Banner, ButtonDirective, Card, EmptyState, Icon, InputDirective, PageHeader, Pill, Segmented, Skeleton,
   ],
   templateUrl: './search.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './search.scss',
 })
 export class AgencySearch {

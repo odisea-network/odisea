@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { Shell } from './shell';
 import { NavAction, NavGroup, NavItem } from './side-nav';
 
 @Component({
   selector: 'app-agency-shell',
   imports: [Shell],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<app-shell area="Partner portal" [groups]="groups" [primaryAction]="newBooking" [tabs]="tabs" />`,
 })
 export class AgencyShell {

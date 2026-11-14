@@ -1,4 +1,4 @@
-import { Component, booleanAttribute, input } from '@angular/core';
+import { Component, booleanAttribute, input, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 
 /**
@@ -26,6 +26,7 @@ import { Icon } from '../icon/icon';
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './field.scss',
 })
 export class Field {

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { formatDateTime, relativeDeadline } from '../../../core/format';
 import { Icon } from '../icon/icon';
 
@@ -24,6 +24,7 @@ import { Icon } from '../icon/icon';
       <span class="dl__abs">—</span>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './deadline.scss',
 })
 export class Deadline {

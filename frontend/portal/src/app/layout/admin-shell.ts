@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { Shell } from './shell';
 import { NavGroup } from './side-nav';
 
 @Component({
   selector: 'app-admin-shell',
   imports: [Shell],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<app-shell area="Back-office" [groups]="groups" />`,
 })
 export class AdminShell {

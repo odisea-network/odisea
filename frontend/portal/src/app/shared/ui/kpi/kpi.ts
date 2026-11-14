@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
@@ -19,6 +19,7 @@ export type KpiTone = 'ok' | 'warn' | 'bad' | 'info' | 'neutral';
       <span class="kpi__f">{{ foot() }}<ui-icon name="chevron-right" size="sm" /></span>
     </a>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './kpi.scss',
 })
 export class Kpi {

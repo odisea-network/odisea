@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 
 const WIDTHS = ['60%', '90%', '75%', '82%', '55%'];
 
@@ -11,6 +11,7 @@ const WIDTHS = ['60%', '90%', '75%', '82%', '55%'];
     }
   `,
   styleUrl: './skeleton.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { role: 'status', 'aria-label': 'Loading' },
 })
 export class Skeleton {

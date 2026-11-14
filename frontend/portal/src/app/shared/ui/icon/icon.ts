@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { ICONS, IconName } from './icons';
 
 export type IconSize = 'sm' | 'md' | 'lg';
@@ -8,6 +8,7 @@ export type IconSize = 'sm' | 'md' | 'lg';
   selector: 'ui-icon',
   template: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="path()" /></svg>`,
   styleUrl: './icon.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { '[class]': '"ui-icon ui-icon--" + size()' },
 })
 export class Icon {

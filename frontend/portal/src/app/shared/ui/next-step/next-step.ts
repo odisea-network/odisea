@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -22,6 +22,7 @@ export type NextStepTone = 'neutral' | 'ok' | 'warn' | 'info' | 'bad';
     </div>
     <div class="next__action"><ng-content /></div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './next-step.scss',
 })
 export class NextStep {

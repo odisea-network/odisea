@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -15,6 +15,7 @@ import { IconName } from '../icon/icons';
     <div class="empty__actions"><ng-content /></div>
   `,
   styleUrl: './empty-state.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { '[attr.role]': 'tone() === "error" ? "alert" : null', '[class]': '"empty empty--" + tone()' },
 })
 export class EmptyState {

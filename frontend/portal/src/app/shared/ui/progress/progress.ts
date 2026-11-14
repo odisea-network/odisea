@@ -1,10 +1,11 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 
 /** Thin bar for "paid of total" and "credit used" — the numbers always sit next to it. */
 @Component({
   selector: 'ui-progress',
   template: `<i class="bar__fill" [style.width.%]="percent()"></i>`,
   styleUrl: './progress.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     role: 'progressbar',
     '[attr.aria-valuenow]': 'percent()',

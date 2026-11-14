@@ -22,7 +22,7 @@ Open: audit log for sensitive operations, encrypt the persisted DataProtection k
 
 ## Standing decisions
 
-- .NET 10 **modular monolith** · Angular 21 single app · PostgreSQL (schema per module) · EUR pricing baseline
+- .NET 10 **modular monolith** · Angular 22 single app · PostgreSQL (schema per module) · EUR pricing baseline
 - Mock provider first; the real intermediary system (TourVisio vs Sejour, both SAN TSG) is undecided and only blocks Phase 5
 - Every phase ends runnable; every slice passes build (warnings=errors) + tests + live Swagger smoke before merge
 
