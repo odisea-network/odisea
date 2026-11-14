@@ -1,4 +1,4 @@
-import { Component, booleanAttribute, input } from '@angular/core';
+import { Component, booleanAttribute, input, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../icon/icon';
 
@@ -40,6 +40,7 @@ export interface Crumb {
     </div>
     <div class="ph__actions"><ng-content select="[actions]" /></div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './page-header.scss',
 })
 export class PageHeader {

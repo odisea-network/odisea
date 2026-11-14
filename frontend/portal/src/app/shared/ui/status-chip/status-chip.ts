@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -35,6 +35,7 @@ export function bookingStatusLabel(status: string): string {
   imports: [Icon],
   template: `<ui-icon [name]="meta().icon" size="sm" />{{ meta().label }}`,
   styleUrl: './status-chip.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { '[class]': '"chip chip--" + meta().tone' },
 })
 export class StatusChip {

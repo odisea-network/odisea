@@ -1,4 +1,4 @@
-import { Component, booleanAttribute, computed, input, output } from '@angular/core';
+import { Component, booleanAttribute, computed, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { HotelOffer } from '../../core/api.types';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { ButtonDirective, Icon, Pill } from '../../shared/ui';
@@ -46,6 +46,7 @@ import { ButtonDirective, Icon, Pill } from '../../shared/ui';
     </div>
   `,
   styleUrl: './offer-card.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { class: 'glass', '[class.offer--compact]': 'compact()', '[class.offer--expired]': 'expired()' },
 })
 export class OfferCard {

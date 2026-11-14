@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -76,6 +76,7 @@ export function formFromPassenger(p: PassengerDto): PassengerForm {
     StatusChip,
   ],
   templateUrl: './book.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './book.scss',
 })
 export class AgencyBook {

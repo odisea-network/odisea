@@ -1,10 +1,11 @@
-import { Component, booleanAttribute, input, output } from '@angular/core';
+import { Component, booleanAttribute, input, output, ChangeDetectionStrategy } from '@angular/core';
 
 /** On/off control for a setting that applies immediately (e.g. a rule's Active flag). */
 @Component({
   selector: 'ui-switch',
   template: ``,
   styleUrl: './switch.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     role: 'switch',
     tabindex: '0',

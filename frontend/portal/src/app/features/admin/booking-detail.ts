@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, computed, inject, input, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -48,6 +48,7 @@ interface NextAction {
     Pill, Progress, Segmented, Sheet, Skeleton, StatusChip, Timeline,
   ],
   templateUrl: './booking-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './booking-detail.scss',
 })
 export class AdminBookingDetail {

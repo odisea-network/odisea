@@ -1,4 +1,4 @@
-import { Component, booleanAttribute, input } from '@angular/core';
+import { Component, booleanAttribute, input, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Glass surface. With `title`, renders a header row with an actions slot
@@ -16,6 +16,7 @@ import { Component, booleanAttribute, input } from '@angular/core';
     <ng-content />
   `,
   styleUrl: './card.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     class: 'glass',
     '[class.card--flush]': 'flush()',

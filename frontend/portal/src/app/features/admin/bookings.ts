@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, WritableSignal, computed, effect, inject, input, resource, signal } from '@angular/core';
+import { Component, WritableSignal, computed, effect, inject, input, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -24,6 +24,7 @@ export const BOOKING_STATUSES = [
     ButtonDirective, Card, Deadline, EmptyState, Icon, InputDirective, PageHeader, Pager, Pill, Skeleton, StatusChip,
   ],
   templateUrl: './bookings.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './bookings.scss',
 })
 export class AdminBookings {

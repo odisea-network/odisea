@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -40,6 +40,7 @@ export function popularTags(programs: ProgramListItem[], limit = 10): string[] {
   selector: 'app-agency-programs',
   imports: [FormsModule, RouterLink, OdDatePipe, ButtonDirective, EmptyState, Icon, InputDirective, PageHeader, Pill, Skeleton],
   templateUrl: './programs.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './programs.scss',
 })
 export class AgencyPrograms {

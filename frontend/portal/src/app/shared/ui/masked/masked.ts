@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonDirective } from '../button/button.directive';
 import { Icon } from '../icon/icon';
 
@@ -26,6 +26,7 @@ import { Icon } from '../icon/icon';
       </button>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './masked.scss',
 })
 export class Masked {

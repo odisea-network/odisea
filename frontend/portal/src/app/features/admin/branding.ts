@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { BrandingDto, UpdateBrandingRequest } from '../../core/api.types';
@@ -21,6 +21,7 @@ const MAX_LOGO_BYTES = 512 * 1024;
   selector: 'app-admin-branding',
   imports: [FormsModule, Banner, ButtonDirective, Card, Field, Icon, InputDirective, PageHeader, Pill, SettingsNav],
   templateUrl: './branding.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './branding.scss',
 })
 export class AdminBranding {

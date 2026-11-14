@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { parseMarkdown } from './markdown-parse';
 
 /** Operator-written Markdown (descriptions, policies) as safe text: no HTML ever reaches the DOM. */
@@ -42,6 +42,7 @@ import { parseMarkdown } from './markdown-parse';
       }
     </ng-template>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './markdown.scss',
 })
 export class Markdown {

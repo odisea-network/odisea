@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TRANSPORT_MODES } from '../../core/program-format';
 import { Field, InputDirective, Pill } from '../../shared/ui';
@@ -9,6 +9,7 @@ import { CONTENT_LIMITS, ContentDraft, lines, tagsOf } from './program-content.m
   selector: 'app-program-content-form',
   imports: [FormsModule, Field, InputDirective, Pill],
   templateUrl: './program-content-form.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program-content-form.scss',
 })
 export class ProgramContentForm {

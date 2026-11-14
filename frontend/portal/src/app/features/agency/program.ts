@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, input, resource } from '@angular/core';
+import { Component, computed, inject, input, resource, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProgramDetail } from '../../core/api.types';
@@ -17,6 +17,7 @@ import { ProgramPhotos } from './program-photos';
     RouterLink, OdDatePipe, ButtonDirective, Card, EmptyState, Icon, Markdown, PageHeader, Pill, Skeleton, ProgramPhotos,
   ],
   templateUrl: './program.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program.scss',
 })
 export class AgencyProgram {

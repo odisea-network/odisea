@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, inject, input, output, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ProgramImageDto } from '../../core/api.types';
@@ -32,6 +32,7 @@ interface ImageEdit {
   selector: 'app-program-gallery',
   imports: [FormsModule, Banner, ButtonDirective, Field, Icon, InputDirective, Pill],
   templateUrl: './program-gallery.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program-gallery.scss',
 })
 export class ProgramGallery {
