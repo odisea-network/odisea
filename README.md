@@ -8,7 +8,7 @@
 
 - **Backend** — .NET 10 modular monolith (`backend/`): Agencies, Catalog, Pricing, Booking, Integrations, Documents modules over a single PostgreSQL database (schema per module).
 - **Integrations** — provider-agnostic reservation contract (`IReservationProvider`): Mock adapter first; external systems (TourVisio, Sejour, …) plug in behind the same interface.
-- **Frontend** — Angular 21 B2B portal (`frontend/portal`): agency area (search, booking wizard, bookings, documents) and admin area (planned: agencies, programs, pricing rules, bookings oversight).
+- **Frontend** — Angular 22 B2B portal (`frontend/portal`): agency area (search, booking wizard, bookings, documents) and admin area (planned: agencies, programs, pricing rules, bookings oversight).
 - **External agencies** — integrated partner systems call the same REST API with a per-agency key (`X-Api-Key`) and get exactly the agency scoping a portal login gets.
 
 ## Layout
