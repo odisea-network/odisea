@@ -80,6 +80,9 @@
                 <td>
                   <div class="status">
                     <ui-status-chip [status]="b.status" />
+                    @if (b.providerRelease === 'Failed' || b.providerRelease === 'Pending') {
+                      <ui-pill [tone]="b.providerRelease === 'Failed' ? 'bad' : 'warn'"><ui-icon name="alert-triangle" size="sm" />Supplier hold not released</ui-pill>
+                    }
                     @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
                       <ui-deadline [at]="b.paymentDueAt" />
                     }

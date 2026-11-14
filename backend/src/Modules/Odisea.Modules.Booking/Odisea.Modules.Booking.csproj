@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Odisea.Modules.Agencies\Odisea.Modules.Agencies.csproj" />
     <ProjectReference Include="..\Odisea.Modules.Catalog\Odisea.Modules.Catalog.csproj" />
     <ProjectReference Include="..\Odisea.Modules.Integrations\Odisea.Modules.Integrations.csproj" />
+    <ProjectReference Include="..\Odisea.Modules.Notifications\Odisea.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Odisea.Modules.Pricing\Odisea.Modules.Pricing.csproj" />
   </ItemGroup>
 </Project>

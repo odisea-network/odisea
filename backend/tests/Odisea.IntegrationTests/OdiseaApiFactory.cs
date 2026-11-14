@@ -55,6 +55,8 @@ public sealed class OdiseaApiFactory : WebApplicationFactory<Program>, IAsyncLif
                 ["Seed:Operator:Password"] = AdminPassword,
                 ["Seed:Operator:FullName"] = "Test Operator Admin",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
+                // Tests run the maintenance pass directly; a timer firing mid-test would race them.
+                ["Booking:Maintenance:Enabled"] = "false",
                 // Tests hammer one key; the 60/min production default is covered by manual smoke.
                 ["RateLimiting:ApiKeyPerMinute"] = "100000",
                 ["RateLimiting:PublicPerMinute"] = "100000",

@@ -7,7 +7,7 @@ import { AgencyDto, OperatorBookingSummary, PagedResult } from '../../core/api.t
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import {
-  ButtonDirective, Card, Deadline, EmptyState, InputDirective, PageHeader, Pager, Skeleton, StatusChip,
+  ButtonDirective, Card, Deadline, EmptyState, Icon, InputDirective, PageHeader, Pager, Pill, Skeleton, StatusChip,
   bookingStatusLabel,
 } from '../../shared/ui';
 
@@ -21,7 +21,7 @@ export const BOOKING_STATUSES = [
   selector: 'app-admin-bookings',
   imports: [
     FormsModule, RouterLink, MoneyPipe, OdDatePipe,
-    ButtonDirective, Card, Deadline, EmptyState, InputDirective, PageHeader, Pager, Skeleton, StatusChip,
+    ButtonDirective, Card, Deadline, EmptyState, Icon, InputDirective, PageHeader, Pager, Pill, Skeleton, StatusChip,
   ],
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
