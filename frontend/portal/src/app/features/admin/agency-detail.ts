@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, computed, inject, input, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -47,6 +47,7 @@ const ROLE_LABELS: Record<string, string> = { AgencyAdmin: 'Agency admin', Agent
     Tabs,
   ],
   templateUrl: './agency-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './agency-detail.scss',
 })
 export class AdminAgencyDetail {

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DestinationDto, HotelDto, LocationMappingDto } from '../../core/api.types';
@@ -17,6 +17,7 @@ import {
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ],
   templateUrl: './destinations.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './destinations.scss',
 })
 export class AdminDestinations {

@@ -54,6 +54,9 @@ public class Booking : Entity
     /// Set when the provider holds the reservation; the operator must have the money by then.
     public DateTimeOffset? PaymentDueAt { get; set; }
 
+    /// Set once the agency has been reminded that the payment deadline is near.
+    public DateTimeOffset? PaymentReminderSentAt { get; set; }
+
     /// Optimistic concurrency token mapped to Postgres xmin: two operators cannot both act on
     /// the same stale row (second SaveChanges fails with DbUpdateConcurrencyException → 409).
     public uint Version { get; set; }
@@ -70,7 +73,51 @@ public class Booking : Entity
     public List<BookingPayment> Payments { get; } = [];
     public List<BookingStatusHistory> History { get; } = [];
 
+    /// The supplier hold is released only after the closing status is saved, so a failed or
+    /// conflicting save never leaves a released hold behind an active booking. This tracks that
+    /// second step until the supplier confirms it.
+    public ProviderReleaseStatus ProviderRelease { get; private set; } = ProviderReleaseStatus.None;
+    public int ProviderReleaseAttempts { get; private set; }
+    public string? ProviderReleaseError { get; private set; }
+    public DateTimeOffset? ProviderReleaseUpdatedAt { get; private set; }
+
+    public const int MaxProviderReleaseErrorLength = 300;
+
     public decimal PaidAmount => Payments.Where(p => !p.IsVoided).Sum(p => p.Amount);
+
+    /// Marks the hold for release when the supplier holds one; a booking it never reached needs nothing.
+    public void RequestProviderRelease(DateTimeOffset now)
+    {
+        if (ProviderBookingRef is null)
+            return;
+        ProviderRelease = ProviderReleaseStatus.Pending;
+        ProviderReleaseError = null;
+        ProviderReleaseUpdatedAt = now;
+    }
+
+    public void ProviderReleased(DateTimeOffset now)
+    {
+        ProviderRelease = ProviderReleaseStatus.Released;
+        ProviderReleaseAttempts++;
+        ProviderReleaseError = null;
+        ProviderReleaseUpdatedAt = now;
+    }
+
+    /// The supplier could not be reached or answered with an error: try again later.
+    public void ProviderReleaseRetry(string error, DateTimeOffset now) =>
+        RecordReleaseFailure(ProviderReleaseStatus.Pending, error, now);
+
+    /// The supplier said no and still holds the booking: retrying blindly will not help.
+    public void ProviderReleaseRefused(string reason, DateTimeOffset now) =>
+        RecordReleaseFailure(ProviderReleaseStatus.Failed, reason, now);
+
+    private void RecordReleaseFailure(ProviderReleaseStatus status, string error, DateTimeOffset now)
+    {
+        ProviderRelease = status;
+        ProviderReleaseAttempts++;
+        ProviderReleaseError = error.Length > MaxProviderReleaseErrorLength ? error[..MaxProviderReleaseErrorLength] : error;
+        ProviderReleaseUpdatedAt = now;
+    }
     public decimal BalanceDue => (SellAmount ?? 0m) - PaidAmount;
     public bool IsFullyPaid => SellAmount is { } sell && PaidAmount >= sell;
 

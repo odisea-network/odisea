@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonDirective, Field, Icon, InputDirective } from '../../shared/ui';
 import { CONTENT_LIMITS, ContentDraft, dayDraft, moveDay } from './program-content.model';
@@ -60,6 +60,7 @@ import { CONTENT_LIMITS, ContentDraft, dayDraft, moveDay } from './program-conte
       }
     </ol>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './program-itinerary.scss',
 })
 export class ProgramItinerary {

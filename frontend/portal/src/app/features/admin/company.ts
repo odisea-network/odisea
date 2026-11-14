@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, resource, signal } from '@angular/core';
+import { Component, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CompanyProfileDto } from '../../core/api.types';
@@ -18,6 +18,7 @@ function emptyProfile(): CompanyProfileDto {
   selector: 'app-admin-company',
   imports: [FormsModule, Banner, ButtonDirective, Card, Field, InputDirective, PageHeader, Skeleton, SettingsNav],
   templateUrl: './company.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './company.scss',
 })
 export class AdminCompany {

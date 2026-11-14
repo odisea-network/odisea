@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -22,6 +22,7 @@ import { VAT_TREATMENT_LABELS, documentKindLabel, vatTreatmentShort } from './do
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ],
   templateUrl: './documents.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './documents.scss',
 })
 export class AdminDocuments {

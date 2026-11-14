@@ -1,4 +1,4 @@
-import { Component, booleanAttribute, input, output } from '@angular/core';
+import { Component, booleanAttribute, input, output, ChangeDetectionStrategy } from '@angular/core';
 
 export interface SegmentOption<T extends string = string> {
   value: T;
@@ -26,6 +26,7 @@ export interface SegmentOption<T extends string = string> {
     }
   `,
   styleUrl: './segmented.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { role: 'group', '[class.seg--stretch]': 'stretch()' },
 })
 export class Segmented {

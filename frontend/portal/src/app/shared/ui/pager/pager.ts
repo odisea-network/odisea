@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonDirective } from '../button/button.directive';
 
 /** Range summary + previous/next, for API-paged lists. */
@@ -16,6 +16,7 @@ import { ButtonDirective } from '../button/button.directive';
       </button>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './pager.scss',
 })
 export class Pager {

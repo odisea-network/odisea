@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AgencyDto, OperatorAttentionItem, OperatorDashboardDto } from '../../core/api.types';
@@ -46,6 +46,7 @@ export function deltaLabel(current: number, previous: number, days: number): str
     ButtonDirective, Card, Deadline, EmptyState, Icon, Kpi, PageHeader, Progress, Segmented, Skeleton,
   ],
   templateUrl: './dashboard.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dashboard.scss',
 })
 export class AdminDashboard {

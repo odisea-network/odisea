@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -52,6 +52,7 @@ function emptyRule(): SavePricingRuleRequest {
     Skeleton, Switch,
   ],
   templateUrl: './pricing.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './pricing.scss',
 })
 export class AdminPricing {

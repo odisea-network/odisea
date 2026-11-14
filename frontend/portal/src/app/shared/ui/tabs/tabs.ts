@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 
 export interface TabOption {
   value: string;
@@ -27,6 +27,7 @@ export interface TabOption {
     }
   `,
   styleUrl: './tabs.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { role: 'tablist' },
 })
 export class Tabs {

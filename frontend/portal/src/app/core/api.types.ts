@@ -307,7 +307,11 @@ export interface OperatorBookingSummary {
   currency: string;
   paymentDueAt: string | null;
   createdAt: string;
+  /** Giving the supplier hold back after the booking closed. */
+  providerRelease: ProviderReleaseStatus;
 }
+
+export type ProviderReleaseStatus = 'None' | 'Pending' | 'Released' | 'Failed';
 
 export interface OperatorStatusHistory {
   at: string;
@@ -349,6 +353,9 @@ export interface OperatorBooking extends OperatorBookingSummary {
   passengers: PassengerDto[];
   payments: OperatorPayment[];
   history: OperatorStatusHistory[];
+  providerReleaseAttempts: number;
+  providerReleaseError: string | null;
+  providerReleaseUpdatedAt: string | null;
 }
 
 export interface RecordPaymentRequest {

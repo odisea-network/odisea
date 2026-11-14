@@ -48,7 +48,7 @@
                       <span class="who__avatar" aria-hidden="true">{{ initials(a.name) }}</span>
                       <div class="col">
                         <a class="ref ref--ink" [routerLink]="['/admin/agencies', a.id]" (click)="$event.stopPropagation()">{{ a.name }}</a>
-                        <span class="small muted">{{ a.billing?.city ? a.billing?.city + ', ' : '' }}{{ a.country }}</span>
+                        <span class="small muted">{{ a.billing?.city ? a.billing.city + ', ' : '' }}{{ a.country }}</span>
                       </div>
                     </div>
                   </td>

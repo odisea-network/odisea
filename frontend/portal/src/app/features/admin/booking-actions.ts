@@ -11,10 +11,12 @@ export interface OperatorActions {
   expire: boolean;
   cancel: boolean;
   voidPayment: boolean;
+  /** Retry giving the supplier hold back: pending after an error, or refused and since sorted out. */
+  retryRelease: boolean;
 }
 
 export function operatorActions(
-  b: Pick<OperatorBooking, 'status' | 'sellAmount' | 'balanceDue' | 'paymentDueAt'>,
+  b: Pick<OperatorBooking, 'status' | 'sellAmount' | 'balanceDue' | 'paymentDueAt' | 'providerRelease'>,
   isAdmin: boolean,
   now: Date,
 ): OperatorActions {
@@ -29,6 +31,7 @@ export function operatorActions(
     expire: awaiting && pastDeadline,
     cancel: isAdmin && (b.status === 'PendingConfirmation' || awaiting || b.status === 'Confirmed'),
     voidPayment: isAdmin && awaiting,
+    retryRelease: b.providerRelease === 'Pending' || b.providerRelease === 'Failed',
   };
 }
 

@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService, SessionUser } from '../core/auth.service';
 import { BrandingService } from '../core/branding.service';
@@ -42,6 +42,7 @@ export function roleLabel(user: SessionUser | null): string {
   imports: [RouterLink, RouterLinkActive, ButtonDirective, Icon],
   templateUrl: './side-nav.html',
   styleUrl: './side-nav.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { role: 'navigation', '[attr.aria-label]': 'area()' },
 })
 export class SideNav {

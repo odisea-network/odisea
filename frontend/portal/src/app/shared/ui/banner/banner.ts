@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -17,6 +17,7 @@ const ICON: Record<BannerTone, IconName> = {
   imports: [Icon],
   template: `<ui-icon [name]="icon()" /><div class="banner__body"><ng-content /></div>`,
   styleUrl: './banner.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     '[class]': '"banner banner--" + tone()',
     '[attr.role]': 'tone() === "bad" ? "alert" : "status"',
