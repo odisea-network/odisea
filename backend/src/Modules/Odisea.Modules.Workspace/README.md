@@ -1,6 +1,6 @@
 # Odisea.Modules.Workspace
 
-**The agency's own back-office inside Odisea** — the paid *Workspace* tier (see `Agencies` → plans). Agencies keep here the business they do outside the operator's packages: reservations they sold on their own site, inquiries from their website, the e-mails those trigger. Odisea stores and tracks; it does not interpret.
+**The agency's own back-office inside Odisea** — the paid *Ledger* and *Workspace* tiers (see `Agencies` → plans). Agencies keep here the business they do outside the operator's packages: reservations they sold on their own site, inquiries from their website, the e-mails those trigger. Odisea stores and tracks; it does not interpret.
 
 ## Owns
 
@@ -56,10 +56,72 @@ Embedding on a website:
 ```
 or `fetch(submitPath, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) })`.
 
+## Reservation ledger
+
+The first product sold to agencies on its own (plan **Ledger**; **Workspace** includes it). An agency registers the bookings it makes with *any* tour operator and sees, in one place, what it owes each of them, when, what commission it expects back and the papers that go with each booking. It is operational reporting, **not accounting**: no VAT, no postings, no exchange rates.
+
+### Owns
+
+- `TourOperator` — the agency's own list (name unique per agency, case-insensitive; contact e-mail / phone, notes). Archived operators stay on old reservations and are not offered for new ones.
+- `LedgerReservation` — operator, the operator's reference (unique per agency + operator), holder name, booked-on and travel dates, **operator price** and currency, optional customer sale price (informational), status (`Draft` / `Confirmed` / `Completed` / `Cancelled`), notes, commission (type, rate, base, expected, received). Optimistic concurrency on Postgres `xmin`.
+- `LedgerInstallment` — the schedule agreed with the operator: any number of rows (`Deposit` / `Balance` / `Other`), each an amount and a due date.
+- `LedgerPayment` — money actually sent to the operator: amount, date, method, reference, an idempotency key; never deleted, only **voided** with a reason.
+- `LedgerDocument` — a file kept with the reservation (operator contract, confirmation, invoice, payment proof, other), bytes in the row, SHA-256, optional link to one payment.
+- `LedgerAuditEvent` — who changed which money-relevant value, when and why (`jsonb` field → from / to). Written in the same `SaveChanges` as the change. Holder names and notes are recorded only as "changed"; a document event keeps the file name, size and hash so a deleted file can still be identified.
+
+### Financial rules
+
+1. `paid` = payments that are not voided. `outstanding = max(0, operator price − paid)`; anything above the price is reported as `overpaid`, never rejected — the transfer happened.
+2. **Payments are not tied to an instalment.** Whatever was paid covers the schedule in order, first instalment first, so one transfer can settle several instalments and a part-payment leaves exactly one instalment partly paid. Instalment status (`Unpaid` / `PartiallyPaid` / `Paid`, `isOverdue`) is computed, not stored.
+3. An instalment is overdue the day **after** its due date. "Today" is the calendar date in `Workspace:Ledger:TimeZone` (default `Europe/Sofia`), one setting for the deployment.
+4. The schedule does not have to add up to the price: `scheduleDifference` is returned and shown ("incomplete schedule"). No instalments at all is valid.
+5. A deposit given as a percentage is a form helper; the API stores amounts.
+6. A payment is always in the reservation's currency. Totals are **per currency** and never added across currencies.
+7. Commission is informational and does not reduce what is owed to the operator. Percent of the operator price or of the customer sale price, or a typed amount; rounded to cents half away from zero. Status (`Expected` / `PartiallyReceived` / `Received`) follows the received amount the agency records.
+8. Cancelling requires a note and changes no figure: fees and refunds differ per operator, so a cancelled reservation keeps counting in "owed" and "overdue" until someone corrects its price and schedule.
+9. Drafts are left out of the dashboard and the due filters: nothing is owed on an unconfirmed booking.
+
+### Permissions
+
+| Action | Agent / API key | Agency admin |
+|---|---|---|
+| Read everything; create and edit reservations; edit the schedule while nothing is paid; record a payment; upload a document; record received commission; add or edit a tour operator | yes | yes |
+| Void a payment; change the operator price or the schedule after a payment (reason required); delete a document; archive / restore a tour operator | no | yes |
+
+An API key is never an agency admin. Writes need `AgencyFeature.ReservationLedger` (403 `…/feature-not-in-plan`); reads keep working after a downgrade. The agency always comes from the token: another agency's reservation, payment or document is a 404.
+
+### Endpoints (policy `Agency`, base `/api/v1/agency`)
+
+| Endpoint | Notes |
+|---|---|
+| `GET/POST tour-operators`, `PUT tour-operators/{id}`, `POST tour-operators/{id}/archive\|unarchive` | archive / unarchive: agency admin |
+| `GET ledger/reservations?q&status&operatorId&travelFrom&travelTo&dueWithinDays&overdueOnly&sort&page&pageSize` | `q` matches reference, holder, operator name. The due filters look at instalments that are still open; both together = overdue or due within N days |
+| `POST ledger/reservations`, `GET/PUT ledger/reservations/{id}` | `PUT` carries `version`; a stale one is 409 `stale_version` |
+| `PUT ledger/reservations/{id}/schedule` | replaces the whole schedule |
+| `POST ledger/reservations/{id}/payments`, `POST …/payments/{paymentId}/void` | same `idempotencyKey` twice records one payment |
+| `POST ledger/reservations/{id}/status`, `PUT ledger/reservations/{id}/commission` | |
+| `GET/POST ledger/reservations/{id}/documents`, `GET …/documents/{documentId}/file`, `DELETE …/documents/{documentId}` | multipart `file` + `type`; PDF / JPEG / PNG recognised by their bytes, 10 MB, 50 per reservation; always served as a download |
+| `GET ledger/reservations/{id}/history` | audit events, newest first |
+| `GET ledger/dashboard` | active reservations, overdue, due in 7 / 30 days, outstanding and commission per currency, the 20 most urgent open instalments |
+
+Every rejection is a ProblemDetails with a stable `code` extension (`reference_taken`, `currency_mismatch`, `admin_required`, `stale_version`, `file_type_unsupported`, …); the portal maps the code to its own wording and never shows the English detail.
+
+### Assumptions to confirm with the product owner
+
+- Commission is settled separately (gross settlement): the agency pays the operator the full price and receives the commission later. Net settlement would change rule 7.
+- Payments from the customer to the agency are not tracked; the customer sale price is a reference figure only.
+- No exchange rates and no conversion; a reservation lives in one currency.
+- Files live in Postgres (`bytea`) without a malware scan. Fine for the first agencies; object storage and scanning come before volume.
+- One time zone per deployment decides "today".
+
+### Not included (yet)
+
+Reading a contract PDF with AI to pre-fill a reservation (needs a privacy review and a provider choice), due-date reminders (e-mail through the Notifications outbox), a read-only role, customer payments, refunds and cancellation fees as their own records, export.
+
 ## Relations
 
 Depends on `Agencies.PublicApi` (policies, `IAgencyEntitlements`, `IAgencyLookup` for the agency name on the public page) and `Notifications.PublicApi` (`IEmailOutbox`).
 
-## Not included (yet)
+## Not included (yet), external reservations and forms
 
 Attachments (form files are ignored), customer self-service beyond the status page, webhooks to the agency's system on status change or new inquiry, CAPTCHA (honeypot + rate limit only), per-form rate limits, bulk import/export.

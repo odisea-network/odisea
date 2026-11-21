@@ -16,9 +16,12 @@ src/
                  branding.service (name, colours, logo from GET /api/v1/branding at startup),
                  theme (contrast maths that derives readable inks from the two brand colours),
                  api.types (DTO mirrors), format (display-only money/date/deadline helpers),
-                 booking-history (status history -> timeline), problem (ProblemDetails)
+                 booking-history (status history -> timeline), problem (ProblemDetails; coded
+                 rejections -> the portal's own wording), i18n/ (bg.ts: every user-facing string,
+                 typed; i18n.ts: t() and tOptional()), entitlements.service (the agency's plan from
+                 GET /api/v1/agency/plan; featureGuard for plan-gated routes)
     shared/ui/   the component kit, one folder per component with its own .scss (see below)
-    shared/pipes/ money, odDate, odDateTime - thin wrappers over core/format
+    shared/pipes/ money, odDate, odDateTime - thin wrappers over core/format; t - dictionary lookup
     layout/      Shell (sidebar on wide screens, top bar + drawer below 900px, bottom tab bar on phones
                  for the agency area, legal footer),
                  SideNav (brand block, one primary action, grouped links, signed-in user),
@@ -35,6 +38,14 @@ src/
                  (/agency/programs/:id: photos, summary, highlights, description, day by day,
                  included / not included, transport, hotels, practical info, policies, upcoming
                  dates linking into search with ?program=&departure= preselected)
+      agency/ledger/  the reservation ledger, behind featureGuard('ReservationLedger'): overview
+                 (/agency/ledger: overdue and due-soon figures per currency, the most urgent
+                 instalments), reservations (search, status, operator and due-date views, paged by
+                 the API), reservation-form (new / edit, deposit-percentage helper), schedule-editor
+                 (the instalment rows, shared by the form and the reservation page),
+                 reservation-detail (figures, schedule, payments with void for the agency admin,
+                 commission, documents, history), documents (upload / download / delete), operators,
+                 ledger-api (the endpoints), ledger.model (pure helpers: schedule maths, labels)
       admin/     dashboard (Today: KPIs, attention queue, period figures, top agencies from
                  /api/v1/admin/dashboard), bookings oversight over /api/v1/admin/bookings: filtered, paged list across agencies;
                  detail with a "next step" card, net cost, price breakdown, payments (inline record
