@@ -1,0 +1,256 @@
+@if (loaded.error()) {
+  <ui-page-header [title]="'ledger.detail.notFoundTitle' | t" [crumbs]="crumbs" />
+  <ui-empty-state tone="error" icon="alert-circle" [title]="'ledger.detail.notFoundTitle' | t" [description]="'ledger.detail.notFoundText' | t">
+    <a uiButton size="sm" routerLink="/agency/ledger/reservations">{{ 'ledger.detail.back' | t }}</a>
+  </ui-empty-state>
+} @else if (!reservation()) {
+  <ui-card><ui-skeleton [lines]="8" /></ui-card>
+} @else if (reservation(); as r) {
+  <ui-page-header [title]="r.reference" [sub]="r.tourOperatorName + ' · ' + r.holderName" [crumbs]="crumbs" tabular>
+    <ui-pill status [tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</ui-pill>
+    <a actions uiButton [routerLink]="['/agency/ledger/reservations', r.id, 'edit']"><ui-icon name="pencil" />{{ 'ledger.detail.edit' | t }}</a>
+    <button actions type="button" uiButton="primary" (click)="openPayment(r)" [disabled]="busy()">
+      <ui-icon name="plus" />{{ 'ledger.detail.recordPayment' | t }}
+    </button>
+  </ui-page-header>
+
+  @if (error(); as message) {
+    <ui-banner tone="bad">{{ message }}</ui-banner>
+  }
+  @if (r.status === 'Cancelled' && r.outstanding > 0) {
+    <ui-banner tone="warn">{{ 'ledger.detail.cancelledWarning' | t }}</ui-banner>
+  }
+  @if (r.overpaid > 0) {
+    <ui-banner tone="warn">{{ 'ledger.detail.overpaidWarning' | t: { amount: (r.overpaid | money: r.currency) } }}</ui-banner>
+  }
+
+  <ui-card>
+    <dl class="figures">
+      <div><dt>{{ 'ledger.detail.total' | t }}</dt><dd class="m">{{ r.operatorTotal | money: r.currency }}</dd></div>
+      <div><dt>{{ 'ledger.detail.paid' | t }}</dt><dd class="m">{{ r.paidTotal | money: r.currency }}</dd></div>
+      <div><dt>{{ 'ledger.detail.outstanding' | t }}</dt><dd class="m figures__main">{{ r.outstanding | money: r.currency }}</dd></div>
+      <div>
+        <dt>{{ 'ledger.detail.overdue' | t }}</dt>
+        <dd class="m" [class.u-over]="r.overdueAmount > 0">{{ r.overdueAmount | money: r.currency }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'ledger.detail.nextDue' | t }}</dt>
+        <dd class="num">{{ r.nextDueDate ? (r.nextDueDate | odDate) : ('ledger.detail.noDue' | t) }}</dd>
+      </div>
+    </dl>
+  </ui-card>
+
+  <div class="detail">
+    <div class="detail__main">
+      <ui-card [title]="'ledger.detail.scheduleTitle' | t" flush>
+        <span cardActions class="row">
+          @if (hasPayments() && !isAdmin()) {
+            <span class="why"><ui-icon name="lock" size="sm" />{{ 'ledger.detail.scheduleAdminOnly' | t }}</span>
+          }
+          <button type="button" uiButton size="sm" (click)="openSchedule(r)" [disabled]="busy() || (hasPayments() && !isAdmin())">
+            {{ 'ledger.detail.editSchedule' | t }}
+          </button>
+        </span>
+        @if (r.installments.length === 0) {
+          <p class="small muted pad">{{ 'ledger.detail.scheduleEmpty' | t }}</p>
+        } @else {
+          <div class="tw">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>{{ 'ledger.schedule.label' | t }}</th>
+                  <th>{{ 'ledger.schedule.dueDate' | t }}</th>
+                  <th class="r">{{ 'ledger.schedule.amount' | t }}</th>
+                  <th class="r">{{ 'ledger.detail.paid' | t }}</th>
+                  <th class="r">{{ 'ledger.list.colOutstanding' | t }}</th>
+                  <th>{{ 'ledger.list.status' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (i of r.installments; track i.id) {
+                  <tr>
+                    <td><b>{{ labelText(i) }}</b></td>
+                    <td class="num" [class.u-over]="i.isOverdue">{{ i.dueDate | odDate }}</td>
+                    <td class="r m">{{ i.amount | money: r.currency }}</td>
+                    <td class="r m">{{ i.paidAmount | money: r.currency }}</td>
+                    <td class="r m strong">{{ i.remainingAmount | money: r.currency }}</td>
+                    <td><ui-pill [tone]="installmentTone(i)">{{ installmentStatus(i) }}</ui-pill></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        @if (r.scheduleDifference > 0 && r.installments.length > 0) {
+          <div class="pad"><ui-banner tone="warn">{{ 'ledger.schedule.short' | t: { amount: (r.scheduleDifference | money: r.currency) } }}</ui-banner></div>
+        } @else if (r.scheduleDifference < 0) {
+          <div class="pad"><ui-banner tone="warn">{{ 'ledger.schedule.over' | t: { amount: (-r.scheduleDifference | money: r.currency) } }}</ui-banner></div>
+        }
+      </ui-card>
+
+      <ui-card [title]="'ledger.detail.paymentsTitle' | t" flush>
+        @if (r.payments.length === 0) {
+          <p class="small muted pad">{{ 'ledger.detail.paymentsEmpty' | t }}</p>
+        } @else {
+          <div class="tw">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>{{ 'ledger.detail.colDate' | t }}</th>
+                  <th>{{ 'ledger.detail.colMethod' | t }}</th>
+                  <th>{{ 'ledger.detail.colReference' | t }}</th>
+                  <th class="r">{{ 'ledger.detail.colAmount' | t }}</th>
+                  <th><span class="sr-only">{{ 'common.actions' | t }}</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of r.payments; track p.id) {
+                  <tr [class.voided]="p.isVoided">
+                    <td class="num">{{ p.paidOn | odDate }}</td>
+                    <td>{{ methodText(p.method) }}</td>
+                    <td>
+                      {{ p.reference ?? '—' }}
+                      @if (p.note) {
+                        <div class="sub-line">{{ p.note }}</div>
+                      }
+                      @if (p.isVoided) {
+                        <div class="sub-line">{{ 'ledger.detail.voidReason' | t: { reason: p.voidReason ?? '' } }}</div>
+                      }
+                    </td>
+                    <td class="r m strong"><span class="amount">{{ p.amount | money: p.currency }}</span></td>
+                    <td class="r">
+                      @if (p.isVoided) {
+                        <ui-pill tone="bad">{{ 'ledger.detail.voided' | t }}</ui-pill>
+                      } @else if (isAdmin()) {
+                        <button type="button" uiButton="danger-quiet" size="sm" (click)="voidPayment(r, p)" [disabled]="busy()">
+                          {{ 'ledger.detail.void' | t }}
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (!isAdmin() && hasPayments()) {
+            <p class="why pad"><ui-icon name="lock" size="sm" />{{ 'ledger.detail.voidAdminOnly' | t }}</p>
+          }
+        }
+      </ui-card>
+
+      <ui-card [title]="'ledger.detail.historyTitle' | t">
+        @if (timeline().length === 0) {
+          <p class="small muted note">{{ 'ledger.detail.historyEmpty' | t }}</p>
+        } @else {
+          <ui-timeline [items]="timeline()" />
+        }
+      </ui-card>
+    </div>
+
+    <aside class="detail__aside">
+      <ui-card [title]="'ledger.detail.statusTitle' | t">
+        <div class="row wrap">
+          @for (action of actions(); track action.status) {
+            <button type="button" [uiButton]="action.danger ? 'danger-quiet' : 'secondary'" size="sm" (click)="changeStatus(r, action)" [disabled]="busy()">
+              {{ action.label }}
+            </button>
+          }
+        </div>
+        @if (r.cancellationNote) {
+          <p class="small note"><span class="muted">{{ 'ledger.detail.cancellationNote' | t }}:</span> {{ r.cancellationNote }}</p>
+        }
+      </ui-card>
+
+      <ui-card [title]="'ledger.detail.commissionTitle' | t">
+        @if (r.commission; as c) {
+          <dl class="kv">
+            <dt>{{ 'ledger.detail.commissionExpected' | t }}</dt>
+            <dd>
+              <span class="m">{{ c.expectedAmount === null ? ('ledger.detail.commissionUnknown' | t) : (c.expectedAmount | money: r.currency) }}</span>
+              <div class="small muted">{{ commissionRule(r) }}</div>
+            </dd>
+            <dt>{{ 'ledger.detail.commissionReceived' | t }}</dt>
+            <dd><span class="m">{{ c.receivedAmount | money: r.currency }}</span><span class="small muted"> · {{ commissionStatus(r) }}</span></dd>
+          </dl>
+          <form class="received" (ngSubmit)="saveReceived(r)">
+            <ui-field [label]="'ledger.detail.receivedAmount' | t" for="ld-received">
+              <input uiInput size="sm" id="ld-received" name="received" type="number" min="0" step="0.01" class="m"
+                [ngModel]="receivedDraft ?? c.receivedAmount" (ngModelChange)="receivedDraft = $event" />
+            </ui-field>
+            <button type="submit" uiButton size="sm" [disabled]="busy() || receivedDraft === null">{{ 'ledger.detail.saveReceived' | t }}</button>
+          </form>
+          <p class="small muted note">{{ 'ledger.form.commissionInfo' | t }}</p>
+        } @else {
+          <p class="small muted note">{{ 'ledger.detail.commissionNone' | t }}</p>
+        }
+      </ui-card>
+
+      <ui-card [title]="'ledger.form.sectionBooking' | t">
+        <dl class="kv">
+          <dt>{{ 'ledger.detail.operator' | t }}</dt><dd>{{ r.tourOperatorName }}</dd>
+          <dt>{{ 'ledger.detail.holder' | t }}</dt><dd>{{ r.holderName }}</dd>
+          <dt>{{ 'ledger.detail.travel' | t }}</dt>
+          <dd class="num">{{ r.travelStart | odDate }}@if (r.travelEnd) { – {{ r.travelEnd | odDate }}}</dd>
+          <dt>{{ 'ledger.detail.bookedOn' | t }}</dt><dd class="num">{{ r.bookedOn | odDate }}</dd>
+          @if (r.customerSaleAmount !== null) {
+            <dt>{{ 'ledger.detail.customerSale' | t }}</dt><dd class="m">{{ r.customerSaleAmount | money: r.currency }}</dd>
+          }
+          @if (r.notes) {
+            <dt>{{ 'ledger.detail.notes' | t }}</dt><dd class="notes">{{ r.notes }}</dd>
+          }
+        </dl>
+      </ui-card>
+    </aside>
+  </div>
+
+  <ui-sheet [(open)]="paymentOpen" [title]="'ledger.payment.title' | t"
+    [sub]="'ledger.payment.sub' | t: { reference: r.reference, amount: (r.outstanding | money: r.currency) }">
+    <form id="ld-payment" (ngSubmit)="savePayment(r)">
+      @if (paymentError(); as message) {
+        <ui-banner tone="bad">{{ message }}</ui-banner>
+      }
+      <ui-field [label]="('ledger.payment.amount' | t) + ' (' + r.currency + ')'" for="ld-amount">
+        <input uiInput id="ld-amount" name="amount" type="number" min="0.01" step="0.01" class="m" [(ngModel)]="payment.amount" required />
+      </ui-field>
+      @if (overpayBy(r) > 0) {
+        <ui-banner tone="warn">{{ 'ledger.payment.overpayWarning' | t: { amount: (overpayBy(r) | money: r.currency) } }}</ui-banner>
+      }
+      <ui-field [label]="'ledger.payment.paidOn' | t" for="ld-paid-on">
+        <input uiInput id="ld-paid-on" name="paidOn" type="date" [max]="today" [(ngModel)]="payment.paidOn" required />
+      </ui-field>
+      <ui-field [label]="'ledger.payment.method' | t" for="ld-method">
+        <select uiInput id="ld-method" name="method" [(ngModel)]="payment.method">
+          @for (m of methods; track m) {
+            <option [value]="m">{{ methodText(m) }}</option>
+          }
+        </select>
+      </ui-field>
+      <ui-field [label]="'ledger.payment.reference' | t" for="ld-ref" optional>
+        <input uiInput id="ld-ref" name="reference" maxlength="100" [(ngModel)]="payment.reference" />
+      </ui-field>
+      <ui-field [label]="'ledger.payment.note' | t" for="ld-note" optional>
+        <textarea uiInput id="ld-note" name="note" rows="2" maxlength="500" [(ngModel)]="payment.note"></textarea>
+      </ui-field>
+    </form>
+    <button sheetActions type="button" uiButton (click)="paymentOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="ld-payment" uiButton="primary" [disabled]="busy() || !paymentValid()">
+      {{ busy() ? ('common.saving' | t) : ('ledger.payment.save' | t) }}
+    </button>
+  </ui-sheet>
+
+  <ui-sheet [(open)]="scheduleOpen" [title]="'ledger.scheduleSheet.title' | t" [sub]="r.reference">
+    @if (scheduleError(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <app-ledger-schedule-editor [(rows)]="scheduleRows" [operatorTotal]="r.operatorTotal" [currency]="r.currency" />
+    @if (hasPayments()) {
+      <ui-field [label]="'ledger.scheduleSheet.reason' | t" for="ld-schedule-reason">
+        <input uiInput id="ld-schedule-reason" name="scheduleReason" maxlength="500" [(ngModel)]="scheduleReason" />
+      </ui-field>
+    }
+    <button sheetActions type="button" uiButton (click)="scheduleOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="button" uiButton="primary" (click)="saveSchedule(r)" [disabled]="busy() || !scheduleSavable()">
+      {{ busy() ? ('common.saving' | t) : ('ledger.scheduleSheet.save' | t) }}
+    </button>
+  </ui-sheet>
+}
