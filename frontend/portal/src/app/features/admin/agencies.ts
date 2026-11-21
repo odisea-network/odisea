@@ -4,9 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AgencyDetailDto, SaveAgencyRequest } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, SegmentOption,
   Segmented, Sheet, Skeleton, ToastService,
@@ -22,7 +24,7 @@ export function agencyInitials(name: string): string {
 @Component({
   selector: 'app-admin-agencies',
   imports: [
-    FormsModule, RouterLink, MoneyPipe, OdDatePipe,
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Segmented, Sheet,
     Skeleton,
   ],
@@ -49,9 +51,9 @@ export class AdminAgencies {
   readonly views = computed<SegmentOption[]>(() => {
     const list = this.agencies.value() ?? [];
     return [
-      { value: 'all', label: 'All', count: list.length },
-      { value: 'active', label: 'Active', count: list.filter(a => a.status === 'Active').length },
-      { value: 'suspended', label: 'Suspended', count: list.filter(a => a.status === 'Suspended').length },
+      { value: 'all', label: t('common.all'), count: list.length },
+      { value: 'active', label: t('agencies.viewActive'), count: list.filter(a => a.status === 'Active').length },
+      { value: 'suspended', label: t('agencies.viewSuspended'), count: list.filter(a => a.status === 'Suspended').length },
     ];
   });
 
@@ -99,10 +101,10 @@ export class AdminAgencies {
         contactEmail: this.form.contactEmail?.trim() || null,
       }));
       this.createOpen.set(false);
-      this.toasts.show(`${created.name} added`);
+      this.toasts.show(t('agencies.added', { name: created.name }));
       await this.router.navigate(['/admin/agencies', created.id]);
     } catch (err) {
-      this.error.set(problemMessage(err, 'Could not create the agency.'));
+      this.error.set(problemMessage(err, t('agencies.createFailed')));
     } finally {
       this.busy.set(false);
     }

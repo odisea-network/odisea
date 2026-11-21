@@ -1,24 +1,24 @@
 @if (loaded.error()) {
-  <ui-page-header title="Agency" [crumbs]="[{ label: 'Agencies', link: '/admin/agencies' }, { label: 'Not found' }]" />
-  <ui-empty-state tone="error" icon="alert-circle" title="Couldn't load this agency" description="It may not exist, or the API is unreachable.">
-    <button type="button" uiButton size="sm" (click)="loaded.reload()">Retry</button>
+  <ui-page-header [title]="'agencyDetail.title' | t" [crumbs]="[{ label: ('nav.agencies' | t), link: '/admin/agencies' }, { label: ('agencyDetail.notFoundCrumb' | t) }]" />
+  <ui-empty-state tone="error" icon="alert-circle" [title]="'agencyDetail.loadFailedTitle' | t" [description]="'agencyDetail.loadFailedText' | t">
+    <button type="button" uiButton size="sm" (click)="loaded.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (agency(); as a) {
   <ui-page-header
     [title]="a.name"
-    [crumbs]="[{ label: 'Agencies', link: '/admin/agencies' }, { label: a.name }]"
-    [sub]="a.country + ' · ' + a.plan + ' plan · partner since ' + (a.createdAt | odDate) + (users.value() ? ' · ' + users.value()!.length + ' users' : '')"
+    [crumbs]="[{ label: ('nav.agencies' | t), link: '/admin/agencies' }, { label: a.name }]"
+    [sub]="('agencyDetail.sub' | t: { country: a.country, plan: a.plan, date: (a.createdAt | odDate) }) + (users.value() ? ' · ' + ('agencyDetail.usersCount' | t: { n: users.value()!.length }) : '')"
   >
     @if (a.status === 'Active') {
-      <ui-pill status tone="ok"><ui-icon name="check-circle" size="sm" />Active</ui-pill>
+      <ui-pill status tone="ok"><ui-icon name="check-circle" size="sm" />{{ 'agencies.active' | t }}</ui-pill>
     } @else {
-      <ui-pill status tone="bad"><ui-icon name="slash-circle" size="sm" />Suspended</ui-pill>
+      <ui-pill status tone="bad"><ui-icon name="slash-circle" size="sm" />{{ 'agencies.suspended' | t }}</ui-pill>
     }
-    <button actions type="button" uiButton (click)="openEdit()">Edit details</button>
+    <button actions type="button" uiButton (click)="openEdit()">{{ 'agencyDetail.editDetails' | t }}</button>
     @if (a.status === 'Active') {
-      <button actions type="button" uiButton="danger-quiet" (click)="toggleStatus()" [disabled]="busy()">Suspend…</button>
+      <button actions type="button" uiButton="danger-quiet" (click)="toggleStatus()" [disabled]="busy()">{{ 'agencyDetail.suspendMore' | t }}</button>
     } @else {
-      <button actions type="button" uiButton="primary" (click)="toggleStatus()" [disabled]="busy()">Reactivate</button>
+      <button actions type="button" uiButton="primary" (click)="toggleStatus()" [disabled]="busy()">{{ 'agencyDetail.reactivate' | t }}</button>
     }
   </ui-page-header>
 
@@ -28,15 +28,15 @@
 
   <div class="tiles">
     <div class="tile">
-      <span class="small muted">Credit limit</span>
+      <span class="small muted">{{ 'agencies.colCreditLimit' | t }}</span>
       <div class="m tile__v">{{ a.creditLimit | money }}</div>
-      <span class="small muted">per the agreement</span>
+      <span class="small muted">{{ 'agencyDetail.perAgreement' | t }}</span>
     </div>
     <div class="tile">
       <div class="row between">
-        <span class="small muted">Plan</span>
+        <span class="small muted">{{ 'agencyDetail.plan' | t }}</span>
         @if (isAdmin()) {
-          <select uiInput size="sm" class="tile__link" aria-label="Change plan" (change)="pickPlan($event)" [disabled]="busy()">
+          <select uiInput size="sm" class="tile__link" [attr.aria-label]="'agencyDetail.changePlan' | t" (change)="pickPlan($event)" [disabled]="busy()">
             @for (p of plans; track p) {
               <option [value]="p" [selected]="p === a.plan">{{ p }}</option>
             }
@@ -47,14 +47,14 @@
       <span class="small muted">{{ planSummary[a.plan] }}</span>
     </div>
     <div class="tile">
-      <span class="small muted">Users</span>
+      <span class="small muted">{{ 'agencyDetail.users' | t }}</span>
       <div class="m tile__v">{{ users.value()?.length ?? '—' }}</div>
-      <span class="small muted">{{ (users.value() ?? []).length > 0 ? 'can sign in' : 'nobody can sign in yet' }}</span>
+      <span class="small muted">{{ ((users.value() ?? []).length > 0 ? 'agencyDetail.usersCan' : 'agencyDetail.usersNone') | t }}</span>
     </div>
     <div class="tile">
-      <span class="small muted">Bookings</span>
+      <span class="small muted">{{ 'nav.bookings' | t }}</span>
       <div class="m tile__v">{{ bookings.value()?.totalCount ?? '—' }}</div>
-      <a class="small" [routerLink]="['/admin/bookings']" [queryParams]="{ agencyId: a.id }">Open the list</a>
+      <a class="small" [routerLink]="['/admin/bookings']" [queryParams]="{ agencyId: a.id }">{{ 'agencyDetail.openList' | t }}</a>
     </div>
   </div>
 
@@ -64,28 +64,28 @@
     @if (tab() === 'overview') {
       <div class="overview">
         <section class="block">
-          <div class="row between"><h2 class="h3">Contact</h2></div>
+          <div class="row between"><h2 class="h3">{{ 'agencyDetail.contact' | t }}</h2></div>
           <dl class="kv">
-            <dt>Email</dt><dd>{{ a.contactEmail ?? '—' }}</dd>
-            <dt>Country</dt><dd>{{ a.country }}</dd>
-            <dt>Status</dt><dd>{{ a.status }}</dd>
+            <dt>{{ 'agencyDetail.email' | t }}</dt><dd>{{ a.contactEmail ?? '—' }}</dd>
+            <dt>{{ 'agencies.country' | t }}</dt><dd>{{ a.country }}</dd>
+            <dt>{{ 'agencyDetail.status' | t }}</dt><dd>{{ (a.status === 'Active' ? 'agencies.active' : 'agencies.suspended') | t }}</dd>
           </dl>
         </section>
         <section class="block">
           <div class="row between">
-            <h2 class="h3">Billing requisites</h2>
-            <button type="button" uiButton="ghost" size="sm" (click)="openBilling()">{{ a.billing ? 'Edit' : 'Add' }}</button>
+            <h2 class="h3">{{ 'agencyDetail.billing' | t }}</h2>
+            <button type="button" uiButton="ghost" size="sm" (click)="openBilling()">{{ (a.billing ? 'agencyDetail.edit' : 'agencyDetail.add') | t }}</button>
           </div>
           @if (a.billing; as b) {
             <dl class="kv">
-              <dt>Legal name</dt><dd>{{ b.legalName }}</dd>
-              <dt>EIK</dt><dd class="mono">{{ b.eik }}</dd>
-              <dt>VAT number</dt><dd class="mono">{{ b.vatNumber ?? '—' }}</dd>
-              <dt>Address</dt><dd>{{ b.address }}, {{ b.city }}</dd>
-              <dt>MOL</dt><dd>{{ b.mol }}</dd>
+              <dt>{{ 'agencyDetail.legalName' | t }}</dt><dd>{{ b.legalName }}</dd>
+              <dt>{{ 'agencyDetail.eik' | t }}</dt><dd class="mono">{{ b.eik }}</dd>
+              <dt>{{ 'agencyDetail.vatNumber' | t }}</dt><dd class="mono">{{ b.vatNumber ?? '—' }}</dd>
+              <dt>{{ 'agencyDetail.address' | t }}</dt><dd>{{ b.address }}, {{ b.city }}</dd>
+              <dt>{{ 'agencyDetail.mol' | t }}</dt><dd>{{ b.mol }}</dd>
             </dl>
           } @else {
-            <p class="small muted">Needed before an invoice can be issued to this agency.</p>
+            <p class="small muted">{{ 'agencyDetail.billingMissing' | t }}</p>
           }
         </section>
       </div>
@@ -93,23 +93,23 @@
 
     @if (tab() === 'users') {
       <div class="row between tabhead">
-        <div><h2 class="h2">Users</h2><p class="small muted">People who sign in to the partner portal for {{ a.name }}.</p></div>
-        <button type="button" uiButton size="sm" (click)="openUser()"><ui-icon name="plus" />Add user</button>
+        <div><h2 class="h2">{{ 'agencyDetail.users' | t }}</h2><p class="small muted">{{ 'agencyDetail.usersSub' | t: { name: a.name } }}</p></div>
+        <button type="button" uiButton size="sm" (click)="openUser()"><ui-icon name="plus" />{{ 'agencyDetail.addUser' | t }}</button>
       </div>
       @if (users.value(); as list) {
         @if (list.length === 0) {
-          <p class="small muted pad">No users yet — add one so the agency can sign in.</p>
+          <p class="small muted pad">{{ 'agencyDetail.noUsers' | t }}</p>
         } @else {
           <div class="tw">
             <table class="tbl">
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th></tr></thead>
+              <thead><tr><th>{{ 'agencyDetail.colName' | t }}</th><th>{{ 'agencyDetail.email' | t }}</th><th>{{ 'agencyDetail.colRole' | t }}</th><th>{{ 'agencyDetail.status' | t }}</th><th>{{ 'agencyDetail.colAdded' | t }}</th></tr></thead>
               <tbody>
                 @for (u of list; track u.id) {
                   <tr>
                     <td><b>{{ u.fullName }}</b></td>
                     <td>{{ u.email }}</td>
                     <td>{{ roleLabel(u.role) }}</td>
-                    <td>@if (u.isActive) {<ui-pill tone="ok">Active</ui-pill>} @else {<ui-pill>Deactivated</ui-pill>}</td>
+                    <td>@if (u.isActive) {<ui-pill tone="ok">{{ 'agencyDetail.userActive' | t }}</ui-pill>} @else {<ui-pill>{{ 'agencyDetail.userDeactivated' | t }}</ui-pill>}</td>
                     <td class="muted num">{{ u.createdAt | odDate }}</td>
                   </tr>
                 }
@@ -124,34 +124,34 @@
 
     @if (tab() === 'keys') {
       <div class="row between tabhead">
-        <div><h2 class="h2">API keys</h2><p class="small muted">For {{ a.name }}’s own systems. Keys act as the agency; each call shows in booking history as an API client.</p></div>
-        <button type="button" uiButton="primary" size="sm" (click)="openKey()"><ui-icon name="plus" />Create key</button>
+        <div><h2 class="h2">{{ 'agencyDetail.tabKeys' | t }}</h2><p class="small muted">{{ 'agencyDetail.keysSub' | t: { name: a.name } }}</p></div>
+        <button type="button" uiButton="primary" size="sm" (click)="openKey()"><ui-icon name="plus" />{{ 'agencyDetail.createKey' | t }}</button>
       </div>
       @if (keys.value(); as list) {
         @if (list.length === 0) {
-          <p class="small muted pad">No keys yet.</p>
+          <p class="small muted pad">{{ 'agencyDetail.noKeys' | t }}</p>
         } @else {
           <div class="tw">
             <table class="tbl">
-              <thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Expires</th><th>Last used</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th>{{ 'agencyDetail.colName' | t }}</th><th>{{ 'agencyDetail.colKey' | t }}</th><th>{{ 'agencyDetail.colCreated' | t }}</th><th>{{ 'agencyDetail.colExpires' | t }}</th><th>{{ 'agencyDetail.colLastUsed' | t }}</th><th>{{ 'agencyDetail.status' | t }}</th><th><span class="sr-only">{{ 'common.actions' | t }}</span></th></tr></thead>
               <tbody>
                 @for (k of list; track k.id) {
                   <tr>
                     <td><b>{{ k.name }}</b></td>
                     <td class="mono">{{ k.keyPrefix }}…</td>
                     <td class="num">{{ k.createdAt | odDate }}</td>
-                    <td class="num">{{ k.expiresAt ? (k.expiresAt | odDate) : 'Never' }}</td>
-                    <td class="muted num">{{ k.lastUsedAt ? (k.lastUsedAt | odDateTime) : 'Never' }}</td>
+                    <td class="num">{{ k.expiresAt ? (k.expiresAt | odDate) : ('agencyDetail.noExpiry' | t) }}</td>
+                    <td class="muted num">{{ k.lastUsedAt ? (k.lastUsedAt | odDateTime) : ('agencyDetail.neverUsed' | t) }}</td>
                     <td>
                       @switch (keyState(k)) {
-                        @case ('Active') { <ui-pill tone="ok">Active</ui-pill> }
-                        @case ('Expired') { <ui-pill>Expired</ui-pill> }
-                        @default { <ui-pill tone="bad">Revoked</ui-pill> }
+                        @case ('Active') { <ui-pill tone="ok">{{ 'agencyDetail.keyActive' | t }}</ui-pill> }
+                        @case ('Expired') { <ui-pill>{{ 'agencyDetail.keyExpired' | t }}</ui-pill> }
+                        @default { <ui-pill tone="bad">{{ 'agencyDetail.keyRevoked' | t }}</ui-pill> }
                       }
                     </td>
                     <td class="r">
                       @if (keyState(k) === 'Active') {
-                        <button type="button" uiButton="ghost" size="sm" class="danger-text" (click)="revoke(k)" [disabled]="busy()">Revoke</button>
+                        <button type="button" uiButton="ghost" size="sm" class="danger-text" (click)="revoke(k)" [disabled]="busy()">{{ 'agencyDetail.revoke' | t }}</button>
                       }
                     </td>
                   </tr>
@@ -167,100 +167,100 @@
 
     @if (tab() === 'bookings') {
       <div class="pad">
-        <ui-empty-state icon="bookings" title="Same list as Bookings, pre-filtered to this agency" [description]="(bookings.value()?.totalCount ?? 0) + ' bookings so far'">
-          <a uiButton size="sm" [routerLink]="['/admin/bookings']" [queryParams]="{ agencyId: a.id }">Open filtered list</a>
+        <ui-empty-state icon="bookings" [title]="'agencyDetail.bookingsTitle' | t" [description]="'agencyDetail.bookingsCount' | t: { n: bookings.value()?.totalCount ?? 0 }">
+          <a uiButton size="sm" [routerLink]="['/admin/bookings']" [queryParams]="{ agencyId: a.id }">{{ 'agencyDetail.openFiltered' | t }}</a>
         </ui-empty-state>
       </div>
     }
   </ui-card>
 
-  <ui-sheet [(open)]="editOpen" title="Edit agency">
+  <ui-sheet [(open)]="editOpen" [title]="'agencyDetail.editTitle' | t">
     <form id="edit-agency" (ngSubmit)="saveEdit()">
-      <ui-field label="Agency name" for="ed-name"><input uiInput id="ed-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
+      <ui-field [label]="'agencies.name' | t" for="ed-name"><input uiInput id="ed-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
       <div class="two">
-        <ui-field label="Country" for="ed-country" hint="2-letter code"><input uiInput id="ed-country" name="country" [(ngModel)]="edit.country" maxlength="2" /></ui-field>
-        <ui-field label="Credit limit" for="ed-credit" hint="EUR"><input uiInput id="ed-credit" name="creditLimit" type="number" min="0" step="100" class="m" [(ngModel)]="edit.creditLimit" /></ui-field>
+        <ui-field [label]="'agencies.country' | t" for="ed-country" [hint]="'agencies.countryHint' | t"><input uiInput id="ed-country" name="country" [(ngModel)]="edit.country" maxlength="2" /></ui-field>
+        <ui-field [label]="'agencies.creditLimit' | t" for="ed-credit" hint="EUR"><input uiInput id="ed-credit" name="creditLimit" type="number" min="0" step="100" class="m" [(ngModel)]="edit.creditLimit" /></ui-field>
       </div>
-      <ui-field label="Contact email" for="ed-email" optional><input uiInput id="ed-email" name="contactEmail" type="email" [(ngModel)]="edit.contactEmail" /></ui-field>
+      <ui-field [label]="'agencies.contactEmail' | t" for="ed-email" optional><input uiInput id="ed-email" name="contactEmail" type="email" [(ngModel)]="edit.contactEmail" /></ui-field>
     </form>
-    <button sheetActions type="button" uiButton (click)="editOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="edit-agency" uiButton="primary" [disabled]="busy()">Save</button>
+    <button sheetActions type="button" uiButton (click)="editOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="edit-agency" uiButton="primary" [disabled]="busy()">{{ 'common.save' | t }}</button>
   </ui-sheet>
 
-  <ui-sheet [(open)]="billingOpen" title="Billing requisites" sub="Printed on every invoice issued to the agency.">
+  <ui-sheet [(open)]="billingOpen" [title]="'agencyDetail.billing' | t" [sub]="'agencyDetail.billingSub' | t">
     <form id="edit-billing" (ngSubmit)="saveBilling()">
-      <ui-field label="Legal name" for="bl-legal"><input uiInput id="bl-legal" name="legalName" [(ngModel)]="billing.legalName" required maxlength="200" /></ui-field>
+      <ui-field [label]="'agencyDetail.legalName' | t" for="bl-legal"><input uiInput id="bl-legal" name="legalName" [(ngModel)]="billing.legalName" required maxlength="200" /></ui-field>
       <div class="two">
-        <ui-field label="EIK" for="bl-eik" hint="9 digits (13 for branches)"><input uiInput id="bl-eik" name="eik" class="mono" [(ngModel)]="billing.eik" required /></ui-field>
-        <ui-field label="VAT number" for="bl-vat" optional hint="BG + 9–10 digits"><input uiInput id="bl-vat" name="vatNumber" class="mono" [(ngModel)]="billing.vatNumber" placeholder="BG…" /></ui-field>
+        <ui-field [label]="'agencyDetail.eik' | t" for="bl-eik" [hint]="'agencyDetail.eikHint' | t"><input uiInput id="bl-eik" name="eik" class="mono" [(ngModel)]="billing.eik" required /></ui-field>
+        <ui-field [label]="'agencyDetail.vatNumber' | t" for="bl-vat" optional [hint]="'agencyDetail.vatNumberHint' | t"><input uiInput id="bl-vat" name="vatNumber" class="mono" [(ngModel)]="billing.vatNumber" placeholder="BG…" /></ui-field>
       </div>
-      <ui-field label="Address" for="bl-address"><input uiInput id="bl-address" name="address" [(ngModel)]="billing.address" required maxlength="300" /></ui-field>
+      <ui-field [label]="'agencyDetail.address' | t" for="bl-address"><input uiInput id="bl-address" name="address" [(ngModel)]="billing.address" required maxlength="300" /></ui-field>
       <div class="two">
-        <ui-field label="City" for="bl-city"><input uiInput id="bl-city" name="city" [(ngModel)]="billing.city" required maxlength="100" /></ui-field>
-        <ui-field label="MOL" for="bl-mol" hint="Person in charge"><input uiInput id="bl-mol" name="mol" [(ngModel)]="billing.mol" required maxlength="200" /></ui-field>
+        <ui-field [label]="'agencyDetail.city' | t" for="bl-city"><input uiInput id="bl-city" name="city" [(ngModel)]="billing.city" required maxlength="100" /></ui-field>
+        <ui-field [label]="'agencyDetail.mol' | t" for="bl-mol" [hint]="'agencyDetail.molHint' | t"><input uiInput id="bl-mol" name="mol" [(ngModel)]="billing.mol" required maxlength="200" /></ui-field>
       </div>
     </form>
-    <button sheetActions type="button" uiButton (click)="billingOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="edit-billing" uiButton="primary" [disabled]="busy() || !billingValid()">Save</button>
+    <button sheetActions type="button" uiButton (click)="billingOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="edit-billing" uiButton="primary" [disabled]="busy() || !billingValid()">{{ 'common.save' | t }}</button>
   </ui-sheet>
 
-  <ui-sheet [(open)]="userOpen" title="Add user" [sub]="'They sign in to the partner portal as ' + a.name + '.'">
+  <ui-sheet [(open)]="userOpen" [title]="'agencyDetail.userTitle' | t" [sub]="'agencyDetail.userSub' | t: { name: a.name }">
     <form id="add-user" (ngSubmit)="createUser()">
-      <ui-field label="Full name" for="us-name"><input uiInput id="us-name" name="fullName" [(ngModel)]="user.fullName" required maxlength="200" autocomplete="off" /></ui-field>
-      <ui-field label="Work email" for="us-email"><input uiInput id="us-email" name="email" type="email" [(ngModel)]="user.email" required autocomplete="off" /></ui-field>
-      <ui-field label="Role" for="us-role" hint="Agency admins see every booking of the agency">
+      <ui-field [label]="'agencyDetail.fullName' | t" for="us-name"><input uiInput id="us-name" name="fullName" [(ngModel)]="user.fullName" required maxlength="200" autocomplete="off" /></ui-field>
+      <ui-field [label]="'agencyDetail.workEmail' | t" for="us-email"><input uiInput id="us-email" name="email" type="email" [(ngModel)]="user.email" required autocomplete="off" /></ui-field>
+      <ui-field [label]="'agencyDetail.colRole' | t" for="us-role" [hint]="'agencyDetail.roleHint' | t">
         <select uiInput id="us-role" name="role" [(ngModel)]="user.role">
-          <option value="Agent">Agent</option>
-          <option value="AgencyAdmin">Agency admin</option>
+          <option value="Agent">{{ 'roles.agent' | t }}</option>
+          <option value="AgencyAdmin">{{ 'roles.agencyAdmin' | t }}</option>
         </select>
       </ui-field>
-      <ui-field label="Initial password" for="us-pw" hint="12 to 128 characters; share it over a separate channel">
+      <ui-field [label]="'agencyDetail.initialPassword' | t" for="us-pw" [hint]="'agencyDetail.passwordHint' | t">
         <span class="pw">
           <input uiInput id="us-pw" name="password" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="user.password" minlength="12" maxlength="128" autocomplete="new-password" />
-          <button type="button" uiButton="ghost" size="sm" iconOnly class="pw__eye" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'" (click)="showPassword.set(!showPassword())"><ui-icon [name]="showPassword() ? 'eye-off' : 'eye'" /></button>
+          <button type="button" uiButton="ghost" size="sm" iconOnly class="pw__eye" [attr.aria-label]="(showPassword() ? 'login.hidePassword' : 'login.showPassword') | t" (click)="showPassword.set(!showPassword())"><ui-icon [name]="showPassword() ? 'eye-off' : 'eye'" /></button>
         </span>
       </ui-field>
     </form>
-    <button sheetActions type="button" uiButton (click)="userOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="add-user" uiButton="primary" [disabled]="busy() || !userValid()">Add user</button>
+    <button sheetActions type="button" uiButton (click)="userOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="add-user" uiButton="primary" [disabled]="busy() || !userValid()">{{ 'agencyDetail.addUser' | t }}</button>
   </ui-sheet>
 
-  <ui-sheet [(open)]="keyOpen" [title]="'New API key for ' + a.name">
+  <ui-sheet [(open)]="keyOpen" [title]="'agencyDetail.keyTitle' | t: { name: a.name }">
     <form id="add-key" (ngSubmit)="createKey()">
-      <ui-field label="Name" for="ky-name" hint="Appears as the actor in booking history"><input uiInput id="ky-name" name="name" [(ngModel)]="key.name" required maxlength="100" placeholder="e.g. Booking engine — production" /></ui-field>
-      <ui-field label="Expires" for="ky-exp">
+      <ui-field [label]="'agencyDetail.keyName' | t" for="ky-name" [hint]="'agencyDetail.keyNameHint' | t"><input uiInput id="ky-name" name="name" [(ngModel)]="key.name" required maxlength="100" [placeholder]="'agencyDetail.keyNamePlaceholder' | t" /></ui-field>
+      <ui-field [label]="'agencyDetail.keyExpiry' | t" for="ky-exp">
         <select uiInput id="ky-exp" name="expiry" [(ngModel)]="key.expiry">
-          <option value="90d">In 90 days</option>
-          <option value="1y">In 1 year</option>
-          <option value="never">Never</option>
+          <option value="90d">{{ 'agencyDetail.expiry90d' | t }}</option>
+          <option value="1y">{{ 'agencyDetail.expiry1y' | t }}</option>
+          <option value="never">{{ 'agencyDetail.noExpiry' | t }}</option>
         </select>
       </ui-field>
     </form>
-    <button sheetActions type="button" uiButton (click)="keyOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="add-key" uiButton="primary" [disabled]="busy() || !key.name.trim()">Create key</button>
+    <button sheetActions type="button" uiButton (click)="keyOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="add-key" uiButton="primary" [disabled]="busy() || !key.name.trim()">{{ 'agencyDetail.createKey' | t }}</button>
   </ui-sheet>
 
   @if (createdKey(); as created) {
     <div class="scrim">
-      <div class="secret" role="alertdialog" aria-modal="true" aria-label="Copy your new key">
+      <div class="secret" role="alertdialog" aria-modal="true" [attr.aria-label]="'agencyDetail.secretLabel' | t">
         <div class="row">
           <span class="secret__icon"><ui-icon name="key" /></span>
-          <h3 class="secret__title">Copy this key now</h3>
+          <h3 class="secret__title">{{ 'agencyDetail.secretTitle' | t }}</h3>
         </div>
-        <ui-banner tone="warn"><b>You won’t see it again.</b> Only a fingerprint is stored. If it’s lost, revoke it and create a new one.</ui-banner>
+        <ui-banner tone="warn"><b>{{ 'agencyDetail.secretOnce' | t }}</b> {{ 'agencyDetail.secretWarning' | t }}</ui-banner>
         <div class="secret__box">
           <code class="mono secret__code">{{ created.secret }}</code>
-          <button type="button" uiButton="primary" size="sm" (click)="copySecret()">{{ copied() ? 'Copied' : 'Copy' }}</button>
+          <button type="button" uiButton="primary" size="sm" (click)="copySecret()">{{ (copied() ? 'agencyDetail.copied' : 'agencyDetail.copy') | t }}</button>
         </div>
         <label class="row stored">
           <input type="checkbox" class="ui-chk" [checked]="secretStored()" (change)="secretStored.set(!secretStored())" />
-          <span class="small">I’ve stored this key somewhere safe</span>
+          <span class="small">{{ 'agencyDetail.secretStored' | t }}</span>
         </label>
         <div class="row secret__foot">
           @if (!secretStored()) {
-            <span class="small muted">Tick the box to close</span>
+            <span class="small muted">{{ 'agencyDetail.secretTick' | t }}</span>
           }
-          <button type="button" uiButton="primary" [disabled]="!secretStored()" (click)="finishKey()">Done</button>
+          <button type="button" uiButton="primary" [disabled]="!secretStored()" (click)="finishKey()">{{ 'agencyDetail.done' | t }}</button>
         </div>
       </div>
     </div>

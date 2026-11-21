@@ -3,7 +3,9 @@ import { Component, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CompanyProfileDto } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, Field, InputDirective, PageHeader, Skeleton, ToastService,
 } from '../../shared/ui';
@@ -16,7 +18,7 @@ function emptyProfile(): CompanyProfileDto {
 /** Settings › Company: the operator's own requisites, printed as the supplier on every invoice. */
 @Component({
   selector: 'app-admin-company',
-  imports: [FormsModule, Banner, ButtonDirective, Card, Field, InputDirective, PageHeader, Skeleton, SettingsNav],
+  imports: [FormsModule, TPipe, Banner, ButtonDirective, Card, Field, InputDirective, PageHeader, Skeleton, SettingsNav],
   templateUrl: './company.html',
   styleUrl: './company.scss',
 })
@@ -69,10 +71,10 @@ export class AdminCompany {
         iban: f.iban?.trim() ? f.iban.trim().replace(/\s+/g, '').toUpperCase() : null,
         bankName: f.bankName?.trim() || null,
       }));
-      this.toasts.show('Company profile saved');
+      this.toasts.show(t('company.saved'));
       this.loaded.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The profile was not saved.'));
+      this.error.set(problemMessage(err, t('company.saveFailed')));
     } finally {
       this.busy.set(false);
     }

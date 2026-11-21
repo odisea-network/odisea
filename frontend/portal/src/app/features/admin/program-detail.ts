@@ -6,28 +6,30 @@ import { firstValueFrom } from 'rxjs';
 import {
   CreateDepartureRequest, DepartureDto, HotelDto, HotelMappingDto, ProgramDetail, UpdateProgramRequest,
 } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { placeName } from '../../core/program-format';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, DialogService, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet,
   Skeleton, TabOption, Tabs, ToastService,
 } from '../../shared/ui';
 import { MonthGrid, monthGrid, nightsBetween, shiftMonth } from './calendar';
 import {
-  CONTENT_LIMITS, ContentDraft, ProgramTab, draftFrom, draftProblems, expectedDays, toRequest,
+  CONTENT_LIMITS, ContentDraft, ProgramTab, checkTitle, draftFrom, draftProblems, expectedDays, toRequest,
 } from './program-content.model';
 import { ProgramContentForm } from './program-content-form';
 import { ProgramGallery } from './program-gallery';
 import { ProgramItinerary } from './program-itinerary';
 import { AdminProgramReadiness } from './program-readiness';
-import { programTone } from './programs';
+import { programStatusLabel, programTone } from './programs';
 
 /** One program: what agencies read, its photos, the departures and hotels they can book, and whether it can go live. */
 @Component({
   selector: 'app-admin-program-detail',
   imports: [
-    FormsModule, RouterLink, OdDatePipe,
+    FormsModule, RouterLink, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton, Tabs,
     AdminProgramReadiness, ProgramContentForm, ProgramGallery, ProgramItinerary,
   ],
@@ -50,7 +52,7 @@ export class AdminProgramDetail {
   readonly calendar = signal<{ year: number; month: number } | null>(null);
 
   readonly tone = programTone;
-  readonly place = placeName;
+  readonly statusLabel = programStatusLabel;
   readonly today = new Date().toISOString().slice(0, 10);
   readonly descriptionMax = CONTENT_LIMITS.description;
 
@@ -59,6 +61,16 @@ export class AdminProgramDetail {
     loader: ({ params }) => firstValueFrom(this.http.get<ProgramDetail>(`/api/v1/programs/${params.id}`)),
   });
   readonly program = computed(() => this.loaded.value() ?? null);
+  readonly subtitle = computed(() => {
+    const p = this.program();
+    if (!p) return '';
+    return [
+      p.destination ? placeName(p.destination.name, p.destination.country) : '',
+      t('programEditor.supplier', { code: p.providerCode }),
+      p.season ?? '',
+      `/${p.slug}`,
+    ].filter(Boolean).join(' · ');
+  });
 
   /** Every hotel of the destination; attached ones are filtered from it. */
   readonly hotels = resource({
@@ -97,7 +109,7 @@ export class AdminProgramDetail {
 
   readonly readiness = computed(() => this.program()?.readiness ?? null);
   readonly blocking = computed(() =>
-    (this.readiness()?.checks ?? []).filter(c => c.required && !c.passed).map(c => c.title.toLowerCase()));
+    (this.readiness()?.checks ?? []).filter(c => c.required && !c.passed).map(c => checkTitle(c).toLowerCase()));
   readonly expected = computed(() => {
     const p = this.program();
     return p ? expectedDays(p) : null;
@@ -106,11 +118,11 @@ export class AdminProgramDetail {
   readonly tabs = computed<TabOption[]>(() => {
     const p = this.program();
     return [
-      { value: 'content', label: 'Content' },
-      { value: 'itinerary', label: 'Itinerary', count: this.draft()?.itinerary.length ?? null },
-      { value: 'gallery', label: 'Gallery', count: p?.images.length ?? null },
-      { value: 'departures', label: 'Departures', count: p?.departures.length ?? null },
-      { value: 'hotels', label: 'Hotels', count: p?.hotelIds.length ?? null },
+      { value: 'content', label: t('programEditor.tabContent') },
+      { value: 'itinerary', label: t('programEditor.tabItinerary'), count: this.draft()?.itinerary.length ?? null },
+      { value: 'gallery', label: t('programEditor.tabGallery'), count: p?.images.length ?? null },
+      { value: 'departures', label: t('programEditor.tabDepartures'), count: p?.departures.length ?? null },
+      { value: 'hotels', label: t('nav.hotels'), count: p?.hotelIds.length ?? null },
     ];
   });
 
@@ -123,7 +135,7 @@ export class AdminProgramDetail {
     return monthGrid(focus.year, focus.month, marks);
   });
 
-  readonly dow = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  readonly dow = t('programEditor.weekdays').split(' ');
 
   edit: UpdateProgramRequest = { name: '', season: '', description: '' };
   departure: CreateDepartureRequest = { startDate: '', endDate: '', transportNote: '' };
@@ -158,9 +170,9 @@ export class AdminProgramDetail {
   }
 
   publishBlockedBy(): string | null {
-    if (this.dirty()) return 'Save your changes first';
+    if (this.dirty()) return t('programEditor.saveFirst');
     const missing = this.blocking();
-    return missing.length > 0 ? `Missing: ${missing.join(', ')}` : null;
+    return missing.length > 0 ? t('programEditor.missing', { items: missing.join(', ') }) : null;
   }
 
   isMapped(hotelId: string): boolean | null {
@@ -206,7 +218,7 @@ export class AdminProgramDetail {
       const saved = await firstValueFrom(this.http.put<ProgramDetail>(`/api/v1/programs/${p.id}/content`, request));
       // The server normalises (trims, lowercases tags); start again from what it stored.
       this.resetDraft(saved);
-    }, 'Content saved');
+    }, t('programEditor.contentSaved'));
   }
 
   openEdit(): void {
@@ -222,7 +234,7 @@ export class AdminProgramDetail {
     if (!p || !this.edit.name.trim()) return;
     await this.act(() => firstValueFrom(this.http.put<ProgramDetail>(`/api/v1/programs/${p.id}`, {
       name: this.edit.name.trim(), season: this.edit.season?.trim() || null, description: this.edit.description?.trim() || null,
-    })), 'Program saved', () => this.editOpen.set(false));
+    })), t('programEditor.saved'), () => this.editOpen.set(false));
   }
 
   openDeparture(): void {
@@ -241,7 +253,7 @@ export class AdminProgramDetail {
     await this.act(() => firstValueFrom(this.http.post<DepartureDto>(`/api/v1/programs/${p.id}/departures`, {
       startDate: this.departure.startDate, endDate: this.departure.endDate,
       transportNote: this.departure.transportNote?.trim() || null,
-    })), 'Departure added', () => this.departureOpen.set(false));
+    })), t('programEditor.departureAdded'), () => this.departureOpen.set(false));
   }
 
   openHotel(): void {
@@ -254,7 +266,7 @@ export class AdminProgramDetail {
     const p = this.program();
     if (!p || !this.hotelToAttach) return;
     await this.act(() => firstValueFrom(this.http.post(`/api/v1/programs/${p.id}/hotels/${this.hotelToAttach}`, {})),
-      'Hotel allowed in this program', () => this.hotelOpen.set(false));
+      t('programEditor.hotelAttached'), () => this.hotelOpen.set(false));
   }
 
   async publish(): Promise<void> {
@@ -262,16 +274,18 @@ export class AdminProgramDetail {
     if (!p || !this.canPublish()) return;
     const open = (p.readiness?.checks ?? []).filter(c => !c.required && !c.passed);
     const decision = await this.dialogs.confirm({
-      title: `Publish ${p.name}?`,
+      title: t('programEditor.publishTitle', { name: p.name }),
       message: open.length > 0
-        ? `Every active agency can search it from now on. ${open.length} recommended ${open.length === 1 ? 'item is' : 'items are'} still open: ${open.map(c => c.title.toLowerCase()).join(', ')}.`
-        : 'Every active agency can search it from now on. Existing bookings are not affected.',
-      facts: [{ label: 'Readiness score', value: `${p.readiness?.score ?? 0} / 100` }],
-      confirmLabel: 'Publish',
+        ? `${t('programEditor.publishMessage')} ${t(open.length === 1 ? 'programEditor.publishOpenOne' : 'programEditor.publishOpenMany', {
+          n: open.length, items: open.map(c => checkTitle(c).toLowerCase()).join(', '),
+        })}`
+        : `${t('programEditor.publishMessage')} ${t('programEditor.publishKeeps')}`,
+      facts: [{ label: t('programEditor.readinessScore'), value: `${p.readiness?.score ?? 0} / 100` }],
+      confirmLabel: t('programEditor.publish'),
     });
     if (!decision) return;
     await this.act(() => firstValueFrom(this.http.post<ProgramDetail>(`/api/v1/programs/${p.id}/publish`, {})),
-      `${p.name} is live`);
+      t('programEditor.published', { name: p.name }));
   }
 
   reload(): void {
@@ -301,7 +315,7 @@ export class AdminProgramDetail {
       this.toasts.show(done);
       after?.();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('programEditor.saveFailed')));
     } finally {
       this.busy.set(false);
     }

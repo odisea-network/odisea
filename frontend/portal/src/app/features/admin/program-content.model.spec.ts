@@ -90,9 +90,9 @@ describe('content draft', () => {
     draft.tags = 'beach, café';
     draft.itinerary = [...draft.itinerary, dayDraft()];
     const problems = draftProblems(draft);
-    expect(problems).toContain('Minimum group size is larger than the maximum.');
+    expect(problems).toContain('Минималната група е по-голяма от максималната.');
     expect(problems.some(p => p.includes('café'))).toBe(true);
-    expect(problems).toContain('Day 3 needs a title.');
+    expect(problems).toContain('Ден 3 няма заглавие.');
     expect(draftProblems(draftFrom(program))).toEqual([]);
   });
 });
@@ -145,8 +145,8 @@ describe('readiness helpers', () => {
 describe('fileProblem', () => {
   it('accepts web images up to 5 MB only', () => {
     expect(fileProblem({ name: 'a.jpg', type: 'image/jpeg', size: 1000 })).toBeNull();
-    expect(fileProblem({ name: 'a.svg', type: 'image/svg+xml', size: 1000 })).toContain('only PNG, JPEG or WebP');
-    expect(fileProblem({ name: 'a.png', type: 'image/png', size: 6 * 1024 * 1024 })).toContain('larger than 5 MB');
-    expect(fileProblem({ name: 'a.png', type: 'image/png', size: 0 })).toContain('empty');
+    expect(fileProblem({ name: 'a.svg', type: 'image/svg+xml', size: 1000 })).toContain('само PNG, JPEG или WebP');
+    expect(fileProblem({ name: 'a.png', type: 'image/png', size: 6 * 1024 * 1024 })).toContain('над 5 MB');
+    expect(fileProblem({ name: 'a.png', type: 'image/png', size: 0 })).toContain('празен');
   });
 });

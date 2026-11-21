@@ -1,6 +1,7 @@
 import {
   ItineraryDayDto, ProgramDetail, ReadinessCheckDto, SaveProgramContentRequest, TransportMode,
 } from '../../core/api.types';
+import { t, tOptional } from '../../core/i18n/i18n';
 import { Meals, mealPlan, mealsOf } from '../../core/program-format';
 
 export type ProgramTab = 'content' | 'itinerary' | 'gallery' | 'departures' | 'hotels';
@@ -43,6 +44,11 @@ export const CHECK_TAB: Record<string, ProgramTab | 'details'> = {
 
 export function checkTab(check: Pick<ReadinessCheckDto, 'code'>): ProgramTab | 'details' {
   return CHECK_TAB[check.code] ?? 'content';
+}
+
+/** The portal's name for a readiness check; a code it does not know keeps the API's title. */
+export function checkTitle(check: Pick<ReadinessCheckDto, 'code' | 'title'>): string {
+  return tOptional(`programEditor.check.${check.code}`) ?? check.title;
 }
 
 export interface DayDraft extends Meals {
@@ -170,21 +176,21 @@ export function toRequest(d: ContentDraft, currentSlug: string): SaveProgramCont
 export function draftProblems(d: ContentDraft): string[] {
   const problems: string[] = [];
   const req = toRequest(d, d.slug);
-  if (req.highlights.length > CONTENT_LIMITS.highlights) problems.push(`At most ${CONTENT_LIMITS.highlights} highlights.`);
-  if (req.inclusions.length > CONTENT_LIMITS.listItems) problems.push(`At most ${CONTENT_LIMITS.listItems} included items.`);
-  if (req.exclusions.length > CONTENT_LIMITS.listItems) problems.push(`At most ${CONTENT_LIMITS.listItems} excluded items.`);
-  if (req.tags.length > CONTENT_LIMITS.tags) problems.push(`At most ${CONTENT_LIMITS.tags} tags.`);
+  if (req.highlights.length > CONTENT_LIMITS.highlights) problems.push(t('programEditor.problems.highlights', { n: CONTENT_LIMITS.highlights }));
+  if (req.inclusions.length > CONTENT_LIMITS.listItems) problems.push(t('programEditor.problems.inclusions', { n: CONTENT_LIMITS.listItems }));
+  if (req.exclusions.length > CONTENT_LIMITS.listItems) problems.push(t('programEditor.problems.exclusions', { n: CONTENT_LIMITS.listItems }));
+  if (req.tags.length > CONTENT_LIMITS.tags) problems.push(t('programEditor.problems.tags', { n: CONTENT_LIMITS.tags }));
   const badTag = req.tags.find(t => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(t) || t.length > 40);
-  if (badTag) problems.push(`Tag "${badTag}" can only use letters a–z, digits and hyphens.`);
+  if (badTag) problems.push(t('programEditor.problems.badTag', { tag: badTag }));
   if (req.minGroupSize !== null && req.maxGroupSize !== null && req.minGroupSize > req.maxGroupSize) {
-    problems.push('Minimum group size is larger than the maximum.');
+    problems.push(t('programEditor.problems.groupSize'));
   }
-  if (req.itinerary.length > CONTENT_LIMITS.days) problems.push(`An itinerary can have at most ${CONTENT_LIMITS.days} days.`);
+  if (req.itinerary.length > CONTENT_LIMITS.days) problems.push(t('programEditor.problems.days', { n: CONTENT_LIMITS.days }));
   const untitled = req.itinerary.findIndex(day => day.title.length === 0);
-  if (untitled >= 0) problems.push(`Day ${untitled + 1} needs a title.`);
+  if (untitled >= 0) problems.push(t('programEditor.problems.dayTitle', { n: untitled + 1 }));
   const slug = d.slug.trim().toLowerCase();
   if (slug !== '' && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
-    problems.push('The web address can only use letters a–z, digits and single hyphens.');
+    problems.push(t('programEditor.problems.slug'));
   }
   return problems;
 }

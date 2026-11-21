@@ -3,7 +3,9 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DestinationDto, HotelDto, LocationMappingDto } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ToastService,
@@ -13,7 +15,7 @@ import {
 @Component({
   selector: 'app-admin-destinations',
   imports: [
-    FormsModule,
+    FormsModule, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ],
   templateUrl: './destinations.html',
@@ -70,7 +72,7 @@ export class AdminDestinations {
     if (!this.formValid()) return;
     await this.act(() => firstValueFrom(this.http.post<DestinationDto>('/api/v1/destinations', {
       name: this.form.name.trim(), country: this.form.country.trim().toUpperCase(),
-    })), `${this.form.name.trim()} added`, () => { this.createOpen.set(false); this.destinations.reload(); });
+    })), t('destinations.added', { name: this.form.name.trim() }), () => { this.createOpen.set(false); this.destinations.reload(); });
   }
 
   openMappings(d: DestinationDto): void {
@@ -88,7 +90,7 @@ export class AdminDestinations {
     if (!d || !this.mappingValid()) return;
     await this.act(() => firstValueFrom(this.http.post<LocationMappingDto>(`/api/v1/destinations/${d.id}/mappings`, {
       providerCode: this.mapping.providerCode.trim().toLowerCase(), externalLocationCode: this.mapping.externalLocationCode.trim(),
-    })), 'Mapping added', () => { this.mapping = { ...this.mapping, externalLocationCode: '' }; this.mappings.reload(); });
+    })), t('hotels.codeAdded'), () => { this.mapping = { ...this.mapping, externalLocationCode: '' }; this.mappings.reload(); });
   }
 
   closeMappings(open: boolean): void {
@@ -103,7 +105,7 @@ export class AdminDestinations {
       this.toasts.show(done);
       after?.();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('hotels.saveFailed')));
     } finally {
       this.busy.set(false);
     }

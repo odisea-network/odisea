@@ -1,38 +1,38 @@
-<ui-page-header title="Bookings" sub="Every agency, every status" />
+<ui-page-header [title]="'nav.bookings' | t" [sub]="'adminBookings.sub' | t" />
 
 <ui-card flush>
   <div class="toolbar">
-    <select uiInput size="sm" class="toolbar__select" aria-label="Status" [ngModel]="status()" (ngModelChange)="filter(status, $event)">
-      <option value="">All statuses</option>
+    <select uiInput size="sm" class="toolbar__select" [attr.aria-label]="'adminBookings.status' | t" [ngModel]="status()" (ngModelChange)="filter(status, $event)">
+      <option value="">{{ 'adminBookings.allStatuses' | t }}</option>
       @for (s of statuses; track s) {
         <option [value]="s">{{ statusLabel(s) }}</option>
       }
     </select>
-    <select uiInput size="sm" class="toolbar__select" aria-label="Agency" [ngModel]="agencyId()" (ngModelChange)="filter(agencyId, $event)">
-      <option value="">All agencies</option>
+    <select uiInput size="sm" class="toolbar__select" [attr.aria-label]="'adminBookings.agency' | t" [ngModel]="agencyId()" (ngModelChange)="filter(agencyId, $event)">
+      <option value="">{{ 'adminBookings.allAgencies' | t }}</option>
       @for (a of agencies.value(); track a.id) {
         <option [value]="a.id">{{ a.name }}</option>
       }
     </select>
     <label class="toolbar__range">
-      <span class="small muted">Check-in</span>
-      <input uiInput size="sm" type="date" aria-label="Check-in from" [ngModel]="from()" (ngModelChange)="filter(from, $event)" />
+      <span class="small muted">{{ 'adminBookings.checkIn' | t }}</span>
+      <input uiInput size="sm" type="date" [attr.aria-label]="'adminBookings.checkInFrom' | t" [ngModel]="from()" (ngModelChange)="filter(from, $event)" />
       <span class="small muted">–</span>
-      <input uiInput size="sm" type="date" aria-label="Check-in to" [ngModel]="to()" (ngModelChange)="filter(to, $event)" />
+      <input uiInput size="sm" type="date" [attr.aria-label]="'adminBookings.checkInTo' | t" [ngModel]="to()" (ngModelChange)="filter(to, $event)" />
     </label>
     @if (hasFilters()) {
-      <button type="button" uiButton="ghost" size="sm" (click)="clearFilters()">Clear</button>
+      <button type="button" uiButton="ghost" size="sm" (click)="clearFilters()">{{ 'adminBookings.clear' | t }}</button>
     }
     <div class="grow"></div>
     @if (bookings.value(); as result) {
-      <span class="small muted num">{{ result.totalCount }} {{ result.totalCount === 1 ? 'booking' : 'bookings' }}</span>
+      <span class="small muted num">{{ (result.totalCount === 1 ? 'adminBookings.countOne' : 'adminBookings.countMany') | t: { n: result.totalCount } }}</span>
     }
   </div>
 
   @if (bookings.error()) {
     <div class="pad">
-      <ui-empty-state tone="error" icon="refresh" title="Couldn't load bookings" description="Check your connection and try again.">
-        <button type="button" uiButton size="sm" (click)="bookings.reload()">Retry</button>
+      <ui-empty-state tone="error" icon="refresh" [title]="'bookings.loadFailed' | t" [description]="'common.checkConnection' | t">
+        <button type="button" uiButton size="sm" (click)="bookings.reload()">{{ 'common.retry' | t }}</button>
       </ui-empty-state>
     </div>
   } @else if (bookings.isLoading() && !bookings.hasValue()) {
@@ -40,9 +40,9 @@
   } @else if (bookings.value(); as result) {
     @if (result.items.length === 0) {
       <div class="pad">
-        <ui-empty-state icon="bookings" title="No bookings match these filters">
+        <ui-empty-state icon="bookings" [title]="'adminBookings.none' | t">
           @if (hasFilters()) {
-            <button type="button" uiButton size="sm" (click)="clearFilters()">Clear filters</button>
+            <button type="button" uiButton size="sm" (click)="clearFilters()">{{ 'adminBookings.clearFilters' | t }}</button>
           }
         </ui-empty-state>
       </div>
@@ -51,15 +51,15 @@
         <table class="tbl">
           <thead>
             <tr>
-              <th>Ref</th>
-              <th>Agency</th>
-              <th>Hotel · program</th>
-              <th>Check-in</th>
-              <th class="r">Pax</th>
-              <th class="r">Sell</th>
-              <th class="r">Paid / due</th>
-              <th>Status · deadline</th>
-              <th>Created</th>
+              <th>{{ 'adminBookings.colRef' | t }}</th>
+              <th>{{ 'adminBookings.colAgency' | t }}</th>
+              <th>{{ 'adminBookings.colHotel' | t }}</th>
+              <th>{{ 'adminBookings.colDates' | t }}</th>
+              <th class="r">{{ 'adminBookings.colPax' | t }}</th>
+              <th class="r">{{ 'adminBookings.colSell' | t }}</th>
+              <th class="r">{{ 'adminBookings.colPaid' | t }}</th>
+              <th>{{ 'adminBookings.colStatus' | t }}</th>
+              <th>{{ 'adminBookings.colCreated' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -74,14 +74,14 @@
                 <td class="r">
                   <div class="m">{{ b.paidAmount | money: b.currency }}</div>
                   @if ((b.status === 'AwaitingPayment' || b.status === 'Confirmed') && b.balanceDue > 0) {
-                    <div class="m small strong">due {{ b.balanceDue | money: b.currency }}</div>
+                    <div class="m small strong">{{ 'adminBookings.due' | t: { amount: (b.balanceDue | money: b.currency) } }}</div>
                   }
                 </td>
                 <td>
                   <div class="status">
                     <ui-status-chip [status]="b.status" />
                     @if (b.providerRelease === 'Failed' || b.providerRelease === 'Pending') {
-                      <ui-pill [tone]="b.providerRelease === 'Failed' ? 'bad' : 'warn'"><ui-icon name="alert-triangle" size="sm" />Supplier hold not released</ui-pill>
+                      <ui-pill [tone]="b.providerRelease === 'Failed' ? 'bad' : 'warn'"><ui-icon name="alert-triangle" size="sm" />{{ 'adminBookings.holdNotReleased' | t }}</ui-pill>
                     }
                     @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
                       <ui-deadline [at]="b.paymentDueAt" />

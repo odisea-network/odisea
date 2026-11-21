@@ -1,3 +1,5 @@
+import { MessageKey, t } from '../../core/i18n/i18n';
+
 /** Month grid for the departures calendar: Monday-first, leading blanks, one cell per day. */
 export interface MonthCell {
   /** yyyy-mm-dd, or null for a leading blank. */
@@ -13,7 +15,11 @@ export interface MonthGrid {
   cells: MonthCell[];
 }
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS: MessageKey[] = [
+  'calendar.month.january', 'calendar.month.february', 'calendar.month.march', 'calendar.month.april',
+  'calendar.month.may', 'calendar.month.june', 'calendar.month.july', 'calendar.month.august',
+  'calendar.month.september', 'calendar.month.october', 'calendar.month.november', 'calendar.month.december',
+];
 
 function iso(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -30,7 +36,7 @@ export function monthGrid(year: number, month: number, marks: Map<string, 'ok' |
     const date = iso(year, month, day);
     cells.push({ date, day, mark: marks.get(date) ?? null });
   }
-  return { year, month, label: `${MONTHS[month]} ${year}`, cells };
+  return { year, month, label: `${t(MONTHS[month])} ${year}`, cells };
 }
 
 export function shiftMonth(year: number, month: number, by: number): { year: number; month: number } {

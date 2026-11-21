@@ -1,19 +1,19 @@
 @if (loaded.error()) {
-  <ui-page-header title="Program" [crumbs]="[{ label: 'Programs', link: '/admin/programs' }, { label: 'Not found' }]" />
-  <ui-empty-state tone="error" icon="alert-circle" title="Couldn't load this program" description="It may not exist, or the API is unreachable.">
-    <button type="button" uiButton size="sm" (click)="loaded.reload()">Retry</button>
+  <ui-page-header [title]="'program.title' | t" [crumbs]="[{ label: ('nav.programs' | t), link: '/admin/programs' }, { label: ('programEditor.notFoundCrumb' | t) }]" />
+  <ui-empty-state tone="error" icon="alert-circle" [title]="'programEditor.loadFailedTitle' | t" [description]="'programEditor.loadFailedText' | t">
+    <button type="button" uiButton size="sm" (click)="loaded.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (program(); as p) {
   <ui-page-header
     [title]="p.name"
-    [crumbs]="[{ label: 'Programs', link: '/admin/programs' }, { label: p.name }]"
-    [sub]="(p.destination ? place(p.destination.name, p.destination.country) + ' · ' : '') + 'supplier ' + p.providerCode + (p.season ? ' · ' + p.season : '') + ' · /' + p.slug"
+    [crumbs]="[{ label: ('nav.programs' | t), link: '/admin/programs' }, { label: p.name }]"
+    [sub]="subtitle()"
   >
-    <ui-pill status [tone]="tone(p.status)">{{ p.status }}@if (p.status === 'Draft') { · not visible to agencies}</ui-pill>
-    <button actions type="button" uiButton (click)="openEdit()">Name &amp; description</button>
+    <ui-pill status [tone]="tone(p.status)">{{ statusLabel(p.status) }}@if (p.status === 'Draft') { · {{ 'programEditor.notVisible' | t }}}</ui-pill>
+    <button actions type="button" uiButton (click)="openEdit()">{{ 'programEditor.nameAndDescription' | t }}</button>
     @if (p.status === 'Draft') {
       <div actions class="col publish">
-        <button type="button" uiButton="primary" (click)="publish()" [disabled]="busy() || !canPublish()">Publish</button>
+        <button type="button" uiButton="primary" (click)="publish()" [disabled]="busy() || !canPublish()">{{ 'programEditor.publish' | t }}</button>
         @if (publishBlockedBy(); as why) {
           <span class="why"><ui-icon name="lock" size="sm" />{{ why }}</span>
         }
@@ -37,16 +37,16 @@
           <app-program-itinerary [draft]="d" [expected]="expected()" />
         }
         @if ((tab() === 'content' || tab() === 'itinerary') && dirty()) {
-          <div class="savebar row between" role="region" aria-label="Unsaved changes">
+          <div class="savebar row between" role="region" [attr.aria-label]="'programEditor.unsaved' | t">
             <span class="small strong">
-              Unsaved changes
+              {{ 'programEditor.unsaved' | t }}
               @if (problems().length > 0) {
                 <span class="u-over"> · {{ problems()[0] }}</span>
               }
             </span>
             <div class="row savebar__actions">
-              <button type="button" uiButton size="sm" (click)="discard()" [disabled]="busy()">Discard</button>
-              <button type="button" uiButton="primary" size="sm" (click)="saveContent()" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save content' }}</button>
+              <button type="button" uiButton size="sm" (click)="discard()" [disabled]="busy()">{{ 'programEditor.discard' | t }}</button>
+              <button type="button" uiButton="primary" size="sm" (click)="saveContent()" [disabled]="busy()">{{ (busy() ? 'common.saving' : 'programEditor.saveContent') | t }}</button>
             </div>
           </div>
         }
@@ -63,8 +63,8 @@
               <div class="row between">
                 <b>{{ g.label }}</b>
                 <div class="row cal__nav">
-                  <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Previous month" (click)="shift(-1)"><ui-icon name="chevron-left" size="sm" /></button>
-                  <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Next month" (click)="shift(1)"><ui-icon name="chevron-right" size="sm" /></button>
+                  <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'programEditor.previousMonth' | t" (click)="shift(-1)"><ui-icon name="chevron-left" size="sm" /></button>
+                  <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'programEditor.nextMonth' | t" (click)="shift(1)"><ui-icon name="chevron-right" size="sm" /></button>
                 </div>
               </div>
               <div class="cal__grid">
@@ -76,22 +76,22 @@
                 }
               </div>
               <div class="row wrap small muted cal__legend">
-                <span class="row cal__key"><i class="cal__swatch cal__swatch--ok"></i>Departure</span>
-                <span class="row cal__key"><i class="cal__swatch cal__swatch--warn"></i>No transport note</span>
+                <span class="row cal__key"><i class="cal__swatch cal__swatch--ok"></i>{{ 'programEditor.departure' | t }}</span>
+                <span class="row cal__key"><i class="cal__swatch cal__swatch--warn"></i>{{ 'programEditor.noTransportNote' | t }}</span>
               </div>
             </div>
           }
           <div class="col deplist">
             <div class="row between">
-              <b>All departures</b>
-              <button type="button" uiButton size="sm" (click)="openDeparture()"><ui-icon name="plus" />Add departure</button>
+              <b>{{ 'programEditor.allDepartures' | t }}</b>
+              <button type="button" uiButton size="sm" (click)="openDeparture()"><ui-icon name="plus" />{{ 'programEditor.addDeparture' | t }}</button>
             </div>
             @if (p.departures.length === 0) {
-              <p class="small muted">No departures yet. Agencies can only search dates you add here.</p>
+              <p class="small muted">{{ 'programEditor.noDepartures' | t }}</p>
             } @else {
               <div class="tw deplist__table">
                 <table class="tbl tbl--dense">
-                  <thead><tr><th>Departure</th><th>Return</th><th class="r">Nights</th><th>Transport</th></tr></thead>
+                  <thead><tr><th>{{ 'programEditor.departure' | t }}</th><th>{{ 'programEditor.colReturn' | t }}</th><th class="r">{{ 'programEditor.colNights' | t }}</th><th>{{ 'programEditor.colTransport' | t }}</th></tr></thead>
                   <tbody>
                     @for (d of p.departures; track d.id) {
                       <tr [class.past]="d.startDate < today">
@@ -102,7 +102,7 @@
                           @if (d.transportNote) {
                             <span class="mono">{{ d.transportNote }}</span>
                           } @else {
-                            <ui-pill tone="warn"><ui-icon name="alert-triangle" size="sm" />No transport note</ui-pill>
+                            <ui-pill tone="warn"><ui-icon name="alert-triangle" size="sm" />{{ 'programEditor.noTransportNote' | t }}</ui-pill>
                           }
                         </td>
                       </tr>
@@ -117,15 +117,15 @@
 
       @if (tab() === 'hotels') {
         <div class="row between tabhead">
-          <div><h2 class="h2">Allowed hotels</h2><p class="small muted">Only these hotels appear in search results for this program.</p></div>
-          <button type="button" uiButton size="sm" (click)="openHotel()" [disabled]="availableHotels().length === 0"><ui-icon name="plus" />Allow hotel</button>
+          <div><h2 class="h2">{{ 'programEditor.hotelsTitle' | t }}</h2><p class="small muted">{{ 'programEditor.hotelsSub' | t }}</p></div>
+          <button type="button" uiButton size="sm" (click)="openHotel()" [disabled]="availableHotels().length === 0"><ui-icon name="plus" />{{ 'programEditor.attachHotel' | t }}</button>
         </div>
         @if (p.hotels.length === 0) {
-          <p class="small muted pad">No hotels allowed yet.@if (availableHotels().length === 0) { Add hotels to the destination first.}</p>
+          <p class="small muted pad">{{ 'programEditor.noHotels' | t }}@if (availableHotels().length === 0) { {{ 'programEditor.addHotelsFirst' | t }}}</p>
         } @else {
           <div class="tw">
             <table class="tbl">
-              <thead><tr><th>Hotel</th><th>Stars</th><th>Supplier mapping</th></tr></thead>
+              <thead><tr><th>{{ 'hotels.colHotel' | t }}</th><th>{{ 'hotels.colStars' | t }}</th><th>{{ 'programEditor.colMapping' | t }}</th></tr></thead>
               <tbody>
                 @for (h of p.hotels; track h.id) {
                   <tr>
@@ -133,11 +133,11 @@
                     <td class="num">{{ h.stars }}★</td>
                     <td>
                       @switch (isMapped(h.id)) {
-                        @case (true) { <ui-pill tone="ok">Mapped to {{ p.providerCode }}</ui-pill> }
-                        @case (false) { <ui-pill tone="warn"><ui-icon name="alert-triangle" size="sm" />No {{ p.providerCode }} code</ui-pill> }
-                        @default { <span class="small muted">Checking…</span> }
+                        @case (true) { <ui-pill tone="ok">{{ 'programEditor.mapped' | t: { provider: p.providerCode } }}</ui-pill> }
+                        @case (false) { <ui-pill tone="warn"><ui-icon name="alert-triangle" size="sm" />{{ 'programEditor.notMapped' | t: { provider: p.providerCode } }}</ui-pill> }
+                        @default { <span class="small muted">{{ 'programEditor.checking' | t }}</span> }
                       }
-                      <a class="small maplink" [routerLink]="['/admin/hotels']" [queryParams]="{ hotelId: h.id }">Mappings</a>
+                      <a class="small maplink" [routerLink]="['/admin/hotels']" [queryParams]="{ hotelId: h.id }">{{ 'hotels.codes' | t }}</a>
                     </td>
                   </tr>
                 }
@@ -153,43 +153,43 @@
     }
   </div>
 
-  <ui-sheet [(open)]="editOpen" title="Name and description" sub="The description is the body of the program page agencies read.">
+  <ui-sheet [(open)]="editOpen" [title]="'programEditor.nameAndDescription' | t" [sub]="'programEditor.editSub' | t">
     <form id="edit-program" (ngSubmit)="saveEdit()">
-      <ui-field label="Name" for="pe-name" hint="10–70 characters reads best on cards"><input uiInput id="pe-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
-      <ui-field label="Season" for="pe-season" optional><input uiInput id="pe-season" name="season" [(ngModel)]="edit.season" maxlength="50" /></ui-field>
-      <ui-field label="Description" for="pe-desc" optional [hint]="'300+ characters recommended · Markdown: ## heading, - list, **bold** · ' + (edit.description?.length ?? 0) + ' / ' + descriptionMax">
+      <ui-field [label]="'adminPrograms.name' | t" for="pe-name" [hint]="'programEditor.nameHint' | t"><input uiInput id="pe-name" name="name" [(ngModel)]="edit.name" required maxlength="200" /></ui-field>
+      <ui-field [label]="'adminPrograms.season' | t" for="pe-season" optional><input uiInput id="pe-season" name="season" [(ngModel)]="edit.season" maxlength="50" /></ui-field>
+      <ui-field [label]="'adminPrograms.description' | t" for="pe-desc" optional [hint]="'programEditor.descriptionHint' | t: { count: edit.description?.length ?? 0, max: descriptionMax }">
         <textarea uiInput id="pe-desc" name="description" rows="14" [(ngModel)]="edit.description" [maxlength]="descriptionMax"></textarea>
       </ui-field>
     </form>
-    <button sheetActions type="button" uiButton (click)="editOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="edit-program" uiButton="primary" [disabled]="busy() || !edit.name.trim()">Save</button>
+    <button sheetActions type="button" uiButton (click)="editOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="edit-program" uiButton="primary" [disabled]="busy() || !edit.name.trim()">{{ 'common.save' | t }}</button>
   </ui-sheet>
 
-  <ui-sheet [(open)]="departureOpen" title="Add departure" sub="One row per outbound date agencies can book.">
+  <ui-sheet [(open)]="departureOpen" [title]="'programEditor.departureTitle' | t" [sub]="'programEditor.departureSub' | t">
     <form id="add-departure" (ngSubmit)="addDeparture()">
       <div class="two">
-        <ui-field label="Departure" for="dp-start"><input uiInput id="dp-start" name="startDate" type="date" [(ngModel)]="departure.startDate" required /></ui-field>
-        <ui-field label="Return" for="dp-end" [hint]="nights() > 0 ? nights() + ' nights' : 'After the departure'"><input uiInput id="dp-end" name="endDate" type="date" [(ngModel)]="departure.endDate" [min]="departure.startDate" required /></ui-field>
+        <ui-field [label]="'programEditor.departure' | t" for="dp-start"><input uiInput id="dp-start" name="startDate" type="date" [(ngModel)]="departure.startDate" required /></ui-field>
+        <ui-field [label]="'programEditor.colReturn' | t" for="dp-end" [hint]="nights() > 0 ? ('common.nights' | t: { n: nights() }) : ('programEditor.afterDeparture' | t)"><input uiInput id="dp-end" name="endDate" type="date" [(ngModel)]="departure.endDate" [min]="departure.startDate" required /></ui-field>
       </div>
-      <ui-field label="Transport note" for="dp-transport" optional hint="Flight numbers or coach details, shown to agencies"><input uiInput id="dp-transport" name="transportNote" [(ngModel)]="departure.transportNote" maxlength="500" placeholder="e.g. FB 1471 SOF–AYT 06:40" /></ui-field>
+      <ui-field [label]="'programEditor.transportNote' | t" for="dp-transport" optional [hint]="'programEditor.transportNoteHint' | t"><input uiInput id="dp-transport" name="transportNote" [(ngModel)]="departure.transportNote" maxlength="500" [placeholder]="'programEditor.transportNotePlaceholder' | t" /></ui-field>
     </form>
-    <button sheetActions type="button" uiButton (click)="departureOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="add-departure" uiButton="primary" [disabled]="busy() || !departureValid()">Add departure</button>
+    <button sheetActions type="button" uiButton (click)="departureOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="add-departure" uiButton="primary" [disabled]="busy() || !departureValid()">{{ 'programEditor.addDeparture' | t }}</button>
   </ui-sheet>
 
-  <ui-sheet [(open)]="hotelOpen" title="Allow a hotel" [sub]="'Hotels in ' + (p.destination?.name ?? 'this destination') + ' not yet in the program.'">
+  <ui-sheet [(open)]="hotelOpen" [title]="'programEditor.attachTitle' | t" [sub]="'programEditor.attachSub' | t: { destination: p.destination?.name ?? ('programEditor.thisDestination' | t) }">
     <form id="attach-hotel" (ngSubmit)="attachHotel()">
-      <ui-field label="Hotel" for="ah-hotel">
+      <ui-field [label]="'hotels.colHotel' | t" for="ah-hotel">
         <select uiInput id="ah-hotel" name="hotelId" [(ngModel)]="hotelToAttach">
           @for (h of availableHotels(); track h.id) {
             <option [value]="h.id">{{ h.name }} · {{ h.stars }}★</option>
           }
         </select>
       </ui-field>
-      <p class="small muted">Missing a hotel? Add it under Catalogue › Hotels first.</p>
+      <p class="small muted">{{ 'programEditor.attachMissing' | t }}</p>
     </form>
-    <button sheetActions type="button" uiButton (click)="hotelOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="attach-hotel" uiButton="primary" [disabled]="busy() || !hotelToAttach">Allow hotel</button>
+    <button sheetActions type="button" uiButton (click)="hotelOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="attach-hotel" uiButton="primary" [disabled]="busy() || !hotelToAttach">{{ 'programEditor.attachHotel' | t }}</button>
   </ui-sheet>
 } @else {
   <ui-card><ui-skeleton [lines]="6" /></ui-card>

@@ -8,9 +8,11 @@ import {
   OperatorBookingSummary, PagedResult, UpdateAgencyBillingRequest, UpdateAgencyRequest,
 } from '../../core/api.types';
 import { AuthService } from '../../core/auth.service';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe, OdDateTimePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, DialogService, EmptyState, Field, Icon, InputDirective, PageHeader, Pill,
   Sheet, Skeleton, TabOption, Tabs, ToastService,
@@ -39,26 +41,26 @@ export function keyExpiresAt(choice: KeyExpiry, now = new Date()): string | null
 export const PLANS: AgencyPlan[] = ['Core', 'Ledger', 'Workspace'];
 
 export const PLAN_SUMMARY: Record<AgencyPlan, string> = {
-  Core: 'Search and booking only',
-  Ledger: 'Reservation ledger: operators, payments, commission, documents',
-  Workspace: 'Ledger, external reservations, inquiry forms, e-mail',
+  Core: t('agencyDetail.planSummary.Core'),
+  Ledger: t('agencyDetail.planSummary.Ledger'),
+  Workspace: t('agencyDetail.planSummary.Workspace'),
 };
 
 /** What the operator is told before a plan change; a move down the list takes features away. */
 export function planChangeMessage(from: AgencyPlan, to: AgencyPlan): string {
-  const includes = `${to} includes: ${PLAN_SUMMARY[to].toLowerCase()}.`;
+  const includes = t('agencyDetail.planIncludes', { plan: to, summary: PLAN_SUMMARY[to].toLowerCase() });
   return PLANS.indexOf(to) < PLANS.indexOf(from)
-    ? `${includes} Features outside ${to} stop being available to them. Their data stays.`
+    ? `${includes} ${t('agencyDetail.planLoses', { plan: to })}`
     : includes;
 }
 
-const ROLE_LABELS: Record<string, string> = { AgencyAdmin: 'Agency admin', Agent: 'Agent' };
+const ROLE_LABELS: Record<string, string> = { AgencyAdmin: t('roles.agencyAdmin'), Agent: t('roles.agent') };
 
 /** One partner agency: profile and billing, its people, its machine keys. */
 @Component({
   selector: 'app-admin-agency-detail',
   imports: [
-    FormsModule, RouterLink, MoneyPipe, OdDatePipe, OdDateTimePipe,
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe, OdDateTimePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
     Tabs,
   ],
@@ -113,10 +115,10 @@ export class AdminAgencyDetail {
   readonly activeKeys = computed(() => (this.keys.value() ?? []).filter(k => apiKeyState(k) === 'Active').length);
 
   readonly tabs = computed<TabOption[]>(() => [
-    { value: 'overview', label: 'Overview' },
-    { value: 'users', label: 'Users', count: this.users.value()?.length ?? null },
-    { value: 'keys', label: 'API keys', count: this.activeKeys() },
-    { value: 'bookings', label: 'Bookings', count: this.bookings.value()?.totalCount ?? null },
+    { value: 'overview', label: t('agencyDetail.tabOverview') },
+    { value: 'users', label: t('agencyDetail.users'), count: this.users.value()?.length ?? null },
+    { value: 'keys', label: t('agencyDetail.tabKeys'), count: this.activeKeys() },
+    { value: 'bookings', label: t('nav.bookings'), count: this.bookings.value()?.totalCount ?? null },
   ]);
 
   // Forms (template-driven; reset when their sheet opens).
@@ -149,7 +151,7 @@ export class AdminAgencyDetail {
     await this.save(`/api/v1/agencies/${a.id}`, 'put', {
       ...this.edit, name: this.edit.name.trim(), country: this.edit.country.trim().toUpperCase(),
       contactEmail: this.edit.contactEmail?.trim() || null,
-    }, 'Agency details saved', () => this.editOpen.set(false));
+    }, t('agencyDetail.saved'), () => this.editOpen.set(false));
   }
 
   async toggleStatus(): Promise<void> {
@@ -157,18 +159,16 @@ export class AdminAgencyDetail {
     if (!a) return;
     const suspending = a.status === 'Active';
     const decision = await this.dialogs.confirm({
-      title: suspending ? `Suspend ${a.name}?` : `Reactivate ${a.name}?`,
-      message: suspending
-        ? 'Their users can no longer sign in and their API keys stop working. Existing bookings are not affected.'
-        : 'Their users can sign in again and their active API keys work again.',
-      confirmLabel: suspending ? 'Suspend agency' : 'Reactivate',
+      title: t(suspending ? 'agencyDetail.suspendTitle' : 'agencyDetail.reactivateTitle', { name: a.name }),
+      message: t(suspending ? 'agencyDetail.suspendMessage' : 'agencyDetail.reactivateMessage'),
+      confirmLabel: t(suspending ? 'agencyDetail.suspendConfirm' : 'agencyDetail.reactivate'),
       destructive: suspending,
     });
     if (!decision) return;
     await this.save(`/api/v1/agencies/${a.id}`, 'put', {
       name: a.name, country: a.country, creditLimit: a.creditLimit, contactEmail: a.contactEmail,
       status: suspending ? 'Suspended' : 'Active',
-    }, suspending ? `${a.name} suspended` : `${a.name} reactivated`);
+    }, t(suspending ? 'agencyDetail.suspended' : 'agencyDetail.reactivated', { name: a.name }));
   }
 
   async pickPlan(event: Event): Promise<void> {
@@ -182,12 +182,12 @@ export class AdminAgencyDetail {
     const a = this.agency();
     if (!a || a.plan === plan) return false;
     const decision = await this.dialogs.confirm({
-      title: `Move ${a.name} to the ${plan} plan?`,
+      title: t('agencyDetail.planTitle', { name: a.name, plan }),
       message: planChangeMessage(a.plan, plan),
-      confirmLabel: `Set ${plan}`,
+      confirmLabel: t('agencyDetail.planConfirm', { plan }),
     });
     if (!decision) return false;
-    await this.save(`/api/v1/agencies/${a.id}/plan`, 'put', { plan }, `Plan set to ${plan}`);
+    await this.save(`/api/v1/agencies/${a.id}/plan`, 'put', { plan }, t('agencyDetail.planSet', { plan }));
     return true;
   }
 
@@ -217,7 +217,7 @@ export class AdminAgencyDetail {
       legalName: this.billing.legalName.trim(), eik: this.billing.eik.trim(),
       vatNumber: this.billing.vatNumber?.trim() || null, address: this.billing.address.trim(),
       city: this.billing.city.trim(), mol: this.billing.mol.trim(),
-    }, 'Billing requisites saved', () => this.billingOpen.set(false));
+    }, t('agencyDetail.billingSaved'), () => this.billingOpen.set(false));
   }
 
   openUser(): void {
@@ -243,10 +243,10 @@ export class AdminAgencyDetail {
         ...this.user, email: this.user.email.trim().toLowerCase(), fullName: this.user.fullName.trim(),
       }));
       this.userOpen.set(false);
-      this.toasts.show(`${created.fullName} can now sign in`);
+      this.toasts.show(t('agencyDetail.userAdded', { name: created.fullName }));
       this.users.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'Could not add the user.'));
+      this.error.set(problemMessage(err, t('agencyDetail.userFailed')));
     } finally {
       this.busy.set(false);
     }
@@ -273,7 +273,7 @@ export class AdminAgencyDetail {
       this.createdKey.set(created);
       this.keys.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'Could not create the key.'));
+      this.error.set(problemMessage(err, t('agencyDetail.keyFailed')));
     } finally {
       this.busy.set(false);
     }
@@ -286,24 +286,24 @@ export class AdminAgencyDetail {
       await navigator.clipboard.writeText(secret);
       this.copied.set(true);
     } catch {
-      this.toasts.show('Copy failed — select the key and copy it manually', { tone: 'bad' });
+      this.toasts.show(t('agencyDetail.copyFailed'), { tone: 'bad' });
     }
   }
 
   finishKey(): void {
     const created = this.createdKey();
     this.createdKey.set(null);
-    if (created) this.toasts.show(`Key “${created.key.name}” created`);
+    if (created) this.toasts.show(t('agencyDetail.keyCreated', { name: created.key.name }));
   }
 
   async revoke(key: ApiKeyDto): Promise<void> {
     const a = this.agency();
     if (!a) return;
     const decision = await this.dialogs.confirm({
-      title: `Revoke “${key.name}”?`,
-      message: `Calls using this key fail immediately. ${a.name}’s system stops creating bookings until it switches to another key. This can’t be undone.`,
-      confirmLabel: 'Revoke key',
-      cancelLabel: 'Keep key',
+      title: t('agencyDetail.revokeTitle', { name: key.name }),
+      message: t('agencyDetail.revokeMessage', { agency: a.name }),
+      confirmLabel: t('agencyDetail.revokeConfirm'),
+      cancelLabel: t('agencyDetail.revokeKeep'),
       destructive: true,
     });
     if (!decision) return;
@@ -311,10 +311,10 @@ export class AdminAgencyDetail {
     this.error.set(null);
     try {
       await firstValueFrom(this.http.delete(`/api/v1/agencies/${a.id}/api-keys/${key.id}`));
-      this.toasts.show('Key revoked — calls with it now fail');
+      this.toasts.show(t('agencyDetail.revoked'));
       this.keys.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'Could not revoke the key.'));
+      this.error.set(problemMessage(err, t('agencyDetail.revokeFailed')));
     } finally {
       this.busy.set(false);
     }
@@ -329,7 +329,7 @@ export class AdminAgencyDetail {
       this.toasts.show(done);
       after?.();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('agencyDetail.saveFailed')));
     } finally {
       this.busy.set(false);
     }

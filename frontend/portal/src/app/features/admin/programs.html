@@ -1,28 +1,28 @@
-<ui-page-header title="Programs" sub="Packaged offers agencies can search once published">
-  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />New program</button>
+<ui-page-header [title]="'nav.programs' | t" [sub]="'adminPrograms.sub' | t">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />{{ 'adminPrograms.add' | t }}</button>
 </ui-page-header>
 
 @if (programs.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load programs" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="programs.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'programs.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="programs.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (programs.isLoading()) {
   <ui-card><ui-skeleton [lines]="5" /></ui-card>
 } @else if (programs.value(); as all) {
   @if (all.length === 0) {
-    <ui-empty-state icon="layers" title="No programs yet" description="Create a program, add departures and hotels, then publish it.">
-      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">New program</button>
+    <ui-empty-state icon="layers" [title]="'adminPrograms.emptyTitle' | t" [description]="'adminPrograms.emptyText' | t">
+      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">{{ 'adminPrograms.add' | t }}</button>
     </ui-empty-state>
   } @else {
     <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" />
     <ui-card flush>
       @if (filtered().length === 0) {
-        <div class="none">Nothing in this view.</div>
+        <div class="none">{{ 'adminPrograms.none' | t }}</div>
       } @else {
         <div class="tw">
           <table class="tbl">
             <thead>
-              <tr><th>Program</th><th>Destination</th><th>Next departure</th><th>Supplier</th><th>Status</th></tr>
+              <tr><th>{{ 'adminPrograms.colProgram' | t }}</th><th>{{ 'adminPrograms.colDestination' | t }}</th><th>{{ 'adminPrograms.colNextDeparture' | t }}</th><th>{{ 'adminPrograms.colSupplier' | t }}</th><th>{{ 'adminPrograms.colStatus' | t }}</th></tr>
             </thead>
             <tbody>
               @for (p of filtered(); track p.id) {
@@ -32,7 +32,7 @@
                       @if (p.coverImageUrl) {
                         <img class="prog__cover" [src]="p.coverImageUrl" alt="" width="64" height="40" loading="lazy" />
                       } @else {
-                        <span class="prog__cover prog__cover--none" title="No cover image"><ui-icon name="alert-triangle" size="sm" /></span>
+                        <span class="prog__cover prog__cover--none" [title]="'adminPrograms.noCover' | t"><ui-icon name="alert-triangle" size="sm" /></span>
                       }
                       <div class="col">
                         <a class="ref ref--ink" [routerLink]="['/admin/programs', p.id]" (click)="$event.stopPropagation()">{{ p.name }}</a>
@@ -43,13 +43,13 @@
                   <td>{{ place(p.destinationName, p.country) || '—' }}</td>
                   <td class="num">
                     @if (p.nextDeparture) {
-                      {{ p.nextDeparture | odDate }}<div class="sub-line">{{ p.upcomingDepartures }} upcoming</div>
+                      {{ p.nextDeparture | odDate }}<div class="sub-line">{{ 'adminPrograms.upcoming' | t: { n: p.upcomingDepartures } }}</div>
                     } @else {
-                      <span class="muted">None upcoming</span>
+                      <span class="muted">{{ 'adminPrograms.noneUpcoming' | t }}</span>
                     }
                   </td>
                   <td class="mono">{{ p.providerCode }}</td>
-                  <td><ui-pill [tone]="tone(p.status)">{{ p.status }}</ui-pill></td>
+                  <td><ui-pill [tone]="tone(p.status)">{{ statusLabel(p.status) }}</ui-pill></td>
                 </tr>
               }
             </tbody>
@@ -60,13 +60,13 @@
   }
 }
 
-<ui-sheet [(open)]="createOpen" title="New program" sub="Starts as a draft; agencies see it only after you publish.">
+<ui-sheet [(open)]="createOpen" [title]="'adminPrograms.add' | t" [sub]="'adminPrograms.createSub' | t">
   <form id="create-program" (ngSubmit)="create()">
     @if (error(); as message) {
       <ui-banner tone="bad">{{ message }}</ui-banner>
     }
-    <ui-field label="Name" for="pg-name"><input uiInput id="pg-name" name="name" [(ngModel)]="form.name" required maxlength="200" placeholder="e.g. Antalya Spring 2027" /></ui-field>
-    <ui-field label="Destination" for="pg-dest">
+    <ui-field [label]="'adminPrograms.name' | t" for="pg-name"><input uiInput id="pg-name" name="name" [(ngModel)]="form.name" required maxlength="200" [placeholder]="'adminPrograms.namePlaceholder' | t" /></ui-field>
+    <ui-field [label]="'adminPrograms.colDestination' | t" for="pg-dest">
       <select uiInput id="pg-dest" name="destinationId" [(ngModel)]="form.destinationId">
         @for (d of destinations.value(); track d.id) {
           <option [value]="d.id">{{ d.name }}, {{ d.country }}</option>
@@ -74,11 +74,11 @@
       </select>
     </ui-field>
     <div class="two">
-      <ui-field label="Supplier" for="pg-provider" hint="Reservation provider code"><input uiInput id="pg-provider" name="providerCode" class="mono" [(ngModel)]="form.providerCode" required maxlength="30" /></ui-field>
-      <ui-field label="Season" for="pg-season" optional><input uiInput id="pg-season" name="season" [(ngModel)]="form.season" maxlength="50" placeholder="e.g. Summer 2027" /></ui-field>
+      <ui-field [label]="'adminPrograms.colSupplier' | t" for="pg-provider" [hint]="'adminPrograms.supplierHint' | t"><input uiInput id="pg-provider" name="providerCode" class="mono" [(ngModel)]="form.providerCode" required maxlength="30" /></ui-field>
+      <ui-field [label]="'adminPrograms.season' | t" for="pg-season" optional><input uiInput id="pg-season" name="season" [(ngModel)]="form.season" maxlength="50" [placeholder]="'adminPrograms.seasonPlaceholder' | t" /></ui-field>
     </div>
-    <ui-field label="Description" for="pg-desc" optional hint="You can write it later, with the rest of the content"><textarea uiInput id="pg-desc" name="description" [(ngModel)]="form.description" maxlength="20000"></textarea></ui-field>
+    <ui-field [label]="'adminPrograms.description' | t" for="pg-desc" optional [hint]="'adminPrograms.descriptionHint' | t"><textarea uiInput id="pg-desc" name="description" [(ngModel)]="form.description" maxlength="20000"></textarea></ui-field>
   </form>
-  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
-  <button sheetActions type="submit" form="create-program" uiButton="primary" [disabled]="busy() || !formValid()">{{ busy() ? 'Creating…' : 'Create draft' }}</button>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">{{ 'common.cancel' | t }}</button>
+  <button sheetActions type="submit" form="create-program" uiButton="primary" [disabled]="busy() || !formValid()">{{ (busy() ? 'adminPrograms.creating' : 'adminPrograms.createDraft') | t }}</button>
 </ui-sheet>
