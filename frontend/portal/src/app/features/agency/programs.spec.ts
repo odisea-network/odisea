@@ -36,9 +36,10 @@ describe('filterPrograms', () => {
 
   it('matches every word against name, place and tags', () => {
     expect(filterPrograms([past, antalya, rome], 'turkey beach', null).map(p => p.name)).toEqual(['Antalya Easter']);
-    expect(filterPrograms([past, antalya, rome], 'turkiye', null).map(p => p.name)).toEqual(['Bodrum Autumn']);
+    expect(filterPrograms([past, antalya, rome], 'турция', null).map(p => p.name)).toEqual(['Bodrum Autumn']);
+    expect(filterPrograms([past, program({ name: 'Izmir', tagline: 'Türkiye' })], 'turkiye', null).map(p => p.name)).toEqual(['Izmir']);
     expect(filterPrograms([past, antalya, rome], 'FAMILY', null).map(p => p.name)).toEqual(['Antalya Easter']);
-    expect(filterPrograms([past, antalya, rome], 'italy', null).map(p => p.name)).toEqual(['Rome Weekend']);
+    expect(filterPrograms([past, antalya, rome], 'италия', null).map(p => p.name)).toEqual(['Rome Weekend']);
   });
 
   it('narrows to one tag', () => {

@@ -3,8 +3,10 @@ import { Component, computed, inject, input, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProgramDetail } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { mealLabel, placeName, transportLabel } from '../../core/program-format';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   ButtonDirective, Card, EmptyState, Icon, Markdown, PageHeader, Pill, Skeleton,
 } from '../../shared/ui';
@@ -14,7 +16,7 @@ import { ProgramPhotos } from './program-photos';
 @Component({
   selector: 'app-agency-program',
   imports: [
-    RouterLink, OdDatePipe, ButtonDirective, Card, EmptyState, Icon, Markdown, PageHeader, Pill, Skeleton, ProgramPhotos,
+    RouterLink, OdDatePipe, TPipe, ButtonDirective, Card, EmptyState, Icon, Markdown, PageHeader, Pill, Skeleton, ProgramPhotos,
   ],
   templateUrl: './program.html',
   styleUrl: './program.scss',
@@ -44,9 +46,9 @@ export class AgencyProgram {
 
   groupSize(p: ProgramDetail): string | null {
     const { minGroupSize: min, maxGroupSize: max } = p.content;
-    if (min && max) return `${min}–${max} travellers`;
-    if (min) return `At least ${min} travellers`;
-    if (max) return `Up to ${max} travellers`;
+    if (min && max) return t('program.groupRange', { min, max });
+    if (min) return t('program.groupMin', { min });
+    if (max) return t('program.groupMax', { max });
     return null;
   }
 

@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
+import { TPipe } from '../../pipes/t.pipe';
 import { Icon } from '../icon/icon';
 import { ToastService } from './toast.service';
 
 /** Mounted once in the app root; renders the ToastService queue. */
 @Component({
   selector: 'ui-toast-host',
-  imports: [Icon],
+  imports: [TPipe, Icon],
   template: `
     @for (toast of toasts.toasts(); track toast.id) {
       <div class="toast" [class]="'toast toast--' + toast.tone">
@@ -16,7 +17,7 @@ import { ToastService } from './toast.service';
             {{ action.label }}
           </button>
         }
-        <button type="button" class="toast__close" aria-label="Dismiss" (click)="toasts.dismiss(toast.id)">
+        <button type="button" class="toast__close" [attr.aria-label]="'common.close' | t" (click)="toasts.dismiss(toast.id)">
           <ui-icon name="x" size="sm" />
         </button>
       </div>

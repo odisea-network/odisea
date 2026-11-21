@@ -1,16 +1,16 @@
 <ui-page-header
-  title="New booking"
-  sub="Live prices from the operator. Your commission is shown on every offer."
+  [title]="'nav.newBooking' | t"
+  [sub]="'search.sub' | t"
 />
 
 @if (programs.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load programs" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="programs.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'search.programsLoadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="programs.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else {
   <form class="search" role="search" (ngSubmit)="search()">
     <label class="search__cell search__cell--wide">
-      <span class="search__lbl">Program</span>
+      <span class="search__lbl">{{ 'search.program' | t }}</span>
       <span class="search__row">
         <ui-icon name="map-pin" size="sm" />
         <select
@@ -20,7 +20,7 @@
           (ngModelChange)="selectProgram($event)"
           [disabled]="programs.isLoading()"
         >
-          <option value="" disabled>{{ programs.isLoading() ? 'Loading programs…' : 'Choose a program…' }}</option>
+          <option value="" disabled>{{ (programs.isLoading() ? 'search.loadingPrograms' : 'search.chooseProgram') | t }}</option>
           @for (program of programs.value(); track program.id) {
             <option [value]="program.id">{{ program.name }}</option>
           }
@@ -29,7 +29,7 @@
     </label>
 
     <label class="search__cell search__cell--dates">
-      <span class="search__lbl">Departure</span>
+      <span class="search__lbl">{{ 'search.departure' | t }}</span>
       <select
         class="search__ctl"
         name="departure"
@@ -37,11 +37,11 @@
         (ngModelChange)="departureId.set($event)"
         [disabled]="detail.isLoading() || !detail.hasValue()"
       >
-        <option value="" disabled>{{ programId() ? 'Choose dates…' : 'Pick a program first' }}</option>
+        <option value="" disabled>{{ (programId() ? 'search.chooseDates' : 'search.pickProgramFirst') | t }}</option>
         @if (detail.hasValue()) {
           @for (dep of detail.value().departures; track dep.id) {
             <option [value]="dep.id">
-              {{ dep.startDate | odDate }} – {{ dep.endDate | odDate }} · {{ dep.nights }} nights
+              {{ dep.startDate | odDate }} – {{ dep.endDate | odDate }} · {{ 'common.nights' | t: { n: dep.nights } }}
             </option>
           }
         }
@@ -49,16 +49,16 @@
     </label>
 
     <label class="search__cell search__cell--pax">
-      <span class="search__lbl">Adults</span>
+      <span class="search__lbl">{{ 'search.adults' | t }}</span>
       <input class="search__ctl" name="adults" type="number" min="1" max="9" [(ngModel)]="adults" />
     </label>
     <label class="search__cell search__cell--pax">
-      <span class="search__lbl">Children</span>
+      <span class="search__lbl">{{ 'search.children' | t }}</span>
       <input class="search__ctl" name="children" type="number" min="0" max="9" [(ngModel)]="children" />
     </label>
 
     <button type="submit" uiButton="primary" class="search__go" [disabled]="!canSearch() || searching()">
-      <ui-icon name="search" />{{ searching() ? 'Searching…' : 'Search' }}
+      <ui-icon name="search" />{{ (searching() ? 'search.searching' : 'search.submit') | t }}
     </button>
   </form>
 }
@@ -74,7 +74,7 @@
         <span class="small muted">{{ chosen.content.tagline }}</span>
       }
     </div>
-    <a uiButton="ghost" size="sm" [routerLink]="['/agency/programs', chosen.id]">Program details<ui-icon name="arrow-right" size="sm" /></a>
+    <a uiButton="ghost" size="sm" [routerLink]="['/agency/programs', chosen.id]">{{ 'search.programDetails' | t }}<ui-icon name="arrow-right" size="sm" /></a>
   </div>
 }
 
@@ -87,19 +87,19 @@
 } @else if (results(); as found) {
   <div class="results">
     <div class="results__meta">
-      <span class="strong">{{ found.offers.length }} {{ found.offers.length === 1 ? 'offer' : 'offers' }}</span>
+      <span class="strong">{{ (found.offers.length === 1 ? 'search.offersOne' : 'search.offersMany') | t: { n: found.offers.length } }}</span>
       <span class="small muted">
-        {{ found.programName }} · {{ found.checkIn | odDate }} – {{ found.checkOut | odDate }} · {{ found.nights }} nights
+        {{ found.programName }} · {{ found.checkIn | odDate }} – {{ found.checkOut | odDate }} · {{ 'common.nights' | t: { n: found.nights } }}
       </span>
     </div>
     <div class="results__tools">
       <label class="results__sort">
-        <span class="small muted">Sort</span>
-        <select uiInput size="sm" name="sort" [ngModel]="sort()" (ngModelChange)="setSort($event)" aria-label="Sort offers">
-          <option value="price-asc">Price, low to high</option>
-          <option value="price-desc">Price, high to low</option>
-          <option value="stars">Stars</option>
-          <option value="commission">Commission</option>
+        <span class="small muted">{{ 'search.sort' | t }}</span>
+        <select uiInput size="sm" name="sort" [ngModel]="sort()" (ngModelChange)="setSort($event)" [attr.aria-label]="'search.sortLabel' | t">
+          <option value="price-asc">{{ 'search.sortPriceAsc' | t }}</option>
+          <option value="price-desc">{{ 'search.sortPriceDesc' | t }}</option>
+          <option value="stars">{{ 'search.sortStars' | t }}</option>
+          <option value="commission">{{ 'search.sortCommission' | t }}</option>
         </select>
       </label>
       @if (!phone()) {
@@ -109,7 +109,7 @@
   </div>
 
   @if (found.offers.length === 0) {
-    <ui-empty-state icon="search" title="No availability for these criteria" description="Try another departure or a different party size." />
+    <ui-empty-state icon="search" [title]="'search.emptyTitle' | t" [description]="'search.emptyText' | t" />
   } @else if (showCards()) {
     <div class="grid" [class.grid--list]="phone()">
       @for (offer of offers(); track offer.offerToken) {
@@ -131,13 +131,13 @@
         <table class="tbl">
           <thead>
             <tr>
-              <th class="cmp"><span class="sr-only">Compare</span></th>
-              <th>Hotel</th>
-              <th>Room · board</th>
-              <th>Availability</th>
-              <th class="r">Total</th>
-              <th class="r">Your commission</th>
-              <th><span class="sr-only">Book</span></th>
+              <th class="cmp"><span class="sr-only">{{ 'search.colCompare' | t }}</span></th>
+              <th>{{ 'search.colHotel' | t }}</th>
+              <th>{{ 'search.colRoom' | t }}</th>
+              <th>{{ 'search.colAvailability' | t }}</th>
+              <th class="r">{{ 'search.colTotal' | t }}</th>
+              <th class="r">{{ 'search.colCommission' | t }}</th>
+              <th><span class="sr-only">{{ 'search.colBook' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -150,12 +150,12 @@
                     [checked]="isCompared(offer)"
                     [disabled]="expired(offer) || (!isCompared(offer) && compareFull())"
                     (change)="toggleCompare(offer)"
-                    [attr.aria-label]="'Compare ' + offer.hotelName"
+                    [attr.aria-label]="'search.compareHotel' | t: { hotel: offer.hotelName }"
                   />
                 </td>
                 <td>
                   <b>{{ offer.hotelName }}</b>
-                  <span class="stars" role="img" [attr.aria-label]="offer.stars + ' stars'">
+                  <span class="stars" role="img" [attr.aria-label]="'common.stars' | t: { n: offer.stars }">
                     @for (star of stars(offer.stars); track $index) {
                       <ui-icon name="star" size="sm" />
                     }
@@ -164,18 +164,18 @@
                 <td>{{ offer.roomType }} · {{ offer.board }}</td>
                 <td>
                   @if (expired(offer)) {
-                    <ui-pill tone="bad">Expired</ui-pill>
+                    <ui-pill tone="bad">{{ 'offer.expired' | t }}</ui-pill>
                   } @else {
-                    <ui-pill tone="ok">Available</ui-pill>
+                    <ui-pill tone="ok">{{ 'offer.available' | t }}</ui-pill>
                   }
                 </td>
                 <td class="r m strong">{{ offer.sellPrice | money: offer.currency }}</td>
                 <td class="r m">{{ offer.agencyCommission | money: offer.currency }}</td>
                 <td class="r">
                   @if (expired(offer)) {
-                    <span class="small muted">Search again</span>
+                    <span class="small muted">{{ 'search.searchAgain' | t }}</span>
                   } @else {
-                    <button type="button" uiButton="primary" size="sm" (click)="book(offer)">Book</button>
+                    <button type="button" uiButton="primary" size="sm" (click)="book(offer)">{{ 'offer.book' | t }}</button>
                   }
                 </td>
               </tr>
@@ -188,32 +188,32 @@
 
   @if (compare().length > 0) {
     <div class="tray">
-      <span class="strong small">{{ compare().length }} selected to compare</span>
-      <button type="button" uiButton="ghost" size="sm" (click)="clearCompare()">Clear</button>
+      <span class="strong small">{{ 'search.selected' | t: { n: compare().length } }}</span>
+      <button type="button" uiButton="ghost" size="sm" (click)="clearCompare()">{{ 'search.clear' | t }}</button>
       <button type="button" uiButton="primary" size="sm" (click)="compareOpen.set(true)" [disabled]="compare().length < 2">
-        Compare side by side
+        {{ 'search.compareSideBySide' | t }}
       </button>
     </div>
   }
 
-  <dialog #compareDialog class="cmpdlg" aria-label="Compare offers" (close)="compareOpen.set(false)" (cancel)="$event.preventDefault(); compareOpen.set(false)">
+  <dialog #compareDialog class="cmpdlg" [attr.aria-label]="'search.compareTitle' | t" (close)="compareOpen.set(false)" (cancel)="$event.preventDefault(); compareOpen.set(false)">
     <div class="cmpdlg__head">
-      <h2 class="cmpdlg__title">Compare offers</h2>
-      <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Close" (click)="compareOpen.set(false)"><ui-icon name="x" /></button>
+      <h2 class="cmpdlg__title">{{ 'search.compareTitle' | t }}</h2>
+      <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'common.close' | t" (click)="compareOpen.set(false)"><ui-icon name="x" /></button>
     </div>
     <div class="cmpdlg__grid">
       @for (offer of compared(); track offer.offerToken) {
         <div class="cmpdlg__col">
           <b>{{ offer.hotelName }}</b>
           <dl class="kv cmpdlg__kv">
-            <dt>Stars</dt><dd>{{ offer.stars }}</dd>
-            <dt>Room</dt><dd>{{ offer.roomType }}</dd>
-            <dt>Board</dt><dd>{{ offer.board }}</dd>
-            <dt>Availability</dt><dd>{{ expired(offer) ? 'Expired' : 'Available' }}</dd>
-            <dt>Total</dt><dd class="m strong">{{ offer.sellPrice | money: offer.currency }}</dd>
-            <dt>You earn</dt><dd class="m">{{ offer.agencyCommission | money: offer.currency }}</dd>
+            <dt>{{ 'search.stars' | t }}</dt><dd>{{ offer.stars }}</dd>
+            <dt>{{ 'search.room' | t }}</dt><dd>{{ offer.roomType }}</dd>
+            <dt>{{ 'search.board' | t }}</dt><dd>{{ offer.board }}</dd>
+            <dt>{{ 'search.colAvailability' | t }}</dt><dd>{{ (expired(offer) ? 'offer.expired' : 'offer.available') | t }}</dd>
+            <dt>{{ 'search.colTotal' | t }}</dt><dd class="m strong">{{ offer.sellPrice | money: offer.currency }}</dd>
+            <dt>{{ 'search.youEarn' | t }}</dt><dd class="m">{{ offer.agencyCommission | money: offer.currency }}</dd>
           </dl>
-          <button type="button" uiButton="primary" size="sm" [disabled]="expired(offer)" (click)="book(offer)">Book this</button>
+          <button type="button" uiButton="primary" size="sm" [disabled]="expired(offer)" (click)="book(offer)">{{ 'search.bookThis' | t }}</button>
         </div>
       }
     </div>

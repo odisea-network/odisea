@@ -1,18 +1,19 @@
 import { MealPlan, TransportMode } from './api.types';
+import { t } from './i18n/i18n';
 
 export const TRANSPORT_MODES: { value: TransportMode; label: string }[] = [
-  { value: 'Unspecified', label: 'Not set' },
-  { value: 'Flight', label: 'Flight' },
-  { value: 'Bus', label: 'Coach' },
-  { value: 'Train', label: 'Train' },
-  { value: 'Ship', label: 'Ship / ferry' },
-  { value: 'OwnTransport', label: 'Own transport' },
-  { value: 'Mixed', label: 'Mixed' },
+  { value: 'Unspecified', label: t('program.transportMode.Unspecified') },
+  { value: 'Flight', label: t('program.transportMode.Flight') },
+  { value: 'Bus', label: t('program.transportMode.Bus') },
+  { value: 'Train', label: t('program.transportMode.Train') },
+  { value: 'Ship', label: t('program.transportMode.Ship') },
+  { value: 'OwnTransport', label: t('program.transportMode.OwnTransport') },
+  { value: 'Mixed', label: t('program.transportMode.Mixed') },
 ];
 
-const regions = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
+const regions = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames(['bg'], { type: 'region' }) : null;
 
-/** "Antalya, Turkey": destinations store the country as an ISO code. */
+/** "Antalya, Турция": destinations store the country as an ISO code. */
 export function placeName(name: string | null | undefined, country: string | null | undefined): string {
   if (!name) return '';
   if (!country) return name;
@@ -50,8 +51,8 @@ export function mealPlan(meals: Meals): MealPlan {
 
 export function mealLabel(plan: MealPlan): string {
   const m = mealsOf(plan);
-  const parts = [m.breakfast && 'breakfast', m.lunch && 'lunch', m.dinner && 'dinner'].filter(Boolean) as string[];
-  if (parts.length === 0) return 'No meals';
-  const text = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts.at(-1);
+  const parts = [m.breakfast && t('program.meals.breakfast'), m.lunch && t('program.meals.lunch'), m.dinner && t('program.meals.dinner')].filter(Boolean) as string[];
+  if (parts.length === 0) return t('program.meals.none');
+  const text = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ` ${t('program.meals.and')} ` + parts.at(-1);
   return text.charAt(0).toUpperCase() + text.slice(1);
 }

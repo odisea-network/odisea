@@ -6,9 +6,11 @@ import { BookingDto, FinancialDocumentDto } from '../../core/api.types';
 import { historyTimeline } from '../../core/booking-history';
 import { BrandingService } from '../../core/branding.service';
 import { formatDateTime, formatMoney } from '../../core/format';
+import { t, tOptional } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Icon, IconName, Masked, NextStep,
   PageHeader, Pill, Progress, Skeleton, StatusChip, Timeline, ToastService, bookingStatusLabel,
@@ -27,7 +29,7 @@ interface NextAction {
 @Component({
   selector: 'app-agency-booking-detail',
   imports: [
-    RouterLink, MoneyPipe, OdDatePipe,
+    RouterLink, MoneyPipe, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, Deadline, EmptyState, Icon, Masked, NextStep, PageHeader, Pill, Progress,
     Skeleton, StatusChip, Timeline,
   ],
@@ -72,7 +74,9 @@ export class AgencyBookingDetail {
     if (!b) return null;
     const lead = b.passengers.find(p => p.isLead);
     const count = b.passengers.length || b.adults + b.children;
-    return `${b.hotelName} · ${b.programName} · ${count} ${count === 1 ? 'traveller' : 'travellers'}${lead ? ` · lead ${lead.firstName} ${lead.lastName}` : ''}`;
+    const party = t(count === 1 ? 'bookingDetail.passengersOne' : 'bookingDetail.passengersMany', { n: count });
+    const leadText = lead ? ` · ${t('bookingDetail.leadIs', { name: `${lead.firstName} ${lead.lastName}` })}` : '';
+    return `${b.hotelName} · ${b.programName} · ${party}${leadText}`;
   });
 
   readonly next = computed<NextAction | null>(() => {
@@ -82,25 +86,40 @@ export class AgencyBookingDetail {
       case 'Draft':
       case 'PriceConfirmed':
         return {
-          icon: 'pencil', tone: 'neutral', title: 'Finish this booking',
-          sub: 'Travellers are saved. Continue to check the live price and submit.',
-          action: { label: 'Continue booking', link: ['/agency/book'] },
+          icon: 'pencil', tone: 'neutral', title: t('bookingDetail.next.draftTitle'),
+          sub: t('bookingDetail.next.draftSub'),
+          action: { label: t('bookingDetail.next.draftAction'), link: ['/agency/book'] },
         };
       case 'PendingConfirmation':
-        return { icon: 'hourglass', tone: 'info', title: 'Waiting for the supplier', sub: 'The hold request is in flight. You will get a payment deadline once it lands.' };
+        return { icon: 'hourglass', tone: 'info', title: t('bookingDetail.next.pendingTitle'), sub: t('bookingDetail.next.pendingSub') };
       case 'AwaitingPayment':
         return {
           icon: 'card', tone: 'warn',
-          title: `Pay ${formatMoney(b.balanceDue, b.currency)}${b.paymentDueAt ? ` by ${formatDateTime(b.paymentDueAt)}` : ''}`,
-          sub: 'After the deadline the hold is released and the booking expires.',
-          action: { label: 'Payment details', link: [], fragment: 'pay' },
+          title: b.paymentDueAt
+            ? t('bookingDetail.next.payTitleBy', { amount: formatMoney(b.balanceDue, b.currency), deadline: formatDateTime(b.paymentDueAt) })
+            : t('bookingDetail.next.payTitle', { amount: formatMoney(b.balanceDue, b.currency) }),
+          sub: t('bookingDetail.next.paySub'),
+          action: { label: t('bookingDetail.next.payAction'), link: [], fragment: 'pay' },
         };
       case 'Confirmed':
-        return { icon: 'check-circle', tone: 'ok', title: 'Confirmed', sub: 'Paid in full and final. Your invoice appears under Documents once issued.' };
+        return { icon: 'check-circle', tone: 'ok', title: t('bookingDetail.next.confirmedTitle'), sub: t('bookingDetail.next.confirmedSub') };
       default:
-        return { icon: 'slash-circle', tone: 'neutral', title: `Closed · ${bookingStatusLabel(b.status)}`, sub: 'Nothing more to do on this booking.' };
+        return { icon: 'slash-circle', tone: 'neutral', title: t('bookingDetail.next.closedTitle', { status: bookingStatusLabel(b.status) }), sub: t('bookingDetail.next.closedSub') };
     }
   });
+
+  passengerType(type: string | null): string {
+    return type ? tOptional(`passenger.type.${type}`) ?? type : '—';
+  }
+
+  documentType(type: string): string {
+    if (type === 'Passport') return t('book.passport');
+    return type === 'IdCard' ? t('book.idCard') : type;
+  }
+
+  kindLabel(kind: string): string {
+    return tOptional(`agencyDocuments.kind.${kind}`) ?? kind;
+  }
 
   async download(doc: FinancialDocumentDto): Promise<void> {
     try {
@@ -114,7 +133,7 @@ export class AgencyBookingDetail {
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      this.toasts.show(`Download of ${doc.number} failed`, { tone: 'bad' });
+      this.toasts.show(t('agencyDocuments.downloadFailed', { number: doc.number }), { tone: 'bad' });
     }
   }
 
@@ -122,10 +141,10 @@ export class AgencyBookingDetail {
     const b = this.booking();
     if (!b) return;
     const decision = await this.dialogs.confirm({
-      title: `Cancel booking ${b.ref}?`,
-      message: 'The reservation is withdrawn and any supplier hold is released. This can’t be undone.',
-      confirmLabel: 'Cancel booking',
-      cancelLabel: 'Keep booking',
+      title: t('bookings.cancelTitle', { ref: b.ref }),
+      message: t('bookings.cancelMessage'),
+      confirmLabel: t('bookings.cancelConfirm'),
+      cancelLabel: t('bookings.cancelKeep'),
       destructive: true,
     });
     if (!decision) return;
@@ -133,10 +152,10 @@ export class AgencyBookingDetail {
     this.error.set(null);
     try {
       await firstValueFrom(this.http.post(`/api/v1/bookings/${b.id}/cancel`, {}));
-      this.toasts.show(`${b.ref} cancelled`);
+      this.toasts.show(t('bookings.cancelled', { ref: b.ref }));
       this.loaded.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'Cancellation failed.'));
+      this.error.set(problemMessage(err, t('bookings.cancelFailed')));
     } finally {
       this.busy.set(false);
     }

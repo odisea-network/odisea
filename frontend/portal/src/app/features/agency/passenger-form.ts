@@ -1,4 +1,5 @@
 import { Gender, PassengerRequest, PassengerType, TravelDocumentType } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 
 /** One row of the wizard. Everything is a string so it binds straight to inputs. */
 export interface PassengerForm {
@@ -58,40 +59,40 @@ export function validatePassengers(
 ): string[] {
   const problems: string[] = [];
   if (passengers.length !== context.adults + context.children) {
-    problems.push(`The offer is for ${context.adults} adult(s) and ${context.children} child(ren): ${passengers.length} passenger(s) entered.`);
+    problems.push(t('passenger.countMismatch', { adults: context.adults, children: context.children, count: passengers.length }));
   }
   if (leadIndex < 0 || leadIndex >= passengers.length) {
-    problems.push('Choose a lead passenger.');
+    problems.push(t('passenger.chooseLead'));
   }
 
   let adults = 0;
   let minors = 0;
   passengers.forEach((p, i) => {
-    const label = `Passenger ${i + 1}`;
+    const who = t('passenger.label', { n: i + 1 });
     const missing: string[] = [];
-    if (!p.gender) missing.push('gender');
-    if (!p.firstName.trim()) missing.push('first name');
-    else if (!LATIN_NAME.test(p.firstName.trim())) problems.push(`${label}: first name must use Latin letters as in the travel document.`);
-    if (!p.lastName.trim()) missing.push('last name');
-    else if (!LATIN_NAME.test(p.lastName.trim())) problems.push(`${label}: last name must use Latin letters as in the travel document.`);
-    if (!p.birthDate) missing.push('birth date');
-    else if (p.birthDate > context.checkIn) problems.push(`${label}: birth date is after check-in.`);
-    if (!p.nationality.trim()) missing.push('nationality');
-    else if (!COUNTRY_CODE.test(p.nationality.trim())) problems.push(`${label}: nationality must be a 2-letter country code.`);
-    if (!p.documentType) missing.push('document type');
-    if (!p.documentNumber.trim()) missing.push('document number');
-    else if (!DOCUMENT_NUMBER.test(p.documentNumber.trim())) problems.push(`${label}: document number must be letters and digits only (max 20).`);
-    if (!p.documentIssuingCountry.trim()) missing.push('document issuing country');
-    else if (!COUNTRY_CODE.test(p.documentIssuingCountry.trim())) problems.push(`${label}: issuing country must be a 2-letter country code.`);
-    if (!p.documentExpiryDate) missing.push('document expiry date');
-    else if (p.documentExpiryDate < context.checkOut) problems.push(`${label}: travel document expires before check-out.`);
+    if (!p.gender) missing.push(t('passenger.field.gender'));
+    if (!p.firstName.trim()) missing.push(t('passenger.field.firstName'));
+    else if (!LATIN_NAME.test(p.firstName.trim())) problems.push(t('passenger.firstNameLatin', { who }));
+    if (!p.lastName.trim()) missing.push(t('passenger.field.lastName'));
+    else if (!LATIN_NAME.test(p.lastName.trim())) problems.push(t('passenger.lastNameLatin', { who }));
+    if (!p.birthDate) missing.push(t('passenger.field.birthDate'));
+    else if (p.birthDate > context.checkIn) problems.push(t('passenger.birthAfterCheckIn', { who }));
+    if (!p.nationality.trim()) missing.push(t('passenger.field.nationality'));
+    else if (!COUNTRY_CODE.test(p.nationality.trim())) problems.push(t('passenger.nationalityCode', { who }));
+    if (!p.documentType) missing.push(t('passenger.field.documentType'));
+    if (!p.documentNumber.trim()) missing.push(t('passenger.field.documentNumber'));
+    else if (!DOCUMENT_NUMBER.test(p.documentNumber.trim())) problems.push(t('passenger.documentNumberFormat', { who }));
+    if (!p.documentIssuingCountry.trim()) missing.push(t('passenger.field.issuingCountry'));
+    else if (!COUNTRY_CODE.test(p.documentIssuingCountry.trim())) problems.push(t('passenger.issuingCountryCode', { who }));
+    if (!p.documentExpiryDate) missing.push(t('passenger.field.expiry'));
+    else if (p.documentExpiryDate < context.checkOut) problems.push(t('passenger.documentExpires', { who }));
     if (i === leadIndex) {
-      if (!p.email.trim()) missing.push('email (lead)');
-      else if (!EMAIL.test(p.email.trim())) problems.push(`${label}: email looks invalid.`);
-      if (!p.phone.trim()) missing.push('phone (lead)');
-      else if (!PHONE.test(p.phone.trim())) problems.push(`${label}: phone may contain digits, spaces, brackets and a leading +.`);
+      if (!p.email.trim()) missing.push(t('passenger.field.email'));
+      else if (!EMAIL.test(p.email.trim())) problems.push(t('passenger.emailInvalid', { who }));
+      if (!p.phone.trim()) missing.push(t('passenger.field.phone'));
+      else if (!PHONE.test(p.phone.trim())) problems.push(t('passenger.phoneInvalid', { who }));
     }
-    if (missing.length) problems.push(`${label}: missing ${missing.join(', ')}.`);
+    if (missing.length) problems.push(t('passenger.missing', { who, fields: missing.join(', ') }));
 
     if (p.birthDate && p.birthDate <= context.checkIn) {
       if (passengerTypeAt(p.birthDate, context.checkIn) === 'Adult') adults++;
@@ -100,7 +101,9 @@ export function validatePassengers(
   });
 
   if (problems.length === 0 && (adults !== context.adults || minors !== context.children)) {
-    problems.push(`Birth dates give ${adults} adult(s) and ${minors} child(ren), but the offer is for ${context.adults} adult(s) and ${context.children} child(ren).`);
+    problems.push(t('passenger.ageMismatch', {
+      adults, minors, offerAdults: context.adults, offerChildren: context.children,
+    }));
   }
   return problems;
 }

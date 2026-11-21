@@ -32,27 +32,27 @@ describe('validatePassengers', () => {
   it('reports missing fields by position, never by name', () => {
     const problems = validatePassengers(
       [adult(), adult({ firstName: 'Nameless', nationality: '', documentNumber: '' })], 0, context);
-    expect(problems).toEqual(['Passenger 2: missing nationality, document number.']);
+    expect(problems).toEqual(['Пътник 2: не е попълнено: гражданство, номер на документа.']);
     expect(problems.join()).not.toContain('Nameless');
   });
 
   it('requires the lead to have contact details and exactly one lead to be chosen', () => {
     expect(validatePassengers([adult({ email: '', phone: '' }), adult()], 0, context))
-      .toEqual(['Passenger 1: missing email (lead), phone (lead).']);
-    expect(validatePassengers([adult(), adult()], -1, context)).toContain('Choose a lead passenger.');
+      .toEqual(['Пътник 1: не е попълнено: имейл (титуляр), телефон (титуляр).']);
+    expect(validatePassengers([adult(), adult()], -1, context)).toContain('Изберете титуляр.');
   });
 
   it('checks the party against the priced occupancy, by count and by age mix', () => {
-    expect(validatePassengers([adult()], 0, context)[0]).toContain('2 adult(s) and 0 child(ren): 1 passenger(s)');
+    expect(validatePassengers([adult()], 0, context)[0]).toContain('възрастни: 2, деца: 0; въведени пътници: 1');
     expect(validatePassengers([adult(), adult({ birthDate: '2020-01-01' })], 0, context))
-      .toEqual(['Birth dates give 1 adult(s) and 1 child(ren), but the offer is for 2 adult(s) and 0 child(ren).']);
+      .toEqual(['По дати на раждане: възрастни 1, деца 1; офертата е за възрастни 2, деца 0.']);
   });
 
   it('rejects documents that expire before check-out and non-Latin names', () => {
     const problems = validatePassengers(
       [adult({ documentExpiryDate: '2027-04-01' }), adult({ firstName: 'Иван' })], 0, context);
-    expect(problems).toContain('Passenger 1: travel document expires before check-out.');
-    expect(problems).toContain('Passenger 2: first name must use Latin letters as in the travel document.');
+    expect(problems).toContain('Пътник 1: документът за пътуване изтича преди напускането.');
+    expect(problems).toContain('Пътник 2: името трябва да е на латиница, както е в документа за пътуване.');
   });
 });
 

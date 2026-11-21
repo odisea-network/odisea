@@ -115,13 +115,13 @@ describe('meals', () => {
   });
 
   it('labels meals and transport for people', () => {
-    expect(mealLabel('None')).toBe('No meals');
-    expect(mealLabel('Breakfast, Lunch, Dinner')).toBe('Breakfast, lunch and dinner');
-    expect(transportLabel('Bus')).toBe('Coach');
+    expect(mealLabel('None')).toBe('Без хранене');
+    expect(mealLabel('Breakfast, Lunch, Dinner')).toBe('Закуска, обяд и вечеря');
+    expect(transportLabel('Bus')).toBe('Автобус');
   });
 
   it('spells out ISO country codes', () => {
-    expect(placeName('Rome', 'it')).toBe('Rome, Italy');
+    expect(placeName('Rome', 'it')).toBe('Rome, Италия');
     expect(placeName('Antalya', 'Türkiye')).toBe('Antalya, Türkiye');
     expect(placeName('Antalya', null)).toBe('Antalya');
     expect(placeName(null, 'TR')).toBe('');

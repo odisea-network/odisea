@@ -2,23 +2,17 @@ import { HttpClient } from '@angular/common/http';
 import { Component, inject, resource, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { FinancialDocumentDto } from '../../core/api.types';
+import { t, tOptional } from '../../core/i18n/i18n';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   ButtonDirective, Card, EmptyState, Icon, PageHeader, Pill, Skeleton, ToastService,
 } from '../../shared/ui';
 
-/** Document kinds are Bulgarian tax documents; the law names them, so the label keeps both. */
-const KIND_LABELS: Record<string, string> = {
-  Invoice: 'Invoice · Фактура',
-  CreditNote: 'Credit note · Кредитно известие',
-  DebitNote: 'Debit note · Дебитно известие',
-  Proforma: 'Proforma · Проформа',
-};
-
 @Component({
   selector: 'app-agency-documents',
-  imports: [MoneyPipe, OdDatePipe, ButtonDirective, Card, EmptyState, Icon, PageHeader, Pill, Skeleton],
+  imports: [MoneyPipe, OdDatePipe, TPipe, ButtonDirective, Card, EmptyState, Icon, PageHeader, Pill, Skeleton],
   templateUrl: './documents.html',
   styleUrl: './documents.scss',
 })
@@ -33,7 +27,7 @@ export class AgencyDocuments {
   });
 
   kindLabel(kind: string): string {
-    return KIND_LABELS[kind] ?? kind;
+    return tOptional(`agencyDocuments.kind.${kind}`) ?? kind;
   }
 
   /** Downloaded through HttpClient so the auth interceptor applies. */
@@ -52,7 +46,7 @@ export class AgencyDocuments {
       // revoking in the same task can abort them. Defer it.
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      this.toasts.show(`Download of ${doc.number} failed`, { tone: 'bad' });
+      this.toasts.show(t('agencyDocuments.downloadFailed', { number: doc.number }), { tone: 'bad' });
     } finally {
       this.downloading.set(null);
     }

@@ -1,15 +1,15 @@
 @if (loaded.error()) {
-  <ui-page-header title="Program" [crumbs]="[{ label: 'Programs', link: '/agency/programs' }, { label: 'Not available' }]" />
-  <ui-empty-state icon="layers" title="This program is not available" description="It may have been withdrawn by the operator, or the link is wrong.">
-    <a uiButton size="sm" routerLink="/agency/programs">All programs</a>
+  <ui-page-header [title]="'program.title' | t" [crumbs]="[{ label: ('nav.programs' | t), link: '/agency/programs' }, { label: ('program.notAvailableCrumb' | t) }]" />
+  <ui-empty-state icon="layers" [title]="'program.notAvailableTitle' | t" [description]="'program.notAvailableText' | t">
+    <a uiButton size="sm" routerLink="/agency/programs">{{ 'program.all' | t }}</a>
   </ui-empty-state>
 } @else if (program(); as p) {
   <ui-page-header
     [title]="p.name"
-    [crumbs]="[{ label: 'Programs', link: '/agency/programs' }, { label: p.name }]"
+    [crumbs]="[{ label: ('nav.programs' | t), link: '/agency/programs' }, { label: p.name }]"
     [sub]="place(p.destination?.name, p.destination?.country) + (p.season ? (p.destination ? ' · ' : '') + p.season : '')"
   >
-    <a actions uiButton="primary" routerLink="/agency/search" [queryParams]="{ program: p.id }"><ui-icon name="search" />Check prices</a>
+    <a actions uiButton="primary" routerLink="/agency/search" [queryParams]="{ program: p.id }"><ui-icon name="search" />{{ 'program.checkPrices' | t }}</a>
   </ui-page-header>
 
   <div class="layout">
@@ -35,21 +35,21 @@
       </ui-card>
 
       @if (p.description) {
-        <ui-card title="About this trip"><ui-markdown [text]="p.description" /></ui-card>
+        <ui-card [title]="'program.about' | t"><ui-markdown [text]="p.description" /></ui-card>
       }
 
       @if (p.itinerary.length > 0) {
-        <ui-card title="Day by day">
+        <ui-card [title]="'program.itinerary' | t">
           <ol class="days">
             @for (d of p.itinerary; track d.id) {
               <li class="day">
-                <span class="day__n">Day {{ d.day }}</span>
+                <span class="day__n">{{ 'program.day' | t: { n: d.day } }}</span>
                 <div class="col day__body">
                   <b>{{ d.title }}</b>
                   @if (d.description) {
                     <ui-markdown class="small" [text]="d.description" />
                   }
-                  <span class="small muted">{{ meals(d.meals) }}@if (d.overnight) { · Overnight in {{ d.overnight }}}</span>
+                  <span class="small muted">{{ meals(d.meals) }}@if (d.overnight) { · {{ 'program.overnight' | t: { place: d.overnight } }}}</span>
                 </div>
               </li>
             }
@@ -58,21 +58,21 @@
       }
 
       @if (p.content.inclusions.length > 0 || p.content.exclusions.length > 0) {
-        <ui-card title="What's included">
+        <ui-card [title]="'program.included' | t">
           <div class="incl">
             @if (p.content.inclusions.length > 0) {
               <ul class="ticks">
                 @for (i of p.content.inclusions; track $index) {
-                  <li><ui-icon name="check" size="sm" /><span><span class="sr-only">Included: </span>{{ i }}</span></li>
+                  <li><ui-icon name="check" size="sm" /><span><span class="sr-only">{{ 'program.includedItem' | t }} </span>{{ i }}</span></li>
                 }
               </ul>
             }
             @if (p.content.exclusions.length > 0) {
               <div class="col">
-                <span class="eyebrow">Not included</span>
+                <span class="eyebrow">{{ 'program.notIncluded' | t }}</span>
                 <ul class="ticks ticks--no">
                   @for (x of p.content.exclusions; track $index) {
-                    <li><ui-icon name="x" size="sm" /><span><span class="sr-only">Not included: </span>{{ x }}</span></li>
+                    <li><ui-icon name="x" size="sm" /><span><span class="sr-only">{{ 'program.notIncludedItem' | t }} </span>{{ x }}</span></li>
                   }
                 </ul>
               </div>
@@ -82,13 +82,13 @@
       }
 
       @if (p.content.transportMode !== 'Unspecified' || p.content.departurePoint || p.content.transportDetails) {
-        <ui-card title="Getting there">
+        <ui-card [title]="'program.gettingThere' | t">
           <dl class="kv">
             @if (p.content.transportMode !== 'Unspecified') {
-              <dt>Transport</dt><dd>{{ transport(p.content.transportMode) }}</dd>
+              <dt>{{ 'program.transport' | t }}</dt><dd>{{ transport(p.content.transportMode) }}</dd>
             }
             @if (p.content.departurePoint) {
-              <dt>From</dt><dd>{{ p.content.departurePoint }}</dd>
+              <dt>{{ 'program.from' | t }}</dt><dd>{{ p.content.departurePoint }}</dd>
             }
           </dl>
           @if (p.content.transportDetails) {
@@ -98,52 +98,52 @@
       }
 
       @if (p.hotels.length > 0) {
-        <ui-card title="Hotels to choose from">
+        <ui-card [title]="'program.hotels' | t">
           <ul class="hotels">
             @for (h of p.hotels; track h.id) {
-              <li class="row between"><b>{{ h.name }}</b><span class="stars" [attr.aria-label]="h.stars + ' stars'">{{ stars(h.stars) }}</span></li>
+              <li class="row between"><b>{{ h.name }}</b><span class="stars" [attr.aria-label]="'common.stars' | t: { n: h.stars }">{{ stars(h.stars) }}</span></li>
             }
           </ul>
-          <p class="small muted">Rooms, boards and live prices appear when you check prices for a date.</p>
+          <p class="small muted">{{ 'program.hotelsHint' | t }}</p>
         </ui-card>
       }
 
       @if (p.content.practicalInfo) {
-        <ui-card title="Before you travel"><ui-markdown [text]="p.content.practicalInfo" /></ui-card>
+        <ui-card [title]="'program.practical' | t"><ui-markdown [text]="p.content.practicalInfo" /></ui-card>
       }
 
       @if (hasPolicies(p)) {
-        <ui-card title="Policies">
+        <ui-card [title]="'program.policies' | t">
           <div class="col policies">
             @if (p.content.cancellationPolicy) {
-              <section><h3 class="h3">Cancellation</h3><ui-markdown [text]="p.content.cancellationPolicy" /></section>
+              <section><h3 class="h3">{{ 'program.cancellation' | t }}</h3><ui-markdown [text]="p.content.cancellationPolicy" /></section>
             }
             @if (p.content.paymentTerms) {
-              <section><h3 class="h3">Payment</h3><ui-markdown [text]="p.content.paymentTerms" /></section>
+              <section><h3 class="h3">{{ 'program.payment' | t }}</h3><ui-markdown [text]="p.content.paymentTerms" /></section>
             }
             @if (p.content.insurancePolicy) {
-              <section><h3 class="h3">Insurance</h3><ui-markdown [text]="p.content.insurancePolicy" /></section>
+              <section><h3 class="h3">{{ 'program.insurance' | t }}</h3><ui-markdown [text]="p.content.insurancePolicy" /></section>
             }
             @if (p.content.childPolicy) {
-              <section><h3 class="h3">Children</h3><ui-markdown [text]="p.content.childPolicy" /></section>
+              <section><h3 class="h3">{{ 'program.children' | t }}</h3><ui-markdown [text]="p.content.childPolicy" /></section>
             }
           </div>
         </ui-card>
       }
     </div>
 
-    <ui-card class="side" title="Upcoming dates">
+    <ui-card class="side" [title]="'program.upcoming' | t">
       @if (upcoming().length === 0) {
-        <p class="small muted">No upcoming departures right now.</p>
+        <p class="small muted">{{ 'program.noUpcoming' | t }}</p>
       } @else {
         <ul class="deps">
           @for (d of upcoming(); track d.id) {
             <li class="row between dep">
               <div class="col">
                 <b class="num">{{ d.startDate | odDate }} – {{ d.endDate | odDate }}</b>
-                <span class="small muted">{{ d.nights }} nights@if (d.transportNote) { · {{ d.transportNote }}}</span>
+                <span class="small muted">{{ 'common.nights' | t: { n: d.nights } }}@if (d.transportNote) { · {{ d.transportNote }}}</span>
               </div>
-              <a uiButton size="sm" routerLink="/agency/search" [queryParams]="{ program: p.id, departure: d.id }" [attr.aria-label]="'Check prices for ' + (d.startDate | odDate)">Prices</a>
+              <a uiButton size="sm" routerLink="/agency/search" [queryParams]="{ program: p.id, departure: d.id }" [attr.aria-label]="'program.pricesFor' | t: { date: (d.startDate | odDate) }">{{ 'program.prices' | t }}</a>
             </li>
           }
         </ul>

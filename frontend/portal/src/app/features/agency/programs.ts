@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ProgramListItem } from '../../core/api.types';
 import { placeName } from '../../core/program-format';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import { ButtonDirective, EmptyState, Icon, InputDirective, PageHeader, Pill, Skeleton } from '../../shared/ui';
 
 /** Lowercase without accents, so "turkiye" finds "Türkiye". */
@@ -38,7 +39,7 @@ export function popularTags(programs: ProgramListItem[], limit = 10): string[] {
 /** Everything the operator currently sells, as cards. */
 @Component({
   selector: 'app-agency-programs',
-  imports: [FormsModule, RouterLink, OdDatePipe, ButtonDirective, EmptyState, Icon, InputDirective, PageHeader, Pill, Skeleton],
+  imports: [FormsModule, RouterLink, OdDatePipe, TPipe, ButtonDirective, EmptyState, Icon, InputDirective, PageHeader, Pill, Skeleton],
   templateUrl: './programs.html',
   styleUrl: './programs.scss',
 })

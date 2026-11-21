@@ -1,28 +1,29 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { ProgramImageDto } from '../../core/api.types';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import { ButtonDirective, Icon } from '../../shared/ui';
 
 /** Large photo with thumbnails; the cover first. */
 @Component({
   selector: 'app-program-photos',
-  imports: [ButtonDirective, Icon],
+  imports: [TPipe, ButtonDirective, Icon],
   template: `
     @if (current(); as img) {
       <figure class="main">
         <img [src]="img.url" [alt]="img.altText ?? ''" [width]="img.width" [height]="img.height" />
         @if (ordered().length > 1) {
-          <button type="button" uiButton size="sm" iconOnly class="nav nav--prev" aria-label="Previous photo" (click)="step(-1)"><ui-icon name="chevron-left" size="sm" /></button>
-          <button type="button" uiButton size="sm" iconOnly class="nav nav--next" aria-label="Next photo" (click)="step(1)"><ui-icon name="chevron-right" size="sm" /></button>
+          <button type="button" uiButton size="sm" iconOnly class="nav nav--prev" [attr.aria-label]="'program.photoPrevious' | t" (click)="step(-1)"><ui-icon name="chevron-left" size="sm" /></button>
+          <button type="button" uiButton size="sm" iconOnly class="nav nav--next" [attr.aria-label]="'program.photoNext' | t" (click)="step(1)"><ui-icon name="chevron-right" size="sm" /></button>
         }
         @if (img.caption) {
           <figcaption>{{ img.caption }}</figcaption>
         }
       </figure>
       @if (ordered().length > 1) {
-        <div class="thumbs" role="group" aria-label="Photos">
+        <div class="thumbs" role="group" [attr.aria-label]="'program.photos' | t">
           @for (t of ordered(); track t.id; let i = $index) {
             <button type="button" class="thumb" [class.thumb--on]="i === index()" [attr.aria-pressed]="i === index()"
-              [attr.aria-label]="'Photo ' + (i + 1) + ' of ' + ordered().length" (click)="index.set(i)">
+              [attr.aria-label]="'program.photoOf' | t: { n: i + 1, total: ordered().length }" (click)="index.set(i)">
               <img [src]="t.url" alt="" loading="lazy" />
             </button>
           }
