@@ -41,7 +41,7 @@ Each tour operator runs its own Odisea deployment and dresses the shared portal 
 
 ## Plans and feature entitlements
 
-Every agency has a commercial `Plan`: **Core** (search and book the operator's packages — what every partner gets) or **Workspace** (the first paid add-on: the agency's own tools inside Odisea — external reservations with public tracking, inquiry forms, e-mail notifications). `PlanFeatures.For(plan)` is the single place that says what a plan unlocks; modules gate on `AgencyFeature`, never on plan names.
+Every agency has a commercial `Plan`: **Core** (search and book the operator's packages — what every partner gets), **Ledger** (the reservation ledger only: the agency's bookings with any tour operator, their payments, commission and documents) or **Workspace** (everything in Ledger plus the agency's own tools inside Odisea — external reservations with public tracking, inquiry forms, e-mail notifications). Each plan includes the ones before it. `PlanFeatures.For(plan)` is the single place that says what a plan unlocks; modules gate on `AgencyFeature`, never on plan names.
 
 - Operator admins set it: `PUT /api/v1/agencies/{id}/plan {plan}` (the tier is money, so `OperatorAdmin`). New agencies start on Core; the demo agency is seeded on Workspace.
 - Agencies read their own: `GET /api/v1/agency/plan` → plan, active flag, features — the portal uses it to show or upsell features.
