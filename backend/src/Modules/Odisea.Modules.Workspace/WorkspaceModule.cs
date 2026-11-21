@@ -32,6 +32,7 @@ public static class WorkspaceModule
         services.Configure<LedgerOptions>(configuration.GetSection(LedgerOptions.Section));
         services.AddScoped<TourOperatorService>();
         services.AddScoped<LedgerReservationService>();
+        services.AddScoped<LedgerDocumentService>();
         return services;
     }
 }
