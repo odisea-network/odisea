@@ -77,10 +77,12 @@ public sealed class LedgerReservationService(
 
     public async Task<PagedResult<LedgerReservationSummaryDto>> ListAsync(
         Guid agencyId, string? search, LedgerReservationStatus? status, Guid? operatorId,
-        DateOnly? travelFrom, DateOnly? travelTo, string? sort, int page, int pageSize, CancellationToken ct)
+        DateOnly? travelFrom, DateOnly? travelTo, int? dueWithinDays, bool overdueOnly,
+        string? sort, int page, int pageSize, CancellationToken ct)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
+        var today = Today;
 
         var query = db.LedgerReservations.AsNoTracking().Where(r => r.AgencyId == agencyId);
         if (status is { } s)
@@ -97,29 +99,55 @@ public sealed class LedgerReservationService(
                 || r.HolderName.ToLower().Contains(q)
                 || db.TourOperators.Any(t => t.Id == r.TourOperatorId && t.NameKey.Contains(q)));
 
-        var total = await query.CountAsync(ct);
-        query = sort switch
+        // What is still open on an instalment depends on how the payments fall across the schedule,
+        // which SQL does not know. The due filters therefore narrow by date in the database and decide
+        // on the computed figures in memory, over the agency's open reservations only.
+        var dueWindow = DueWindow.For(today, dueWithinDays, overdueOnly);
+        if (dueWindow is { } window)
+            query = query.Where(r => r.Status != LedgerReservationStatus.Draft
+                                     && r.Installments.Any(i => i.DueDate >= window.From && i.DueDate <= window.To));
+
+        var sorted = sort switch
         {
             "travelStart" => query.OrderBy(r => r.TravelStart).ThenBy(r => r.Id),
             "-travelStart" => query.OrderByDescending(r => r.TravelStart).ThenBy(r => r.Id),
             "bookedOn" => query.OrderBy(r => r.BookedOn).ThenBy(r => r.Id),
             "-bookedOn" => query.OrderByDescending(r => r.BookedOn).ThenBy(r => r.Id),
             "reference" => query.OrderBy(r => r.Reference).ThenBy(r => r.Id),
-            _ => query.OrderByDescending(r => r.CreatedAt).ThenBy(r => r.Id),
+            _ => null,
         };
+        var ordered = sorted ?? query.OrderByDescending(r => r.CreatedAt).ThenBy(r => r.Id);
 
-        var rows = await query
-            .Skip((page - 1) * pageSize).Take(pageSize)
-            .Include(r => r.Installments).Include(r => r.Payments)
-            .AsSplitQuery()
-            .ToListAsync(ct);
+        int total;
+        List<LedgerReservation> rows;
+        if (dueWindow is { } due)
+        {
+            var matches = (await ordered.Include(r => r.Installments).Include(r => r.Payments).AsSplitQuery().ToListAsync(ct))
+                .Select(r => (Reservation: r, Totals: LedgerCalculator.Compute(r, today)))
+                .Where(x => x.Reservation.Installments.Any(i =>
+                    due.Contains(i.DueDate) && x.Totals.Installments[i.Id].Remaining > 0));
+            // Unless asked otherwise, the most urgent first.
+            if (sorted is null)
+                matches = matches.OrderBy(x => x.Totals.NextDueDate).ThenBy(x => x.Reservation.Id);
+            var all = matches.Select(x => x.Reservation).ToList();
+            total = all.Count;
+            rows = [.. all.Skip((page - 1) * pageSize).Take(pageSize)];
+        }
+        else
+        {
+            total = await query.CountAsync(ct);
+            rows = await ordered
+                .Skip((page - 1) * pageSize).Take(pageSize)
+                .Include(r => r.Installments).Include(r => r.Payments)
+                .AsSplitQuery()
+                .ToListAsync(ct);
+        }
 
         var operatorIds = rows.Select(r => r.TourOperatorId).Distinct().ToList();
         var names = await db.TourOperators.AsNoTracking()
             .Where(t => t.AgencyId == agencyId && operatorIds.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, t => t.Name, ct);
 
-        var today = Today;
         return new PagedResult<LedgerReservationSummaryDto>(
             [.. rows.Select(r => r.ToSummaryDto(names.GetValueOrDefault(r.TourOperatorId, ""), today))],
             page, pageSize, total);

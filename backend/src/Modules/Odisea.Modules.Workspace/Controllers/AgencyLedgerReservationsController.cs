@@ -18,10 +18,11 @@ public class AgencyLedgerReservationsController(LedgerReservationService ledger,
     [HttpGet]
     public Task<IActionResult> List(
         [FromQuery] string? q, [FromQuery] LedgerReservationStatus? status, [FromQuery] Guid? operatorId,
-        [FromQuery] DateOnly? travelFrom, [FromQuery] DateOnly? travelTo, [FromQuery] string? sort,
+        [FromQuery] DateOnly? travelFrom, [FromQuery] DateOnly? travelTo,
+        [FromQuery] int? dueWithinDays, [FromQuery] bool overdueOnly, [FromQuery] string? sort,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default) =>
         Execute(async (agencyId, _) => Ok(await ledger.ListAsync(
-            agencyId, q, status, operatorId, travelFrom, travelTo, sort, page, pageSize, ct)));
+            agencyId, q, status, operatorId, travelFrom, travelTo, dueWithinDays, overdueOnly, sort, page, pageSize, ct)));
 
     [HttpGet("{id:guid}")]
     public Task<IActionResult> Get(Guid id, CancellationToken ct) =>

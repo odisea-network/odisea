@@ -38,6 +38,7 @@ public class LedgerReservationServiceTests
     private readonly FakeEntitlements _entitlements = new();
     private readonly LedgerReservationService _ledger;
     private readonly TourOperatorService _operators;
+    private readonly LedgerDashboardService _dashboard;
     private readonly Guid _agencyId = Guid.NewGuid();
     private readonly Guid _otherAgencyId = Guid.NewGuid();
     private readonly LedgerActor _agent = new(Guid.NewGuid(), WorkspaceActor.Agency, IsAdmin: false);
@@ -50,6 +51,7 @@ public class LedgerReservationServiceTests
         _ledger = new LedgerReservationService(_db, _entitlements, _clock, Options.Create(new LedgerOptions()),
             NullLogger<LedgerReservationService>.Instance);
         _operators = new TourOperatorService(_db, _entitlements, _clock);
+        _dashboard = new LedgerDashboardService(_db, _clock, Options.Create(new LedgerOptions()));
         _entitlements.WithLedger.Add(_agencyId);
         _entitlements.WithLedger.Add(_otherAgencyId);
     }
@@ -107,7 +109,7 @@ public class LedgerReservationServiceTests
         Assert.Equal(0m, paid.Commission!.ReceivedAmount);
         Assert.Equal(LedgerReservationStatus.Confirmed, paid.Status);
 
-        var listed = Assert.Single((await _ledger.ListAsync(_agencyId, "georgi", null, null, null, null, null, 1, 50, Ct)).Items);
+        var listed = Assert.Single((await _ledger.ListAsync(_agencyId, "georgi", null, null, null, null, null, false, null, 1, 50, Ct)).Items);
         Assert.Equal(1600m, listed.Outstanding);
         Assert.Equal(200m, listed.OverdueAmount);
         Assert.Equal(new DateOnly(2026, 12, 1), listed.NextDueDate);
@@ -137,7 +139,7 @@ public class LedgerReservationServiceTests
         await Assert.ThrowsAsync<LedgerNotFoundException>(() => _ledger.VoidPaymentAsync(created.Id, paymentId, _otherAgencyId, _admin,
             new VoidLedgerPaymentRequest("mistake"), Ct));
         await Assert.ThrowsAsync<LedgerNotFoundException>(() => _ledger.UpdateAsync(created.Id, _otherAgencyId, _admin, UpdateOf(created), Ct));
-        Assert.Empty((await _ledger.ListAsync(_otherAgencyId, null, null, null, null, null, null, 1, 50, Ct)).Items);
+        Assert.Empty((await _ledger.ListAsync(_otherAgencyId, null, null, null, null, null, null, false, null, 1, 50, Ct)).Items);
         Assert.Empty(await _operators.ListAsync(_otherAgencyId, includeArchived: true, Ct));
     }
 
@@ -388,7 +390,7 @@ public class LedgerReservationServiceTests
             new ChangeLedgerStatusRequest(first.Version, LedgerReservationStatus.Completed, null), Ct);
 
         Task<int> Count(string? q = null, LedgerReservationStatus? status = null, Guid? op = null, DateOnly? from = null, DateOnly? to = null) =>
-            _ledger.ListAsync(_agencyId, q, status, op, from, to, null, 1, 50, Ct).ContinueWith(t => t.Result.TotalCount);
+            _ledger.ListAsync(_agencyId, q, status, op, from, to, null, false, null, 1, 50, Ct).ContinueWith(t => t.Result.TotalCount);
 
         Assert.Equal(2, await Count());
         Assert.Equal(1, await Count(q: "bbb"));
@@ -397,5 +399,119 @@ public class LedgerReservationServiceTests
         Assert.Equal(1, await Count(op: alfa));
         Assert.Equal(2, await Count(from: new DateOnly(2027, 2, 1), to: new DateOnly(2027, 2, 1)));
         Assert.Equal(0, await Count(from: new DateOnly(2027, 2, 2)));
+    }
+
+    /// Today is 10 Dec 2026. Returns the reservations by the name used in the assertions.
+    private async Task<Dictionary<string, LedgerReservationDto>> SeedDueScenarioAsync()
+    {
+        var alfa = await OperatorAsync("Alfa Tours");
+        var seeded = new Dictionary<string, LedgerReservationDto>
+        {
+            // Deposit of 600 was due on 1 Dec and only 400 came in; the balance is due in 36 days.
+            ["late"] = await CreateAsync("LATE-1", alfa),
+            ["soon"] = await CreateAsync("SOON-1", alfa, total: 1000m, installments:
+            [
+                new(LedgerInstallmentLabel.Deposit, 300m, new DateOnly(2026, 12, 12)),
+                new(LedgerInstallmentLabel.Balance, 700m, new DateOnly(2027, 1, 5)),
+            ]),
+            ["today"] = await CreateAsync("USD-1", alfa, total: 500m, currency: "USD", installments:
+                [new(LedgerInstallmentLabel.Other, 500m, new DateOnly(2026, 12, 10))]),
+            ["draft"] = await CreateAsync("DRAFT-1", alfa, total: 9999m, installments:
+                [new(LedgerInstallmentLabel.Other, 9999m, new DateOnly(2026, 11, 1))]),
+            ["settled"] = await CreateAsync("PAID-1", alfa, total: 800m,
+                commission: new CommissionRequest(CommissionType.Percent, 7m, CommissionBase.OperatorTotal, null),
+                installments: [new(LedgerInstallmentLabel.Other, 800m, new DateOnly(2026, 12, 1))]),
+        };
+        await PayAsync(seeded["late"].Id, 400m);
+        await PayAsync(seeded["settled"].Id, 800m);
+        await _ledger.SetCommissionReceivedAsync(seeded["settled"].Id, _agencyId, _agent,
+            new SetCommissionReceivedRequest(seeded["settled"].Version, 20m), Ct);
+        await _ledger.ChangeStatusAsync(seeded["draft"].Id, _agencyId, _agent,
+            new ChangeLedgerStatusRequest(seeded["draft"].Version, LedgerReservationStatus.Draft, null), Ct);
+        await CreateAsync("OTHER-1", agencyId: _otherAgencyId);
+        return seeded;
+    }
+
+    [Fact]
+    public async Task Dashboard_adds_up_what_is_owed_late_and_due_soon_per_currency()
+    {
+        var seeded = await SeedDueScenarioAsync();
+
+        var dashboard = await _dashboard.GetAsync(_agencyId, Ct);
+
+        Assert.Equal(new DateOnly(2026, 12, 10), dashboard.Today);
+        Assert.Equal(4, dashboard.ActiveReservations);
+        Assert.Equal(1, dashboard.OverdueReservations);
+        Assert.Equal(2, dashboard.DueIn7DaysReservations);
+        Assert.Equal(2, dashboard.DueIn30DaysReservations);
+        Assert.Equal(
+            [
+                new LedgerCurrencyTotalsDto("EUR", Outstanding: 2600m, Overdue: 200m, DueIn7Days: 300m, DueIn30Days: 1000m,
+                    CommissionExpected: 56m, CommissionReceived: 20m),
+                new LedgerCurrencyTotalsDto("USD", 500m, 0m, 500m, 500m, 0m, 0m),
+            ],
+            dashboard.Totals);
+        Assert.Equal(
+            [
+                (seeded["late"].Id, new DateOnly(2026, 12, 1), 200m, true),
+                (seeded["today"].Id, new DateOnly(2026, 12, 10), 500m, false),
+                (seeded["soon"].Id, new DateOnly(2026, 12, 12), 300m, false),
+                (seeded["soon"].Id, new DateOnly(2027, 1, 5), 700m, false),
+            ],
+            dashboard.NeedsAction.Select(i => (i.ReservationId, i.DueDate, i.RemainingAmount, i.IsOverdue)));
+        Assert.All(dashboard.NeedsAction, i => Assert.Equal("Alfa Tours", i.TourOperatorName));
+    }
+
+    [Fact]
+    public async Task Dashboard_keeps_a_cancelled_reservation_until_its_figures_are_corrected_and_follows_voids()
+    {
+        var seeded = await SeedDueScenarioAsync();
+        await _ledger.ChangeStatusAsync(seeded["soon"].Id, _agencyId, _agent,
+            new ChangeLedgerStatusRequest(seeded["soon"].Version, LedgerReservationStatus.Cancelled, "client withdrew"), Ct);
+        var settled = await _ledger.GetAsync(seeded["settled"].Id, _agencyId, Ct);
+        await _ledger.VoidPaymentAsync(settled.Id, settled.Payments[0].Id, _agencyId, _admin, new VoidLedgerPaymentRequest("bounced"), Ct);
+
+        var dashboard = await _dashboard.GetAsync(_agencyId, Ct);
+
+        Assert.Equal(3, dashboard.ActiveReservations);
+        var eur = dashboard.Totals.Single(t => t.Currency == "EUR");
+        Assert.Equal(3400m, eur.Outstanding);
+        Assert.Equal(1000m, eur.Overdue);
+        Assert.Equal(1000m, eur.DueIn30Days);
+        Assert.Equal(2, dashboard.OverdueReservations);
+        Assert.Contains(dashboard.NeedsAction, i => i.ReservationStatus == LedgerReservationStatus.Cancelled);
+    }
+
+    [Fact]
+    public async Task Dashboard_of_an_agency_without_reservations_is_empty()
+    {
+        await SeedDueScenarioAsync();
+
+        var dashboard = await _dashboard.GetAsync(Guid.NewGuid(), Ct);
+
+        Assert.Equal(0, dashboard.ActiveReservations);
+        Assert.Empty(dashboard.Totals);
+        Assert.Empty(dashboard.NeedsAction);
+    }
+
+    [Fact]
+    public async Task List_filters_by_overdue_and_by_instalments_due_in_the_coming_days()
+    {
+        var seeded = await SeedDueScenarioAsync();
+
+        async Task<List<Guid>> IdsAsync(int? days, bool overdueOnly, string? sort = null) =>
+            [.. (await _ledger.ListAsync(_agencyId, null, null, null, null, null, days, overdueOnly, sort, 1, 50, Ct)).Items.Select(r => r.Id)];
+
+        Assert.Equal([seeded["late"].Id], await IdsAsync(null, overdueOnly: true));
+        Assert.Equal([seeded["today"].Id, seeded["soon"].Id], await IdsAsync(7, overdueOnly: false));
+        Assert.Equal([seeded["today"].Id], await IdsAsync(0, overdueOnly: false));
+        Assert.Equal([seeded["late"].Id, seeded["today"].Id, seeded["soon"].Id], await IdsAsync(7, overdueOnly: true));
+        // The late one also has a balance due in 36 days; its nearest open date still sorts it first.
+        Assert.Equal([seeded["late"].Id, seeded["today"].Id, seeded["soon"].Id], await IdsAsync(40, overdueOnly: false));
+        Assert.Equal([seeded["soon"].Id, seeded["today"].Id], await IdsAsync(7, overdueOnly: false, sort: "reference"));
+
+        var secondPage = await _ledger.ListAsync(_agencyId, null, null, null, null, null, 7, true, null, 2, 2, Ct);
+        Assert.Equal(3, secondPage.TotalCount);
+        Assert.Equal(seeded["soon"].Id, Assert.Single(secondPage.Items).Id);
     }
 }

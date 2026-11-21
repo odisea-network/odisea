@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Odisea.Modules.Workspace.Domain.Ledger;
+using Odisea.SharedKernel;
 
 namespace Odisea.Modules.Workspace.Features.Ledger;
 
@@ -10,6 +11,9 @@ public sealed class LedgerOptions
 
     /// "Today" for due dates and overdue checks is the calendar date in this zone, not in UTC.
     public string TimeZone { get; set; } = "Europe/Sofia";
+
+    internal DateOnly Today(IClock clock) =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.UtcNow, ResolveZone()).DateTime);
 
     internal TimeZoneInfo ResolveZone()
     {
@@ -22,6 +26,28 @@ public sealed class LedgerOptions
             return TimeZoneInfo.Utc;
         }
     }
+}
+
+/// The due dates a list filter or a dashboard figure looks at, both ends included.
+public readonly record struct DueWindow(DateOnly From, DateOnly To)
+{
+    public const int MaxDays = 366;
+
+    public bool Contains(DateOnly date) => date >= From && date <= To;
+
+    public static DueWindow Overdue(DateOnly today) => new(DateOnly.MinValue, today.AddDays(-1));
+
+    public static DueWindow Upcoming(DateOnly today, int days) => new(today, today.AddDays(Math.Clamp(days, 0, MaxDays)));
+
+    /// Overdue only, the coming days only, or both when both are asked for.
+    public static DueWindow? For(DateOnly today, int? dueWithinDays, bool overdueOnly) =>
+        (dueWithinDays, overdueOnly) switch
+        {
+            (null, false) => null,
+            (null, true) => Overdue(today),
+            ({ } days, false) => Upcoming(today, days),
+            ({ } days, true) => new(DateOnly.MinValue, Upcoming(today, days).To),
+        };
 }
 
 /// Input checks shared by the ledger services. Every rejection carries a stable code.
