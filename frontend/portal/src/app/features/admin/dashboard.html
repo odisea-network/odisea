@@ -1,31 +1,31 @@
-<ui-page-header title="Today" [sub]="today() + (dashboard.value() ? ' · ' + attention() + (attention() === 1 ? ' booking needs' : ' bookings need') + ' attention' : '')">
+<ui-page-header [title]="'nav.today' | t" [sub]="headerSub()">
   <ui-segmented actions [options]="periods" [value]="'' + days()" (valueChange)="setDays($event)" />
 </ui-page-header>
 
 @if (dashboard.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load today's figures" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="dashboard.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'adminDashboard.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="dashboard.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (!dashboard.hasValue()) {
   <ui-card><ui-skeleton [lines]="6" /></ui-card>
 } @else if (dashboard.value(); as d) {
   <div class="kpis" [class.kpis--stale]="dashboard.isLoading()">
-    <ui-kpi icon="check-circle" tone="ok" label="Ready to confirm" [value]="d.readyToConfirm.count" [foot]="'Fully paid · ' + money(d.readyToConfirm.amount, d.readyToConfirm.currency)" [queryParams]="{ status: 'AwaitingPayment' }" />
-    <ui-kpi icon="clock" tone="warn" label="Due in 48 h" [value]="d.dueSoon.count" [foot]="money(d.dueSoon.amount, d.dueSoon.currency) + ' outstanding'" [queryParams]="{ status: 'AwaitingPayment' }" />
-    <ui-kpi icon="alert-triangle" tone="bad" label="Overdue" [value]="d.overdue.count" [foot]="d.overdue.count > 0 ? 'Ready to expire' : 'Nothing past its deadline'" [queryParams]="{ status: 'AwaitingPayment' }" />
-    <ui-kpi icon="alert-circle" tone="bad" label="Failed supplier holds" [value]="d.failedHolds.count" foot="Last 24 h" [queryParams]="{ status: 'Failed' }" />
+    <ui-kpi icon="check-circle" tone="ok" [label]="'adminDashboard.readyToConfirm' | t" [value]="d.readyToConfirm.count" [foot]="'adminDashboard.readyFoot' | t: { amount: money(d.readyToConfirm.amount, d.readyToConfirm.currency) }" [queryParams]="{ status: 'AwaitingPayment' }" />
+    <ui-kpi icon="clock" tone="warn" [label]="'adminDashboard.dueSoon' | t" [value]="d.dueSoon.count" [foot]="'adminDashboard.dueSoonFoot' | t: { amount: money(d.dueSoon.amount, d.dueSoon.currency) }" [queryParams]="{ status: 'AwaitingPayment' }" />
+    <ui-kpi icon="alert-triangle" tone="bad" [label]="'adminDashboard.overdue' | t" [value]="d.overdue.count" [foot]="(d.overdue.count > 0 ? 'adminDashboard.overdueFoot' : 'adminDashboard.overdueNone') | t" [queryParams]="{ status: 'AwaitingPayment' }" />
+    <ui-kpi icon="alert-circle" tone="bad" [label]="'adminDashboard.failedHolds' | t" [value]="d.failedHolds.count" [foot]="'adminDashboard.failedHoldsFoot' | t" [queryParams]="{ status: 'Failed' }" />
   </div>
 
   <div class="layout">
     <ui-card flush class="queue">
       <div class="queue__head">
-        <div><h2 class="h2">Needs you</h2><p class="small muted">Most urgent first. Each row has one action.</p></div>
-        <a uiButton="ghost" size="sm" routerLink="/admin/bookings">All bookings</a>
+        <div><h2 class="h2">{{ 'adminDashboard.queueTitle' | t }}</h2><p class="small muted">{{ 'adminDashboard.queueSub' | t }}</p></div>
+        <a uiButton="ghost" size="sm" routerLink="/admin/bookings">{{ 'adminDashboard.allBookings' | t }}</a>
       </div>
       @if (d.queue.length === 0) {
         <div class="queue__empty">
           <span class="queue__ico queue__ico--ok"><ui-icon name="check" /></span>
-          <div class="col"><b class="small">Nothing needs you right now</b><span class="small muted">New payments and supplier replies land here.</span></div>
+          <div class="col"><b class="small">{{ 'adminDashboard.queueEmptyTitle' | t }}</b><span class="small muted">{{ 'adminDashboard.queueEmptyText' | t }}</span></div>
         </div>
       } @else {
         <ul class="queue__list">
@@ -54,35 +54,35 @@
     </ui-card>
 
     <div class="side">
-      <ui-card [title]="days() === 1 ? 'Today' : 'Last ' + days() + ' days'">
+      <ui-card [title]="periodTitle()">
         <div class="tiles">
           <div class="tile">
-            <span class="small muted">Bookings</span>
+            <span class="small muted">{{ 'nav.bookings' | t }}</span>
             <div class="m tile__v">{{ d.created }}</div>
             <span class="small" [class.tile__up]="d.created > d.createdPrevious" [class.muted]="d.created <= d.createdPrevious">{{ delta(d.created, d.createdPrevious, d.days) }}</span>
           </div>
           <div class="tile">
-            <span class="small muted">Via API</span>
+            <span class="small muted">{{ 'adminDashboard.viaApi' | t }}</span>
             <div class="m tile__v">{{ d.createdViaApi }}</div>
-            <span class="small muted">created by partner systems</span>
+            <span class="small muted">{{ 'adminDashboard.viaApiFoot' | t }}</span>
           </div>
           <div class="tile">
-            <span class="small muted">Revenue</span>
+            <span class="small muted">{{ 'adminDashboard.revenue' | t }}</span>
             <div class="m tile__v tile__v--money">{{ d.confirmedSell | money: d.currency }}</div>
-            <span class="small muted">sell price, confirmed</span>
+            <span class="small muted">{{ 'adminDashboard.revenueFoot' | t }}</span>
           </div>
           <div class="tile">
-            <span class="small muted">Margin</span>
+            <span class="small muted">{{ 'adminDashboard.margin' | t }}</span>
             <div class="m tile__v tile__v--money">{{ d.confirmedMargin | money: d.currency }}</div>
-            <span class="small muted">{{ marginShare() !== null ? marginShare() + '% of revenue' : 'no confirmed bookings yet' }}</span>
+            <span class="small muted">{{ marginShare() !== null ? ('adminDashboard.marginShare' | t: { share: marginShare()! }) : ('adminDashboard.marginNone' | t) }}</span>
           </div>
         </div>
       </ui-card>
 
-      <ui-card title="Top agencies">
-        <a cardActions uiButton="ghost" size="sm" routerLink="/admin/agencies">All</a>
+      <ui-card [title]="'adminDashboard.topAgencies' | t">
+        <a cardActions uiButton="ghost" size="sm" routerLink="/admin/agencies">{{ 'common.all' | t }}</a>
         @if (d.topAgencies.length === 0) {
-          <p class="small muted">No confirmed bookings in this period.</p>
+          <p class="small muted">{{ 'adminDashboard.topEmpty' | t }}</p>
         } @else {
           @for (a of d.topAgencies; track a.agencyId) {
             <div class="col top">

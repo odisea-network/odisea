@@ -27,9 +27,9 @@ describe('keyExpiresAt', () => {
 
 describe('planChangeMessage', () => {
   it('warns about lost features only when moving down', () => {
-    expect(planChangeMessage('Core', 'Ledger')).not.toContain('stop being available');
-    expect(planChangeMessage('Ledger', 'Workspace')).not.toContain('stop being available');
-    expect(planChangeMessage('Workspace', 'Ledger')).toContain('Features outside Ledger stop being available');
-    expect(planChangeMessage('Ledger', 'Core')).toContain('Their data stays');
+    expect(planChangeMessage('Core', 'Ledger')).not.toContain('вече няма да са достъпни');
+    expect(planChangeMessage('Ledger', 'Workspace')).not.toContain('вече няма да са достъпни');
+    expect(planChangeMessage('Workspace', 'Ledger')).toContain('Функциите извън Ledger вече няма да са достъпни');
+    expect(planChangeMessage('Ledger', 'Core')).toContain('Данните ѝ остават');
   });
 });

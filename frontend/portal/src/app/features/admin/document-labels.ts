@@ -1,23 +1,25 @@
-/** Bulgarian tax documents: the law names them, so labels keep both languages. */
+import { t } from '../../core/i18n/i18n';
+
+/** Bulgarian tax documents, named as the law names them. */
 export const DOCUMENT_KIND_LABELS: Record<string, string> = {
-  Invoice: 'Invoice · Фактура',
-  CreditNote: 'Credit note · Кредитно известие',
-  DebitNote: 'Debit note · Дебитно известие',
-  Proforma: 'Proforma · Проформа',
+  Invoice: t('agencyDocuments.kind.Invoice'),
+  CreditNote: t('agencyDocuments.kind.CreditNote'),
+  DebitNote: t('agencyDocuments.kind.DebitNote'),
+  Proforma: t('agencyDocuments.kind.Proforma'),
 };
 
 export const VAT_TREATMENT_LABELS: Record<string, string> = {
-  MarginScheme: 'Margin scheme · art. 136–142 ЗДДС',
-  Standard20: 'Standard 20%',
-  Accommodation9: 'Accommodation 9%',
-  Exempt: 'Exempt · grounds required',
+  MarginScheme: t('adminDocuments.vat.MarginScheme'),
+  Standard20: t('adminDocuments.vat.Standard20'),
+  Accommodation9: t('adminDocuments.vat.Accommodation9'),
+  Exempt: t('adminDocuments.vat.Exempt'),
 };
 
 const VAT_TREATMENT_SHORT: Record<string, string> = {
-  MarginScheme: 'Margin scheme',
-  Standard20: 'VAT 20%',
-  Accommodation9: 'VAT 9%',
-  Exempt: 'Exempt',
+  MarginScheme: t('adminDocuments.vatShort.MarginScheme'),
+  Standard20: t('adminDocuments.vatShort.Standard20'),
+  Accommodation9: t('adminDocuments.vatShort.Accommodation9'),
+  Exempt: t('adminDocuments.vatShort.Exempt'),
 };
 
 /** Table-length form of the treatment. */

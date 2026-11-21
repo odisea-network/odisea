@@ -1,5 +1,5 @@
-<ui-page-header title="Documents" sub="Invoices and credit notes in a gapless series. Documents are never deleted; annulling keeps the number.">
-  <button actions type="button" uiButton="primary" (click)="openIssue()"><ui-icon name="plus" />Issue invoice</button>
+<ui-page-header [title]="'nav.documents' | t" [sub]="'adminDocuments.sub' | t">
+  <button actions type="button" uiButton="primary" (click)="openIssue()"><ui-icon name="plus" />{{ 'adminBookingDetail.issueInvoice' | t }}</button>
 </ui-page-header>
 
 @if (error(); as message) {
@@ -8,29 +8,29 @@
 
 <ui-card flush>
   <div class="toolbar">
-    <select uiInput size="sm" class="filter" aria-label="Type" [ngModel]="kind()" (ngModelChange)="kind.set($event)">
-      <option value="">All types</option>
-      <option value="Invoice">Invoices</option>
-      <option value="CreditNote">Credit notes</option>
-      <option value="DebitNote">Debit notes</option>
-      <option value="Proforma">Proformas</option>
+    <select uiInput size="sm" class="filter" [attr.aria-label]="'adminDocuments.type' | t" [ngModel]="kind()" (ngModelChange)="kind.set($event)">
+      <option value="">{{ 'adminDocuments.allTypes' | t }}</option>
+      <option value="Invoice">{{ 'adminDocuments.kindPlural.Invoice' | t }}</option>
+      <option value="CreditNote">{{ 'adminDocuments.kindPlural.CreditNote' | t }}</option>
+      <option value="DebitNote">{{ 'adminDocuments.kindPlural.DebitNote' | t }}</option>
+      <option value="Proforma">{{ 'adminDocuments.kindPlural.Proforma' | t }}</option>
     </select>
-    <select uiInput size="sm" class="filter" aria-label="Agency" [ngModel]="agencyId()" (ngModelChange)="agencyId.set($event)">
-      <option value="">All agencies</option>
+    <select uiInput size="sm" class="filter" [attr.aria-label]="'adminBookings.agency' | t" [ngModel]="agencyId()" (ngModelChange)="agencyId.set($event)">
+      <option value="">{{ 'adminBookings.allAgencies' | t }}</option>
       @for (a of agencies.value(); track a.id) {
         <option [value]="a.id">{{ a.name }}</option>
       }
     </select>
     <div class="grow"></div>
     @if (documents.value(); as list) {
-      <span class="small muted num">{{ list.length }} {{ list.length === 1 ? 'document' : 'documents' }}</span>
+      <span class="small muted num">{{ (list.length === 1 ? 'adminDocuments.countOne' : 'adminDocuments.countMany') | t: { n: list.length } }}</span>
     }
   </div>
 
   @if (documents.error()) {
     <div class="pad">
-      <ui-empty-state tone="error" icon="refresh" title="Couldn't load documents">
-        <button type="button" uiButton size="sm" (click)="documents.reload()">Retry</button>
+      <ui-empty-state tone="error" icon="refresh" [title]="'agencyDocuments.loadFailed' | t">
+        <button type="button" uiButton size="sm" (click)="documents.reload()">{{ 'common.retry' | t }}</button>
       </ui-empty-state>
     </div>
   } @else if (documents.isLoading() && !documents.hasValue()) {
@@ -38,15 +38,15 @@
   } @else if (documents.value(); as list) {
     @if (list.length === 0) {
       <div class="pad">
-        <ui-empty-state icon="file" title="No documents yet" description="Issue the first invoice for a confirmed booking.">
-          <button type="button" uiButton="primary" size="sm" (click)="openIssue()">Issue invoice</button>
+        <ui-empty-state icon="file" [title]="'agencyDocuments.emptyTitle' | t" [description]="'adminDocuments.emptyText' | t">
+          <button type="button" uiButton="primary" size="sm" (click)="openIssue()">{{ 'adminBookingDetail.issueInvoice' | t }}</button>
         </ui-empty-state>
       </div>
     } @else {
       <div class="tw" [class.tw--stale]="documents.isLoading()">
         <table class="tbl">
           <thead>
-            <tr><th>Number</th><th>Type</th><th>Recipient</th><th>Booking</th><th>Date</th><th>VAT treatment</th><th class="r">Amount</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr>
+            <tr><th>{{ 'agencyDocuments.colNumber' | t }}</th><th>{{ 'agencyDocuments.colType' | t }}</th><th>{{ 'adminDocuments.colRecipient' | t }}</th><th>{{ 'agencyDocuments.colBooking' | t }}</th><th>{{ 'agencyDocuments.colDate' | t }}</th><th>{{ 'adminBookingDetail.vatTreatment' | t }}</th><th class="r">{{ 'agencyDocuments.colAmount' | t }}</th><th>{{ 'agencyDocuments.colStatus' | t }}</th><th><span class="sr-only">{{ 'common.actions' | t }}</span></th></tr>
           </thead>
           <tbody>
             @for (d of list; track d.id) {
@@ -65,21 +65,21 @@
                 <td class="r m strong">{{ d.total | money: d.currency }}</td>
                 <td>
                   @if (d.status === 'Annulled') {
-                    <ui-pill>Annulled</ui-pill>
+                    <ui-pill>{{ 'agencyDocuments.annulled' | t }}</ui-pill>
                   } @else {
-                    <ui-pill tone="ok">Issued</ui-pill>
+                    <ui-pill tone="ok">{{ 'agencyDocuments.issued' | t }}</ui-pill>
                   }
                 </td>
                 <td class="r">
                   <div class="actions">
-                    <button type="button" uiButton="ghost" size="sm" (click)="download(d)" [disabled]="downloading() === d.id" [attr.aria-label]="'Download PDF ' + d.number">
+                    <button type="button" uiButton="ghost" size="sm" (click)="download(d)" [disabled]="downloading() === d.id" [attr.aria-label]="'agencyDocuments.downloadPdf' | t: { number: d.number }">
                       <ui-icon name="download" />PDF
                     </button>
                     @if (d.status === 'Issued' && d.kind === 'Invoice') {
-                      <button type="button" uiButton="ghost" size="sm" (click)="openCredit(d)" [disabled]="busy()">Credit note</button>
+                      <button type="button" uiButton="ghost" size="sm" (click)="openCredit(d)" [disabled]="busy()">{{ 'adminDocuments.creditNote' | t }}</button>
                     }
                     @if (d.status === 'Issued') {
-                      <button type="button" uiButton="ghost" size="sm" class="danger-text" (click)="annul(d)" [disabled]="busy()">Annul</button>
+                      <button type="button" uiButton="ghost" size="sm" class="danger-text" (click)="annul(d)" [disabled]="busy()">{{ 'adminDocuments.annul' | t }}</button>
                     }
                   </div>
                 </td>
@@ -92,22 +92,22 @@
   }
 </ui-card>
 
-<ui-banner tone="info">A credit note can only be issued against an invoice whose booking has been cancelled; annulling corrects a document issued by mistake.</ui-banner>
+<ui-banner tone="info">{{ 'adminDocuments.info' | t }}</ui-banner>
 
-<ui-sheet [(open)]="issueOpen" title="Issue invoice" sub="For a confirmed booking. The number is the next in the series.">
+<ui-sheet [(open)]="issueOpen" [title]="'adminDocuments.issueTitle' | t" [sub]="'adminDocuments.issueSub' | t">
   <form id="issue-invoice" (ngSubmit)="issueInvoice()">
     @if (error(); as message) {
       <ui-banner tone="bad">{{ message }}</ui-banner>
     }
-    <ui-field label="Booking" for="iv-booking" hint="Confirmed bookings only">
+    <ui-field [label]="'adminDocuments.booking' | t" for="iv-booking" [hint]="'adminDocuments.bookingHint' | t">
       <select uiInput id="iv-booking" name="bookingId" [(ngModel)]="issue.bookingId">
-        <option value="" disabled>{{ confirmed.isLoading() ? 'Loading…' : 'Choose a booking…' }}</option>
+        <option value="" disabled>{{ (confirmed.isLoading() ? 'adminDocuments.loading' : 'adminDocuments.chooseBooking') | t }}</option>
         @for (b of confirmed.value()?.items; track b.id) {
           <option [value]="b.id">{{ b.ref }} · {{ agencyName(b.agencyId) }} · {{ b.hotelName }}</option>
         }
       </select>
     </ui-field>
-    <ui-field label="VAT treatment" for="iv-vat">
+    <ui-field [label]="'adminBookingDetail.vatTreatment' | t" for="iv-vat">
       <select uiInput id="iv-vat" name="vatTreatment" [(ngModel)]="issue.vatTreatment">
         @for (o of vatOptions; track o.value) {
           <option [value]="o.value">{{ o.label }}</option>
@@ -115,34 +115,34 @@
       </select>
     </ui-field>
     @if (issue.vatTreatment === 'Exempt') {
-      <ui-field label="Exemption grounds" for="iv-grounds" hint="The legal basis printed on the invoice">
+      <ui-field [label]="'adminBookingDetail.exemptionGrounds' | t" for="iv-grounds" [hint]="'adminDocuments.exemptionHint' | t">
         <input uiInput id="iv-grounds" name="exemptionGrounds" [(ngModel)]="issue.exemptionGrounds" maxlength="300" required />
       </ui-field>
     }
-    <ui-field label="Due in days" for="iv-due" hint="0 to 60">
+    <ui-field [label]="'adminBookingDetail.dueInDays' | t" for="iv-due" [hint]="'adminBookingDetail.dueInDaysHint' | t">
       <input uiInput id="iv-due" name="dueInDays" type="number" min="0" max="60" class="m" [(ngModel)]="issue.dueInDays" required />
     </ui-field>
   </form>
-  <button sheetActions type="button" uiButton (click)="issueOpen.set(false)">Cancel</button>
-  <button sheetActions type="submit" form="issue-invoice" uiButton="primary" [disabled]="busy() || !issueValid()">{{ busy() ? 'Issuing…' : 'Issue invoice' }}</button>
+  <button sheetActions type="button" uiButton (click)="issueOpen.set(false)">{{ 'common.cancel' | t }}</button>
+  <button sheetActions type="submit" form="issue-invoice" uiButton="primary" [disabled]="busy() || !issueValid()">{{ (busy() ? 'adminBookingDetail.issuing' : 'adminBookingDetail.issueInvoice') | t }}</button>
 </ui-sheet>
 
-<ui-sheet [open]="creditFor() !== null" (openChange)="closeCredit($event)" [title]="'Credit note for ' + (creditFor()?.number ?? '')" sub="Reverses the invoice for a cancelled booking.">
+<ui-sheet [open]="creditFor() !== null" (openChange)="closeCredit($event)" [title]="'adminDocuments.creditTitle' | t: { number: creditFor()?.number ?? '' }" [sub]="'adminDocuments.creditSub' | t">
   <form id="issue-credit" (ngSubmit)="issueCreditNote()">
     @if (error(); as message) {
       <ui-banner tone="bad">{{ message }}</ui-banner>
     }
     @if (creditFor(); as inv) {
       <dl class="kv inset facts">
-        <dt>Invoice</dt><dd class="mono">{{ inv.number }}</dd>
-        <dt>Recipient</dt><dd>{{ inv.recipient.name }}</dd>
-        <dt>Amount</dt><dd class="m">{{ inv.total | money: inv.currency }}</dd>
+        <dt>{{ 'adminDocuments.invoice' | t }}</dt><dd class="mono">{{ inv.number }}</dd>
+        <dt>{{ 'adminDocuments.colRecipient' | t }}</dt><dd>{{ inv.recipient.name }}</dd>
+        <dt>{{ 'agencyDocuments.colAmount' | t }}</dt><dd class="m">{{ inv.total | money: inv.currency }}</dd>
       </dl>
     }
-    <ui-field label="Reason" for="cn-reason" hint="Printed on the credit note">
+    <ui-field [label]="'adminDocuments.reason' | t" for="cn-reason" [hint]="'adminDocuments.reasonHint' | t">
       <textarea uiInput id="cn-reason" name="reason" [(ngModel)]="creditReason" maxlength="300" required></textarea>
     </ui-field>
   </form>
-  <button sheetActions type="button" uiButton (click)="creditFor.set(null)">Cancel</button>
-  <button sheetActions type="submit" form="issue-credit" uiButton="primary" [disabled]="busy() || !creditReason.trim()">Issue credit note</button>
+  <button sheetActions type="button" uiButton (click)="creditFor.set(null)">{{ 'common.cancel' | t }}</button>
+  <button sheetActions type="submit" form="issue-credit" uiButton="primary" [disabled]="busy() || !creditReason.trim()">{{ 'adminDocuments.issueCredit' | t }}</button>
 </ui-sheet>

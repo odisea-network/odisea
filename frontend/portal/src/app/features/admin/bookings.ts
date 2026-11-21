@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { AgencyDto, OperatorBookingSummary, PagedResult } from '../../core/api.types';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   ButtonDirective, Card, Deadline, EmptyState, Icon, InputDirective, PageHeader, Pager, Pill, Skeleton, StatusChip,
   bookingStatusLabel,
@@ -20,7 +21,7 @@ export const BOOKING_STATUSES = [
 @Component({
   selector: 'app-admin-bookings',
   imports: [
-    FormsModule, RouterLink, MoneyPipe, OdDatePipe,
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe, TPipe,
     ButtonDirective, Card, Deadline, EmptyState, Icon, InputDirective, PageHeader, Pager, Pill, Skeleton, StatusChip,
   ],
   templateUrl: './bookings.html',

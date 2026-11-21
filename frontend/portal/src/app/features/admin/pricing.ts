@@ -7,8 +7,10 @@ import {
   SaveExchangeRateRequest, SavePricingRuleRequest,
 } from '../../core/api.types';
 import { formatDate, formatMoney } from '../../core/format';
+import { t, tOptional } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, DialogService, EmptyState, Field, Icon, InputDirective, PageHeader, Pill,
   SegmentOption, Segmented, Sheet, Skeleton, Switch, ToastService,
@@ -16,24 +18,24 @@ import {
 
 type KindView = 'all' | RuleKind;
 
-const KIND_LABELS: Record<string, string> = { Markup: 'Markup', Fee: 'Fee', Commission: 'Commission' };
-
-/** "+10%", "−5%", "+€20 / booking", "10% of sell" — how a rule reads in the list. */
+/** "+10%", "−5%", "+20,00 €", "10% от продажната цена" — how a rule reads in the list. */
 export function ruleValueLabel(rule: Pick<PricingRuleDto, 'kind' | 'valueType' | 'value'>): string {
   const { kind, valueType, value } = rule;
   const sign = value < 0 ? '−' : '+';
   const abs = Math.abs(value);
   if (kind === 'Commission') {
-    return valueType === 'Percent' ? `${abs}% of sell` : `${formatMoney(abs)} per booking`;
+    return valueType === 'Percent'
+      ? t('pricing.commissionPercent', { value: abs })
+      : t('pricing.commissionFixed', { amount: formatMoney(abs) });
   }
   return valueType === 'Percent' ? `${sign}${abs}%` : `${sign}${formatMoney(abs)}`;
 }
 
 export function ruleValidityLabel(rule: Pick<PricingRuleDto, 'validFrom' | 'validTo'>, fmt: (d: string) => string): string {
   if (rule.validFrom && rule.validTo) return `${fmt(rule.validFrom)} – ${fmt(rule.validTo)}`;
-  if (rule.validFrom) return `From ${fmt(rule.validFrom)}`;
-  if (rule.validTo) return `Until ${fmt(rule.validTo)}`;
-  return 'Always';
+  if (rule.validFrom) return t('pricing.validFromDate', { date: fmt(rule.validFrom) });
+  if (rule.validTo) return t('pricing.validUntilDate', { date: fmt(rule.validTo) });
+  return t('pricing.validAlways');
 }
 
 function emptyRule(): SavePricingRuleRequest {
@@ -47,7 +49,7 @@ function emptyRule(): SavePricingRuleRequest {
 @Component({
   selector: 'app-admin-pricing',
   imports: [
-    FormsModule, OdDatePipe,
+    FormsModule, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Segmented, Sheet,
     Skeleton, Switch,
   ],
@@ -84,10 +86,10 @@ export class AdminPricing {
     const list = this.rules.value() ?? [];
     const count = (k: string) => list.filter(r => r.kind === k).length;
     return [
-      { value: 'all', label: 'All', count: list.length },
-      { value: 'Markup', label: 'Markups', count: count('Markup') },
-      { value: 'Fee', label: 'Fees', count: count('Fee') },
-      { value: 'Commission', label: 'Commissions', count: count('Commission') },
+      { value: 'all', label: t('common.all'), count: list.length },
+      { value: 'Markup', label: t('pricing.kindPlural.Markup'), count: count('Markup') },
+      { value: 'Fee', label: t('pricing.kindPlural.Fee'), count: count('Fee') },
+      { value: 'Commission', label: t('pricing.kindPlural.Commission'), count: count('Commission') },
     ];
   });
 
@@ -108,13 +110,17 @@ export class AdminPricing {
   readonly fmt = formatDate;
 
   kindLabel(kind: string): string {
-    return KIND_LABELS[kind] ?? kind;
+    return tOptional(`pricing.kind.${kind}`) ?? kind;
+  }
+
+  scopeLabel(scope: string): string {
+    return tOptional(`pricing.scope.${scope}`) ?? scope;
   }
 
   scopeName(rule: PricingRuleDto): string {
-    if (rule.scope === 'Program') return this.programNames().get(rule.scopeId ?? '') ?? 'Unknown program';
-    if (rule.scope === 'Agency') return this.agencyNames().get(rule.scopeId ?? '') ?? 'Unknown agency';
-    return 'All programs and agencies';
+    if (rule.scope === 'Program') return this.programNames().get(rule.scopeId ?? '') ?? t('pricing.unknownProgram');
+    if (rule.scope === 'Agency') return this.agencyNames().get(rule.scopeId ?? '') ?? t('pricing.unknownAgency');
+    return t('pricing.allScope');
   }
 
   validity(rule: PricingRuleDto, fmt: (d: string) => string): string {
@@ -169,7 +175,7 @@ export class AdminPricing {
     await this.act(() => editing
       ? firstValueFrom(this.http.put<PricingRuleDto>(`/api/v1/pricing-rules/${editing.id}`, body))
       : firstValueFrom(this.http.post<PricingRuleDto>('/api/v1/pricing-rules', body)),
-      editing ? 'Rule saved' : 'Rule created', () => this.sheetOpen.set(false));
+      t(editing ? 'pricing.saved' : 'pricing.created'), () => this.sheetOpen.set(false));
   }
 
   async toggle(rule: PricingRuleDto, enabled: boolean): Promise<void> {
@@ -179,18 +185,18 @@ export class AdminPricing {
       validFrom: rule.validFrom, validTo: rule.validTo, enabled,
     };
     await this.act(() => firstValueFrom(this.http.put<PricingRuleDto>(`/api/v1/pricing-rules/${rule.id}`, body)),
-      enabled ? `${rule.name} is active` : `${rule.name} is inactive`);
+      t(enabled ? 'pricing.nowActive' : 'pricing.nowInactive', { name: rule.name }));
   }
 
   async remove(rule: PricingRuleDto): Promise<void> {
     const decision = await this.dialogs.confirm({
-      title: `Delete “${rule.name}”?`,
-      message: 'New prices stop applying it immediately. Prices already quoted keep their own breakdown.',
-      confirmLabel: 'Delete rule',
+      title: t('pricing.deleteTitle', { name: rule.name }),
+      message: t('pricing.deleteMessage'),
+      confirmLabel: t('pricing.deleteConfirm'),
       destructive: true,
     });
     if (!decision) return;
-    await this.act(() => firstValueFrom(this.http.delete(`/api/v1/pricing-rules/${rule.id}`)), 'Rule deleted',
+    await this.act(() => firstValueFrom(this.http.delete(`/api/v1/pricing-rules/${rule.id}`)), t('pricing.deleted'),
       () => this.sheetOpen.set(false));
   }
 
@@ -206,10 +212,10 @@ export class AdminPricing {
       await firstValueFrom(this.http.post<ExchangeRateDto>('/api/v1/exchange-rates', {
         fromCurrency: this.rateForm.fromCurrency.trim().toUpperCase(), rate: Number(this.rateForm.rate), asOf: this.rateForm.asOf,
       }));
-      this.toasts.show(`Rate for ${this.rateForm.fromCurrency.toUpperCase()} saved`);
+      this.toasts.show(t('pricing.rateSaved', { currency: this.rateForm.fromCurrency.toUpperCase() }));
       this.rates.reload();
     } catch (err) {
-      this.rateError.set(problemMessage(err, 'Could not save the rate.'));
+      this.rateError.set(problemMessage(err, t('pricing.rateFailed')));
     } finally {
       this.busy.set(false);
     }
@@ -224,7 +230,7 @@ export class AdminPricing {
       this.toasts.show(done);
       after?.();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('pricing.saveFailed')));
     } finally {
       this.busy.set(false);
     }

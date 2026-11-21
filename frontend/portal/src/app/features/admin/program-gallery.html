@@ -1,9 +1,9 @@
 <div class="row between head">
   <div>
-    <h2 class="h2">Gallery</h2>
-    <p class="small muted">PNG, JPEG or WebP up to 5 MB, at most {{ limits.maxImages }}. The cover leads every card; {{ limits.coverMinWidth }} px wide or more stays sharp. Alt text describes each photo for screen readers.</p>
+    <h2 class="h2">{{ 'programEditor.tabGallery' | t }}</h2>
+    <p class="small muted">{{ 'programEditor.gallery.sub' | t: { max: limits.maxImages, width: limits.coverMinWidth } }}</p>
   </div>
-  <button type="button" uiButton size="sm" (click)="pick()" [disabled]="busy() || full()"><ui-icon name="plus" />Upload images</button>
+  <button type="button" uiButton size="sm" (click)="pick()" [disabled]="busy() || full()"><ui-icon name="plus" />{{ 'programEditor.gallery.upload' | t }}</button>
   <input #picker type="file" class="sr-only" tabindex="-1" aria-hidden="true" [accept]="accept" multiple (change)="picked($event)" />
 </div>
 
@@ -18,8 +18,8 @@
   @if (images().length === 0) {
     <div class="drop__empty col">
       <ui-icon name="plus" />
-      <b>No images yet</b>
-      <span class="small muted">Drop photos here or use Upload images. The first one becomes the cover.</span>
+      <b>{{ 'programEditor.gallery.emptyTitle' | t }}</b>
+      <span class="small muted">{{ 'programEditor.gallery.emptyText' | t }}</span>
     </div>
   } @else {
     <ul class="grid">
@@ -29,34 +29,34 @@
           <div class="tile__img">
             <img [src]="img.url" [alt]="img.altText ?? ''" [width]="img.width" [height]="img.height" loading="lazy" />
             @if (img.isCover) {
-              <ui-pill tone="brand" class="tile__cover">Cover</ui-pill>
+              <ui-pill tone="brand" class="tile__cover">{{ 'programEditor.gallery.cover' | t }}</ui-pill>
             }
           </div>
           <span class="small muted num">
             {{ img.width }} × {{ img.height }} · {{ kb(img.sizeBytes) }}
             @if (img.isCover && img.width < limits.coverMinWidth) {
-              · <span class="u-soon">narrower than {{ limits.coverMinWidth }} px</span>
+              · <span class="u-soon">{{ 'programEditor.gallery.narrow' | t: { width: limits.coverMinWidth } }}</span>
             }
           </span>
-          <ui-field label="Alt text" [for]="'img-alt-' + img.id" [hint]="e.altText.trim() ? null : 'Missing: describe what the photo shows'">
-            <input uiInput [id]="'img-alt-' + img.id" [(ngModel)]="e.altText" maxlength="300" placeholder="e.g. Hotel pool with sea view at sunset" />
+          <ui-field [label]="'programEditor.gallery.altText' | t" [for]="'img-alt-' + img.id" [hint]="e.altText.trim() ? null : ('programEditor.gallery.altMissing' | t)">
+            <input uiInput [id]="'img-alt-' + img.id" [(ngModel)]="e.altText" maxlength="300" [placeholder]="'programEditor.gallery.altPlaceholder' | t" />
           </ui-field>
-          <ui-field label="Caption" [for]="'img-cap-' + img.id" optional>
+          <ui-field [label]="'programEditor.gallery.caption' | t" [for]="'img-cap-' + img.id" optional>
             <input uiInput [id]="'img-cap-' + img.id" [(ngModel)]="e.caption" maxlength="200" />
           </ui-field>
           <div class="row between tile__tools">
             <div class="row">
-              <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'Move image ' + (i + 1) + ' earlier'" [disabled]="busy() || first" (click)="move(i, -1)"><ui-icon name="chevron-left" size="sm" /></button>
-              <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'Move image ' + (i + 1) + ' later'" [disabled]="busy() || last" (click)="move(i, 1)"><ui-icon name="chevron-right" size="sm" /></button>
+              <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'programEditor.gallery.moveEarlier' | t: { n: i + 1 }" [disabled]="busy() || first" (click)="move(i, -1)"><ui-icon name="chevron-left" size="sm" /></button>
+              <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'programEditor.gallery.moveLater' | t: { n: i + 1 }" [disabled]="busy() || last" (click)="move(i, 1)"><ui-icon name="chevron-right" size="sm" /></button>
               @if (!img.isCover) {
-                <button type="button" uiButton="ghost" size="sm" [disabled]="busy()" (click)="makeCover(img)">Make cover</button>
+                <button type="button" uiButton="ghost" size="sm" [disabled]="busy()" (click)="makeCover(img)">{{ 'programEditor.gallery.makeCover' | t }}</button>
               }
             </div>
             <div class="row">
               @if (dirty(img)) {
-                <button type="button" uiButton="primary" size="sm" [disabled]="busy()" (click)="save(img)">Save</button>
+                <button type="button" uiButton="primary" size="sm" [disabled]="busy()" (click)="save(img)">{{ 'common.save' | t }}</button>
               }
-              <button type="button" uiButton="danger-quiet" size="sm" iconOnly [attr.aria-label]="'Delete image ' + (i + 1)" [disabled]="busy()" (click)="remove(img)"><ui-icon name="x" size="sm" /></button>
+              <button type="button" uiButton="danger-quiet" size="sm" iconOnly [attr.aria-label]="'programEditor.gallery.delete' | t: { n: i + 1 }" [disabled]="busy()" (click)="remove(img)"><ui-icon name="x" size="sm" /></button>
             </div>
           </div>
         </li>

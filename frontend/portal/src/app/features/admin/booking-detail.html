@@ -1,13 +1,13 @@
 @if (loaded.error()) {
-  <ui-page-header title="Booking" [crumbs]="[{ label: 'Bookings', link: '/admin/bookings' }, { label: 'Not found' }]" />
-  <ui-empty-state tone="error" icon="alert-circle" title="Couldn't load this booking" description="It may not exist, or the API is unreachable.">
-    <button type="button" uiButton size="sm" (click)="loaded.reload()">Retry</button>
+  <ui-page-header [title]="'bookingDetail.title' | t" [crumbs]="[{ label: ('nav.bookings' | t), link: '/admin/bookings' }, { label: ('bookingDetail.notFoundCrumb' | t) }]" />
+  <ui-empty-state tone="error" icon="alert-circle" [title]="'bookingDetail.loadFailedTitle' | t" [description]="'bookingDetail.loadFailedText' | t">
+    <button type="button" uiButton size="sm" (click)="loaded.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (booking(); as b) {
   <ui-page-header
     [title]="b.ref"
     tabular
-    [crumbs]="[{ label: 'Bookings', link: '/admin/bookings' }, { label: b.ref }]"
+    [crumbs]="[{ label: ('nav.bookings' | t), link: '/admin/bookings' }, { label: b.ref }]"
     [sub]="subtitle()"
   >
     <ui-status-chip status [status]="b.status" />
@@ -32,27 +32,27 @@
 
   <div class="detail">
     <div class="detail__main">
-      <ui-card title="Money">
-        <ui-pill cardActions>Operator only</ui-pill>
+      <ui-card [title]="'adminBookingDetail.money' | t">
+        <ui-pill cardActions>{{ 'adminBookingDetail.operatorOnly' | t }}</ui-pill>
         <div class="facts">
-          <div class="fact"><span class="small muted">Net cost</span><div class="m strong fact__v">{{ b.netAmount | money: b.currency }}</div></div>
-          <div class="fact"><span class="small muted">Sell price</span><div class="m strong fact__v">{{ b.sellAmount | money: b.currency }}</div></div>
-          <div class="fact"><span class="small muted">Agency commission</span><div class="m strong fact__v">{{ b.commissionAmount | money: b.currency }}</div></div>
+          <div class="fact"><span class="small muted">{{ 'adminBookingDetail.netCost' | t }}</span><div class="m strong fact__v">{{ b.netAmount | money: b.currency }}</div></div>
+          <div class="fact"><span class="small muted">{{ 'adminBookingDetail.sellPrice' | t }}</span><div class="m strong fact__v">{{ b.sellAmount | money: b.currency }}</div></div>
+          <div class="fact"><span class="small muted">{{ 'adminBookingDetail.agencyCommission' | t }}</span><div class="m strong fact__v">{{ b.commissionAmount | money: b.currency }}</div></div>
         </div>
         <div class="pay">
           <div class="pay__paid">
             <div class="row between small">
-              <span class="muted">Paid</span>
-              <span class="m strong">{{ b.paidAmount | money: b.currency }} of {{ b.sellAmount | money: b.currency }}</span>
+              <span class="muted">{{ 'adminBookingDetail.paid' | t }}</span>
+              <span class="m strong">{{ 'bookingDetail.paidOf' | t: { paid: (b.paidAmount | money: b.currency), total: (b.sellAmount | money: b.currency) } }}</span>
             </div>
             <ui-progress [value]="b.paidAmount" [max]="b.sellAmount ?? 0" />
           </div>
           <div class="col">
-            <span class="small muted">Balance due</span>
+            <span class="small muted">{{ 'adminBookingDetail.balanceDue' | t }}</span>
             <b class="m pay__due">{{ b.balanceDue | money: b.currency }}</b>
           </div>
           <div class="col">
-            <span class="small muted">Payment deadline</span>
+            <span class="small muted">{{ 'adminBookingDetail.paymentDeadline' | t }}</span>
             @if (b.status === 'AwaitingPayment') {
               <ui-deadline [at]="b.paymentDueAt" />
             } @else {
@@ -61,86 +61,86 @@
           </div>
         </div>
         <div class="row wrap small meta">
-          <span><span class="muted">Supplier</span> <b>{{ b.providerCode }}</b></span>
+          <span><span class="muted">{{ 'adminBookingDetail.supplier' | t }}</span> <b>{{ b.providerCode }}</b></span>
           @if (b.providerBookingRef) {
-            <span><span class="muted">Supplier ref</span> <b class="mono">{{ b.providerBookingRef }}</b></span>
+            <span><span class="muted">{{ 'adminBookingDetail.supplierRef' | t }}</span> <b class="mono">{{ b.providerBookingRef }}</b></span>
           }
-          <span><span class="muted">Dates</span> <b class="num">{{ b.checkIn | odDate }} – {{ b.checkOut | odDate }}</b></span>
+          <span><span class="muted">{{ 'adminBookingDetail.dates' | t }}</span> <b class="num">{{ b.checkIn | odDate }} – {{ b.checkOut | odDate }}</b></span>
         </div>
       </ui-card>
 
       @if (breakdown(); as bd) {
-        <ui-card title="Price breakdown">
+        <ui-card [title]="'adminBookingDetail.breakdown' | t">
           <ol class="steps">
             <li class="steps__row">
               <span class="small muted num steps__n">0</span>
-              <span><b class="small">Net cost</b><div class="small muted">From the supplier</div></span>
+              <span><b class="small">{{ 'adminBookingDetail.netCost' | t }}</b><div class="small muted">{{ 'adminBookingDetail.fromSupplier' | t }}</div></span>
               <span class="m strong steps__total">{{ bd.netCost | money: bd.currency }}</span>
             </li>
             @for (step of bd.steps; track $index; let i = $index) {
               <li class="steps__row">
                 <span class="small muted num steps__n">{{ i + 1 }}</span>
-                <span><b class="small">{{ step.description }}</b><div class="small muted">{{ step.kind }}</div></span>
+                <span><b class="small">{{ step.description }}</b><div class="small muted">{{ stepKindLabel(step.kind) }}</div></span>
                 <span class="m strong steps__total">{{ step.after | money: bd.currency }}</span>
               </li>
             }
           </ol>
-          <div class="row between"><b>Sell price</b><b class="m steps__sell">{{ bd.sellPrice | money: bd.currency }}</b></div>
-          <div class="row between small muted"><span>Agency commission</span><span class="m">{{ bd.agencyCommission | money: bd.currency }}</span></div>
+          <div class="row between"><b>{{ 'adminBookingDetail.sellPrice' | t }}</b><b class="m steps__sell">{{ bd.sellPrice | money: bd.currency }}</b></div>
+          <div class="row between small muted"><span>{{ 'adminBookingDetail.agencyCommission' | t }}</span><span class="m">{{ bd.agencyCommission | money: bd.currency }}</span></div>
         </ui-card>
       }
 
-      <ui-card title="Payments" flush>
+      <ui-card [title]="'adminBookingDetail.payments' | t" flush>
         @if (actions()?.recordPayment) {
           <button cardActions type="button" uiButton size="sm" (click)="payOpen.set(!payOpen())" [attr.aria-expanded]="payOpen()">
-            <ui-icon name="plus" />Record payment
+            <ui-icon name="plus" />{{ 'adminBookingDetail.recordPayment' | t }}
           </button>
         }
 
         @if (payOpen() && actions()?.recordPayment) {
           <form class="payform" (ngSubmit)="recordPayment()">
             <div class="payform__grid">
-              <ui-field label="Amount" for="pay-amount" [hint]="'Prefilled with the balance due, ' + (b.balanceDue | money: b.currency)">
+              <ui-field [label]="'adminBookingDetail.amount' | t" for="pay-amount" [hint]="'adminBookingDetail.amountHint' | t: { amount: (b.balanceDue | money: b.currency) }">
                 <input uiInput id="pay-amount" name="amount" type="number" step="0.01" min="0.01" class="m payform__amount" [(ngModel)]="paymentAmount" required />
               </ui-field>
-              <ui-field label="Currency" for="pay-currency">
+              <ui-field [label]="'adminBookingDetail.currency' | t" for="pay-currency">
                 <input uiInput id="pay-currency" name="currency" [(ngModel)]="paymentCurrency" readonly />
               </ui-field>
             </div>
             <div class="field">
-              <span class="field__label">Method</span>
+              <span class="field__label">{{ 'adminBookingDetail.method' | t }}</span>
               <ui-segmented [options]="paymentMethods" [value]="paymentMethod" (valueChange)="setMethod($event)" stretch />
             </div>
             <div class="payform__grid">
-              <ui-field label="Received on" for="pay-received">
+              <ui-field [label]="'adminBookingDetail.receivedOn' | t" for="pay-received">
                 <input uiInput id="pay-received" name="receivedOn" type="date" [(ngModel)]="paymentReceivedOn" required />
               </ui-field>
-              <ui-field label="Reference" for="pay-ref" optional>
-                <input uiInput id="pay-ref" name="reference" class="mono" [(ngModel)]="paymentReference" maxlength="100" placeholder="e.g. bank transaction ID" />
+              <ui-field [label]="'adminBookingDetail.reference' | t" for="pay-ref" optional>
+                <input uiInput id="pay-ref" name="reference" class="mono" [(ngModel)]="paymentReference" maxlength="100" [placeholder]="'adminBookingDetail.referencePlaceholder' | t" />
               </ui-field>
             </div>
-            <ui-field label="Note" for="pay-note" optional hint="Visible to staff only">
+            <ui-field [label]="'adminBookingDetail.note' | t" for="pay-note" optional [hint]="'adminBookingDetail.noteHint' | t">
               <input uiInput id="pay-note" name="pnote" [(ngModel)]="paymentNote" maxlength="500" />
             </ui-field>
             @if (paymentAmount >= b.balanceDue && b.balanceDue > 0) {
-              <ui-banner tone="info">This clears the balance. The booking becomes ready to confirm.</ui-banner>
+              <ui-banner tone="info">{{ 'adminBookingDetail.clearsBalance' | t }}</ui-banner>
             }
             <div class="row payform__actions">
-              <button type="button" uiButton (click)="payOpen.set(false)">Cancel</button>
+              <button type="button" uiButton (click)="payOpen.set(false)">{{ 'common.cancel' | t }}</button>
               <button type="submit" uiButton="primary" [disabled]="busy() || paymentAmount <= 0">
-                Record {{ paymentAmount | money: paymentCurrency }}
+                {{ 'adminBookingDetail.recordAmount' | t: { amount: (paymentAmount | money: paymentCurrency) } }}
               </button>
             </div>
           </form>
         }
 
         @if (b.payments.length === 0) {
-          <p class="muted small pad">No payments recorded yet.</p>
+          <p class="muted small pad">{{ 'adminBookingDetail.noPayments' | t }}</p>
         } @else {
           <div class="tw">
             <table class="tbl">
               <thead>
-                <tr><th>Received</th><th>Method</th><th>Reference</th><th>Recorded</th><th class="r">Amount</th><th><span class="sr-only">Actions</span></th></tr>
+                <tr><th>{{ 'adminBookingDetail.colReceived' | t }}</th><th>{{ 'adminBookingDetail.colMethod' | t }}</th><th>{{ 'adminBookingDetail.reference' | t }}</th><th>{{ 'adminBookingDetail.colRecorded' | t }}</th><th class="r">{{ 'adminBookingDetail.amount' | t }}</th><th><span class="sr-only">{{ 'common.actions' | t }}</span></th></tr>
               </thead>
               <tbody>
                 @for (p of b.payments; track p.id) {
@@ -152,11 +152,11 @@
                     <td class="r m strong">{{ p.amount | money: p.currency }}</td>
                     <td class="r">
                       @if (p.voidedAt !== null) {
-                        <span class="small muted">Voided{{ p.voidReason ? ' · ' + p.voidReason : '' }}</span>
+                        <span class="small muted">{{ 'adminBookingDetail.voided' | t }}{{ p.voidReason ? ' · ' + p.voidReason : '' }}</span>
                       } @else if (actions()?.voidPayment) {
-                        <button type="button" uiButton="ghost" size="sm" class="void-btn" (click)="voidPayment(p)" [disabled]="busy()">Void</button>
+                        <button type="button" uiButton="ghost" size="sm" class="void-btn" (click)="voidPayment(p)" [disabled]="busy()">{{ 'adminBookingDetail.void' | t }}</button>
                       } @else if (b.status === 'AwaitingPayment') {
-                        <span class="small muted">Void: admin only</span>
+                        <span class="small muted">{{ 'adminBookingDetail.voidAdminOnly' | t }}</span>
                       }
                     </td>
                   </tr>
@@ -167,12 +167,12 @@
         }
       </ui-card>
 
-      <ui-card title="Travellers" flush>
-        <span cardActions class="small muted">Document numbers are masked</span>
+      <ui-card [title]="'adminBookingDetail.travellers' | t" flush>
+        <span cardActions class="small muted">{{ 'adminBookingDetail.documentsMasked' | t }}</span>
         <div class="tw">
           <table class="tbl">
             <thead>
-              <tr><th>Name</th><th>Type</th><th>Birth date</th><th>Nationality</th><th>Document</th><th>Expiry</th></tr>
+              <tr><th>{{ 'bookingDetail.colName' | t }}</th><th>{{ 'bookingDetail.colType' | t }}</th><th>{{ 'bookingDetail.colBirthDate' | t }}</th><th>{{ 'bookingDetail.colNationality' | t }}</th><th>{{ 'bookingDetail.colDocument' | t }}</th><th>{{ 'adminBookingDetail.colExpiry' | t }}</th></tr>
             </thead>
             <tbody>
               @for (p of b.passengers; track p.id) {
@@ -180,20 +180,20 @@
                   <td>
                     <b>{{ p.title ? p.title + ' ' : '' }}{{ p.firstName }} {{ p.lastName }}</b>
                     @if (p.isLead) {
-                      <ui-pill tone="brand" class="lead">Lead</ui-pill>
+                      <ui-pill tone="brand" class="lead">{{ 'bookingDetail.lead' | t }}</ui-pill>
                     }
                     @if (p.email || p.phone) {
                       <div class="sub-line">{{ p.email }}{{ p.email && p.phone ? ' · ' : '' }}{{ p.phone }}</div>
                     }
                   </td>
-                  <td>{{ p.passengerType ?? '—' }}{{ p.gender ? ' · ' + p.gender : '' }}</td>
+                  <td>{{ passengerKind(p) }}</td>
                   <td class="num">{{ p.birthDate | odDate }}</td>
                   <td>{{ p.nationality ?? '—' }}</td>
                   <td>
                     @if (p.documentType) {
                       <span class="row doc">
-                        {{ p.documentType === 'IdCard' ? 'ID card' : p.documentType }}
-                        <ui-masked [value]="p.documentNumber" [subject]="'document number for ' + p.firstName + ' ' + p.lastName" />
+                        {{ documentTypeLabel(p.documentType) }}
+                        <ui-masked [value]="p.documentNumber" [subject]="'bookingDetail.documentNumberOf' | t: { name: p.firstName + ' ' + p.lastName }" />
                         <span class="small muted">{{ p.documentIssuingCountry }}</span>
                       </span>
                     } @else {
@@ -208,23 +208,23 @@
         </div>
       </ui-card>
 
-      <ui-card title="Documents" [flush]="(documents.value()?.length ?? 0) > 0">
+      <ui-card [title]="'nav.documents' | t" [flush]="(documents.value()?.length ?? 0) > 0">
         @if (b.status === 'Confirmed' && documents.value() && !invoice()) {
-          <button cardActions type="button" uiButton size="sm" (click)="openIssue()" [disabled]="busy()">Issue invoice</button>
+          <button cardActions type="button" uiButton size="sm" (click)="openIssue()" [disabled]="busy()">{{ 'adminBookingDetail.issueInvoice' | t }}</button>
         }
         @if (documents.value(); as docs) {
           @if (docs.length === 0) {
             <div class="nodocs">
               <span class="nodocs__icon"><ui-icon name="file" /></span>
               <span class="small muted">
-                @if (b.status === 'Confirmed') { No invoice yet — issue it from here. }
-                @else { The invoice can be issued once the booking is confirmed. }
+                @if (b.status === 'Confirmed') { {{ 'adminBookingDetail.noInvoiceYet' | t }} }
+                @else { {{ 'adminBookingDetail.invoiceAfterConfirm' | t }} }
               </span>
             </div>
           } @else {
             <div class="tw">
               <table class="tbl">
-                <thead><tr><th>Number</th><th>Type</th><th>Date</th><th>VAT</th><th class="r">Amount</th><th>Status</th><th><span class="sr-only">Download</span></th></tr></thead>
+                <thead><tr><th>{{ 'agencyDocuments.colNumber' | t }}</th><th>{{ 'agencyDocuments.colType' | t }}</th><th>{{ 'agencyDocuments.colDate' | t }}</th><th>{{ 'adminBookingDetail.colVat' | t }}</th><th class="r">{{ 'agencyDocuments.colAmount' | t }}</th><th>{{ 'agencyDocuments.colStatus' | t }}</th><th><span class="sr-only">{{ 'agencyDocuments.colDownload' | t }}</span></th></tr></thead>
                 <tbody>
                   @for (d of docs; track d.id) {
                     <tr>
@@ -233,8 +233,8 @@
                       <td class="num">{{ d.issueDate | odDate }}</td>
                       <td class="small">{{ vatLabel(d.vatTreatment) }}</td>
                       <td class="r m strong">{{ d.total | money: d.currency }}</td>
-                      <td>@if (d.status === 'Annulled') {<ui-pill>Annulled</ui-pill>} @else {<ui-pill tone="ok">Issued</ui-pill>}</td>
-                      <td class="r"><button type="button" uiButton="ghost" size="sm" (click)="downloadDocument(d)" [attr.aria-label]="'Download PDF ' + d.number"><ui-icon name="download" />PDF</button></td>
+                      <td>@if (d.status === 'Annulled') {<ui-pill>{{ 'agencyDocuments.annulled' | t }}</ui-pill>} @else {<ui-pill tone="ok">{{ 'agencyDocuments.issued' | t }}</ui-pill>}</td>
+                      <td class="r"><button type="button" uiButton="ghost" size="sm" (click)="downloadDocument(d)" [attr.aria-label]="'agencyDocuments.downloadPdf' | t: { number: d.number }"><ui-icon name="download" />PDF</button></td>
                     </tr>
                   }
                 </tbody>
@@ -249,58 +249,58 @@
 
     <aside class="detail__aside">
       @if (actions(); as a) {
-        <ui-card title="Other decisions" class="decisions">
+        <ui-card [title]="'adminBookingDetail.otherDecisions' | t" class="decisions">
           <div class="decision">
-            <div class="col"><b class="small">Reject</b><span class="small muted">Releases the hold. Reason required.</span></div>
-            <button type="button" uiButton size="sm" (click)="reject()" [disabled]="busy() || !a.reject">Reject…</button>
+            <div class="col"><b class="small">{{ 'adminBookingDetail.reject' | t }}</b><span class="small muted">{{ 'adminBookingDetail.rejectHint' | t }}</span></div>
+            <button type="button" uiButton size="sm" (click)="reject()" [disabled]="busy() || !a.reject">{{ 'adminBookingDetail.rejectMore' | t }}</button>
           </div>
           <hr class="hr" />
           <div class="decision">
             <div class="col">
-              <b class="small">Expire</b>
+              <b class="small">{{ 'adminBookingDetail.expire' | t }}</b>
               <span class="small muted">
-                @if (a.expire) { The deadline has passed. }
-                @else if (b.status === 'AwaitingPayment' && b.paymentDueAt) { Opens after the deadline, {{ b.paymentDueAt | odDateTime }}. }
-                @else { Only for unpaid bookings past their deadline. }
+                @if (a.expire) { {{ 'adminBookingDetail.expirePassed' | t }} }
+                @else if (b.status === 'AwaitingPayment' && b.paymentDueAt) { {{ 'adminBookingDetail.expireAfter' | t: { date: (b.paymentDueAt | odDateTime) } }} }
+                @else { {{ 'adminBookingDetail.expireOnlyUnpaid' | t }} }
               </span>
             </div>
-            <button type="button" uiButton size="sm" (click)="expire()" [disabled]="busy() || !a.expire">Expire</button>
+            <button type="button" uiButton size="sm" (click)="expire()" [disabled]="busy() || !a.expire">{{ 'adminBookingDetail.expire' | t }}</button>
           </div>
           <hr class="hr" />
           <div class="decision">
             <div class="col">
-              <b class="small">Cancel</b>
+              <b class="small">{{ 'adminBookingDetail.cancel' | t }}</b>
               <span class="small muted">
-                @if (a.cancel) { Reason required. The agency is notified. }
-                @else if (!isAdmin() && (b.status === 'PendingConfirmation' || b.status === 'AwaitingPayment' || b.status === 'Confirmed')) { Requires an operator admin. }
-                @else { Not available in this status. }
+                @if (a.cancel) { {{ 'adminBookingDetail.cancelHint' | t }} }
+                @else if (!isAdmin() && (b.status === 'PendingConfirmation' || b.status === 'AwaitingPayment' || b.status === 'Confirmed')) { {{ 'adminBookingDetail.cancelAdminOnly' | t }} }
+                @else { {{ 'adminBookingDetail.cancelUnavailable' | t }} }
               </span>
             </div>
-            <button type="button" uiButton="danger-quiet" size="sm" (click)="cancel()" [disabled]="busy() || !a.cancel">Cancel…</button>
+            <button type="button" uiButton="danger-quiet" size="sm" (click)="cancel()" [disabled]="busy() || !a.cancel">{{ 'adminBookingDetail.cancelMore' | t }}</button>
           </div>
         </ui-card>
       }
 
-      <ui-card title="History">
+      <ui-card [title]="'bookingDetail.history' | t">
         @if (timeline().length > 0) {
           <ui-timeline [items]="timeline()" />
         } @else {
-          <p class="small muted">No status changes yet.</p>
+          <p class="small muted">{{ 'bookingDetail.noHistory' | t }}</p>
         }
       </ui-card>
     </aside>
   </div>
 
-  <ui-sheet [(open)]="issueOpen" [title]="'Issue invoice for ' + b.ref" sub="The number is the next in the series; the agency can download it right away.">
+  <ui-sheet [(open)]="issueOpen" [title]="'adminBookingDetail.issueTitle' | t: { ref: b.ref }" [sub]="'adminBookingDetail.issueSub' | t">
     <form id="issue-invoice" class="invoice-form" (ngSubmit)="issueInvoice()">
       @if (error(); as message) {
         <ui-banner tone="bad">{{ message }}</ui-banner>
       }
       <dl class="kv inset facts">
-        <dt>Recipient</dt><dd>{{ agency.value()?.name ?? '—' }}</dd>
-        <dt>Amount</dt><dd class="m">{{ b.sellAmount | money: b.currency }}</dd>
+        <dt>{{ 'adminBookingDetail.recipient' | t }}</dt><dd>{{ agency.value()?.name ?? '—' }}</dd>
+        <dt>{{ 'adminBookingDetail.amount' | t }}</dt><dd class="m">{{ b.sellAmount | money: b.currency }}</dd>
       </dl>
-      <ui-field label="VAT treatment" for="iv-vat">
+      <ui-field [label]="'adminBookingDetail.vatTreatment' | t" for="iv-vat">
         <select uiInput id="iv-vat" name="vatTreatment" [(ngModel)]="invoiceForm.vatTreatment">
           @for (o of vatOptions; track o.value) {
             <option [value]="o.value">{{ o.label }}</option>
@@ -308,12 +308,12 @@
         </select>
       </ui-field>
       @if (invoiceForm.vatTreatment === 'Exempt') {
-        <ui-field label="Exemption grounds" for="iv-grounds"><input uiInput id="iv-grounds" name="exemptionGrounds" [(ngModel)]="invoiceForm.exemptionGrounds" maxlength="300" required /></ui-field>
+        <ui-field [label]="'adminBookingDetail.exemptionGrounds' | t" for="iv-grounds"><input uiInput id="iv-grounds" name="exemptionGrounds" [(ngModel)]="invoiceForm.exemptionGrounds" maxlength="300" required /></ui-field>
       }
-      <ui-field label="Due in days" for="iv-due" hint="0 to 60"><input uiInput id="iv-due" name="dueInDays" type="number" min="0" max="60" class="m" [(ngModel)]="invoiceForm.dueInDays" required /></ui-field>
+      <ui-field [label]="'adminBookingDetail.dueInDays' | t" for="iv-due" [hint]="'adminBookingDetail.dueInDaysHint' | t"><input uiInput id="iv-due" name="dueInDays" type="number" min="0" max="60" class="m" [(ngModel)]="invoiceForm.dueInDays" required /></ui-field>
     </form>
-    <button sheetActions type="button" uiButton (click)="issueOpen.set(false)">Cancel</button>
-    <button sheetActions type="submit" form="issue-invoice" uiButton="primary" [disabled]="busy() || !invoiceValid()">{{ busy() ? 'Issuing…' : 'Issue invoice' }}</button>
+    <button sheetActions type="button" uiButton (click)="issueOpen.set(false)">{{ 'common.cancel' | t }}</button>
+    <button sheetActions type="submit" form="issue-invoice" uiButton="primary" [disabled]="busy() || !invoiceValid()">{{ (busy() ? 'adminBookingDetail.issuing' : 'adminBookingDetail.issueInvoice') | t }}</button>
   </ui-sheet>
 } @else {
   <ui-card><ui-skeleton [lines]="6" /></ui-card>

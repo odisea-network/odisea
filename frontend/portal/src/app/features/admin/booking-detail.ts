@@ -8,9 +8,11 @@ import {
 import { AuthService } from '../../core/auth.service';
 import { historyTimeline } from '../../core/booking-history';
 import { formatDateTime, formatMoney } from '../../core/format';
+import { t, tOptional } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe, OdDateTimePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Field, Icon, IconName, InputDirective,
   Masked, NextStep, PageHeader, Pill, Progress, SegmentOption, Segmented, Sheet, Skeleton, StatusChip, Timeline,
@@ -21,15 +23,11 @@ import { operatorActions, parseBreakdown } from './booking-actions';
 import { VAT_TREATMENT_LABELS, documentKindLabel, vatTreatmentShort } from './document-labels';
 
 const PAYMENT_METHODS: SegmentOption[] = [
-  { value: 'BankTransfer', label: 'Bank transfer' },
-  { value: 'Card', label: 'Card' },
-  { value: 'Cash', label: 'Cash' },
-  { value: 'Other', label: 'Other' },
+  { value: 'BankTransfer', label: t('ledger.method.BankTransfer') },
+  { value: 'Card', label: t('ledger.method.Card') },
+  { value: 'Cash', label: t('ledger.method.Cash') },
+  { value: 'Other', label: t('ledger.method.Other') },
 ];
-
-const METHOD_LABELS: Record<string, string> = {
-  BankTransfer: 'Bank transfer', Card: 'Card', Cash: 'Cash', Other: 'Other',
-};
 
 interface NextAction {
   icon: IconName;
@@ -43,7 +41,7 @@ interface NextAction {
 @Component({
   selector: 'app-admin-booking-detail',
   imports: [
-    FormsModule, MoneyPipe, OdDatePipe, OdDateTimePipe,
+    FormsModule, MoneyPipe, OdDatePipe, OdDateTimePipe, TPipe,
     Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, Masked, NextStep, PageHeader,
     Pill, Progress, Segmented, Sheet, Skeleton, StatusChip, Timeline,
   ],
@@ -109,14 +107,16 @@ export class AdminBookingDetail {
   });
   readonly breakdown = computed(() => parseBreakdown(this.booking()?.breakdown));
   readonly timeline = computed(() => historyTimeline(
-    (this.booking()?.history ?? []).map(h => ({ ...h, actor: h.actorType }))));
+    (this.booking()?.history ?? []).map(h => ({ ...h, actor: tOptional(`adminBookingDetail.actor.${h.actorType}`) ?? h.actorType }))));
 
   readonly subtitle = computed(() => {
     const b = this.booking();
     if (!b) return null;
-    const agency = this.agency.value()?.name ?? 'Agency';
-    const pax = `${b.adults} ${b.adults === 1 ? 'adult' : 'adults'}${b.children ? `, ${b.children} ${b.children === 1 ? 'child' : 'children'}` : ''}`;
-    return `${agency} · ${b.hotelName} · ${b.programName} · ${pax} · created ${formatDateTime(b.createdAt)}`;
+    const agency = this.agency.value()?.name ?? t('adminBookingDetail.agencyFallback');
+    const adults = t(b.adults === 1 ? 'common.adultOne' : 'common.adultMany', { n: b.adults });
+    const children = b.children ? `, ${t(b.children === 1 ? 'common.childOne' : 'common.childMany', { n: b.children })}` : '';
+    const created = t('adminBookingDetail.createdAt', { date: formatDateTime(b.createdAt) });
+    return `${agency} · ${b.hotelName} · ${b.programName} · ${adults}${children} · ${created}`;
   });
 
   /** What the operator should do next, and why the button is locked if it is. */
@@ -129,19 +129,22 @@ export class AdminBookingDetail {
     if (b.providerRelease === 'Failed') {
       return {
         icon: 'alert-triangle', tone: 'bad',
-        title: 'The supplier still holds this booking',
-        sub: `Supplier ${b.providerCode} refused the release: ${b.providerReleaseError ?? 'no reason given'}. Sort it out with them, then retry.`,
-        action: { label: 'Retry release', run: () => void this.retryRelease(), disabledReason: null },
+        title: t('adminBookingDetail.next.releaseFailedTitle'),
+        sub: t('adminBookingDetail.next.releaseFailedSub', {
+          provider: b.providerCode, reason: b.providerReleaseError ?? t('adminBookingDetail.next.noReason'),
+        }),
+        action: { label: t('adminBookingDetail.next.retryRelease'), run: () => void this.retryRelease(), disabledReason: null },
       };
     }
     if (b.providerRelease === 'Pending') {
       return {
         icon: 'refresh', tone: 'warn',
-        title: 'Giving the hold back to the supplier',
+        title: t('adminBookingDetail.next.releasePendingTitle'),
         sub: b.providerReleaseError
-          ? `The last attempt failed: ${b.providerReleaseError} It is retried automatically (${b.providerReleaseAttempts} ${b.providerReleaseAttempts === 1 ? 'attempt' : 'attempts'} so far); you can retry now.`
-          : 'The release has not reached the supplier yet. It is retried automatically.',
-        action: { label: 'Retry release', run: () => void this.retryRelease(), disabledReason: null },
+          ? t(b.providerReleaseAttempts === 1 ? 'adminBookingDetail.next.releaseRetriedOne' : 'adminBookingDetail.next.releaseRetriedMany',
+            { error: b.providerReleaseError, n: b.providerReleaseAttempts })
+          : t('adminBookingDetail.next.releasePendingSub'),
+        action: { label: t('adminBookingDetail.next.retryRelease'), run: () => void this.retryRelease(), disabledReason: null },
       };
     }
     switch (b.status) {
@@ -149,36 +152,49 @@ export class AdminBookingDetail {
         if (b.balanceDue > 0) {
           return {
             icon: 'card', tone: 'warn',
-            title: `Collect ${money(b.balanceDue)}${b.paymentDueAt ? ` before ${formatDateTime(b.paymentDueAt)}` : ''}`,
-            sub: b.paidAmount > 0 ? `${money(b.paidAmount)} received so far. Record the rest when it arrives.` : 'Nothing received yet. Record the payment when it arrives.',
-            action: { label: 'Record payment', run: () => this.payOpen.set(true), disabledReason: null },
+            title: b.paymentDueAt
+              ? t('adminBookingDetail.next.collectTitleBy', { amount: money(b.balanceDue), deadline: formatDateTime(b.paymentDueAt) })
+              : t('adminBookingDetail.next.collectTitle', { amount: money(b.balanceDue) }),
+            sub: b.paidAmount > 0
+              ? t('adminBookingDetail.next.collectSubPartial', { amount: money(b.paidAmount) })
+              : t('adminBookingDetail.next.collectSubNone'),
+            action: { label: t('adminBookingDetail.recordPayment'), run: () => this.payOpen.set(true), disabledReason: null },
           };
         }
         return {
           icon: 'check-circle', tone: 'ok',
-          title: 'Fully paid — ready to confirm',
-          sub: 'Confirming makes the booking final and notifies the agency.',
+          title: t('adminBookingDetail.next.paidTitle'),
+          sub: t('adminBookingDetail.next.paidSub'),
           action: {
-            label: 'Confirm booking', run: () => void this.confirm(),
-            disabledReason: a.confirm ? null : 'Requires an operator admin',
+            label: t('adminBookingDetail.confirmBooking'), run: () => void this.confirm(),
+            disabledReason: a.confirm ? null : t('adminBookingDetail.next.adminRequired'),
           },
         };
       case 'Confirmed':
         if (this.documents.value() && !this.invoice()) {
           return {
-            icon: 'file', tone: 'info', title: 'Issue the invoice',
-            sub: 'Next number in the series. The agency can download it right away.',
-            action: { label: 'Issue invoice', run: () => this.openIssue(), disabledReason: null },
+            icon: 'file', tone: 'info', title: t('adminBookingDetail.next.invoiceTitle'),
+            sub: t('adminBookingDetail.next.invoiceSub'),
+            action: { label: t('adminBookingDetail.issueInvoice'), run: () => this.openIssue(), disabledReason: null },
           };
         }
-        return { icon: 'check-circle', tone: 'ok', title: 'All done', sub: 'Confirmed, paid in full' + (this.invoice() ? ` and invoiced (${this.invoice()!.number})` : '') + '. Nothing else needs you.' };
+        return {
+          icon: 'check-circle', tone: 'ok', title: t('adminBookingDetail.next.doneTitle'),
+          sub: this.invoice()
+            ? t('adminBookingDetail.next.doneSubInvoiced', { number: this.invoice()!.number })
+            : t('adminBookingDetail.next.doneSub'),
+        };
       case 'PendingConfirmation':
-        return { icon: 'hourglass', tone: 'info', title: 'Waiting for the supplier', sub: 'The hold request is in flight; the agency will see the payment deadline once it lands.' };
+        return { icon: 'hourglass', tone: 'info', title: t('adminBookingDetail.next.pendingTitle'), sub: t('adminBookingDetail.next.pendingSub') };
       case 'Draft':
       case 'PriceConfirmed':
-        return { icon: 'pencil', tone: 'neutral', title: 'Not submitted yet', sub: 'The agency has not sent this booking to the supplier.' };
+        return { icon: 'pencil', tone: 'neutral', title: t('adminBookingDetail.next.draftTitle'), sub: t('adminBookingDetail.next.draftSub') };
       default:
-        return { icon: 'slash-circle', tone: 'neutral', title: `Closed · ${bookingStatusLabel(b.status)}`, sub: 'No operator action is available in this status.' };
+        return {
+          icon: 'slash-circle', tone: 'neutral',
+          title: t('bookingDetail.next.closedTitle', { status: bookingStatusLabel(b.status) }),
+          sub: t('adminBookingDetail.next.closedSub'),
+        };
     }
   });
 
@@ -214,10 +230,10 @@ export class AdminBookingDetail {
         exemptionGrounds: this.invoiceForm.exemptionGrounds.trim() || null, dueInDays: Number(this.invoiceForm.dueInDays),
       }));
       this.issueOpen.set(false);
-      this.toasts.show(`Invoice ${doc.number} issued · available to the agency`);
+      this.toasts.show(t('adminBookingDetail.invoiceIssued', { number: doc.number }));
       this.documents.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The invoice could not be issued.'));
+      this.error.set(problemMessage(err, t('adminBookingDetail.invoiceFailed')));
     } finally {
       this.busy.set(false);
     }
@@ -233,12 +249,26 @@ export class AdminBookingDetail {
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      this.toasts.show(`Download of ${doc.number} failed`, { tone: 'bad' });
+      this.toasts.show(t('agencyDocuments.downloadFailed', { number: doc.number }), { tone: 'bad' });
     }
   }
 
   methodLabel(method: string): string {
-    return METHOD_LABELS[method] ?? method;
+    return tOptional(`ledger.method.${method}`) ?? method;
+  }
+
+  stepKindLabel(kind: string): string {
+    return tOptional(`pricing.kind.${kind}`) ?? kind;
+  }
+
+  passengerKind(p: OperatorBooking['passengers'][number]): string {
+    const type = p.passengerType ? tOptional(`passenger.type.${p.passengerType}`) ?? p.passengerType : '—';
+    const gender = p.gender === 'Male' ? t('book.male') : p.gender === 'Female' ? t('book.female') : p.gender;
+    return gender ? `${type} · ${gender}` : type;
+  }
+
+  documentTypeLabel(type: string): string {
+    return type === 'IdCard' ? t('book.idCard') : type === 'Passport' ? t('book.passport') : type;
   }
 
   setMethod(value: string): void {
@@ -258,7 +288,7 @@ export class AdminBookingDetail {
     };
     const recorded = formatMoney(request.amount, request.currency);
     const ok = await this.act(`/api/v1/admin/bookings/${b.id}/payments`, request,
-      updated => `Payment ${recorded} recorded · balance ${formatMoney(updated.balanceDue, updated.currency)}`);
+      updated => t('adminBookingDetail.paymentRecorded', { amount: recorded, balance: formatMoney(updated.balanceDue, updated.currency) }));
     if (ok) {
       this.payOpen.set(false);
       this.paymentReference = '';
@@ -270,38 +300,52 @@ export class AdminBookingDetail {
     const b = this.booking();
     if (!b) return;
     const decision = await this.dialogs.confirm({
-      title: `Confirm ${b.ref}?`,
-      message: 'The agency is notified and the booking becomes final. After this, only an operator admin can cancel it.',
-      confirmLabel: 'Confirm booking',
-      cancelLabel: 'Not now',
+      title: t('adminBookingDetail.confirmTitle', { ref: b.ref }),
+      message: t('adminBookingDetail.confirmMessage'),
+      confirmLabel: t('adminBookingDetail.confirmBooking'),
+      cancelLabel: t('adminBookingDetail.notNow'),
       facts: [
-        { label: 'Paid', value: `${formatMoney(b.paidAmount, b.currency)} of ${formatMoney(b.sellAmount, b.currency)}` },
-        { label: 'Supplier hold', value: b.providerBookingRef ? `${b.providerBookingRef} · active` : '—' },
+        {
+          label: t('adminBookingDetail.paid'),
+          value: t('bookingDetail.paidOf', { paid: formatMoney(b.paidAmount, b.currency), total: formatMoney(b.sellAmount, b.currency) }),
+        },
+        {
+          label: t('adminBookingDetail.factHold'),
+          value: b.providerBookingRef ? t('adminBookingDetail.holdActive', { ref: b.providerBookingRef }) : '—',
+        },
       ],
     });
     if (!decision) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/confirm`, {}, () => `${b.ref} confirmed · agency notified`);
+    await this.act(`/api/v1/admin/bookings/${b.id}/confirm`, {}, () => t('adminBookingDetail.confirmed', { ref: b.ref }));
   }
 
   async reject(): Promise<void> {
-    await this.decide('reject', 'Reject', 'The supplier hold is released and the agency is told why.', 'rejected');
+    const ref = this.booking()?.ref ?? '';
+    await this.decide('reject', {
+      title: t('adminBookingDetail.rejectTitle', { ref }), message: t('adminBookingDetail.rejectMessage'),
+      confirmLabel: t('adminBookingDetail.rejectConfirm'), done: t('adminBookingDetail.rejected', { ref }),
+    });
   }
 
   async cancel(): Promise<void> {
-    await this.decide('cancel', 'Cancel', 'The booking is cancelled and the agency is told why. This can’t be undone.', 'cancelled');
+    const ref = this.booking()?.ref ?? '';
+    await this.decide('cancel', {
+      title: t('bookings.cancelTitle', { ref }), message: t('adminBookingDetail.cancelMessage'),
+      confirmLabel: t('bookings.cancelConfirm'), done: t('bookings.cancelled', { ref }),
+    });
   }
 
   async expire(): Promise<void> {
     const b = this.booking();
     if (!b) return;
     const decision = await this.dialogs.confirm({
-      title: `Expire ${b.ref}?`,
-      message: 'The payment deadline has passed. The supplier hold is released and the agency is notified.',
-      confirmLabel: 'Expire booking',
+      title: t('adminBookingDetail.expireTitle', { ref: b.ref }),
+      message: t('adminBookingDetail.expireMessage'),
+      confirmLabel: t('adminBookingDetail.expireConfirm'),
       destructive: true,
     });
     if (!decision) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/expire`, {}, () => `${b.ref} expired`);
+    await this.act(`/api/v1/admin/bookings/${b.id}/expire`, {}, () => t('adminBookingDetail.expired', { ref: b.ref }));
   }
 
   async retryRelease(): Promise<void> {
@@ -309,38 +353,41 @@ export class AdminBookingDetail {
     if (!b) return;
     await this.act(`/api/v1/admin/bookings/${b.id}/provider-release/retry`, {}, updated =>
       updated.providerRelease === 'Released'
-        ? `${b.ref}: the supplier released the hold`
-        : `${b.ref}: the supplier has not released the hold yet`);
+        ? t('adminBookingDetail.released', { ref: b.ref })
+        : t('adminBookingDetail.notReleased', { ref: b.ref }));
   }
 
   async voidPayment(payment: OperatorPayment): Promise<void> {
     const b = this.booking();
     if (!b) return;
     const decision = await this.dialogs.confirm({
-      title: `Void payment of ${formatMoney(payment.amount, payment.currency)}?`,
-      message: 'The payment stays on record as voided; the balance due goes back up.',
-      confirmLabel: 'Void payment',
+      title: t('adminBookingDetail.voidTitle', { amount: formatMoney(payment.amount, payment.currency) }),
+      message: t('adminBookingDetail.voidMessage'),
+      confirmLabel: t('adminBookingDetail.voidConfirm'),
       destructive: true,
-      reason: { label: 'Reason', placeholder: 'e.g. transfer bounced', required: true },
+      reason: { label: t('adminBookingDetail.reason'), placeholder: t('adminBookingDetail.voidPlaceholder'), required: true },
     });
     if (!decision) return;
     await this.act(`/api/v1/admin/bookings/${b.id}/payments/${payment.id}/void`, { reason: decision.reason },
-      () => 'Payment voided');
+      () => t('adminBookingDetail.voidDone'));
   }
 
-  private async decide(action: 'reject' | 'cancel', verb: string, consequence: string, past: string): Promise<void> {
+  private async decide(
+    action: 'reject' | 'cancel',
+    text: { title: string; message: string; confirmLabel: string; done: string },
+  ): Promise<void> {
     const b = this.booking();
     if (!b) return;
     const decision = await this.dialogs.confirm({
-      title: `${verb} ${b.ref}?`,
-      message: consequence,
-      confirmLabel: `${verb} booking`,
-      cancelLabel: 'Keep booking',
+      title: text.title,
+      message: text.message,
+      confirmLabel: text.confirmLabel,
+      cancelLabel: t('bookings.cancelKeep'),
       destructive: true,
-      reason: { label: 'Reason', placeholder: 'Visible to the agency', required: true },
+      reason: { label: t('adminBookingDetail.reason'), placeholder: t('adminBookingDetail.reasonVisible'), required: true },
     });
     if (!decision) return;
-    await this.act(`/api/v1/admin/bookings/${b.id}/${action}`, { note: decision.reason }, () => `${b.ref} ${past}`);
+    await this.act(`/api/v1/admin/bookings/${b.id}/${action}`, { note: decision.reason }, () => text.done);
   }
 
   private async act(url: string, body: unknown, done: (updated: OperatorBooking) => string): Promise<boolean> {
@@ -353,7 +400,7 @@ export class AdminBookingDetail {
       this.toasts.show(done(updated));
       return true;
     } catch (err) {
-      this.error.set(problemMessage(err, 'The action failed.'));
+      this.error.set(problemMessage(err, t('adminBookingDetail.actionFailed')));
       return false;
     } finally {
       this.busy.set(false);

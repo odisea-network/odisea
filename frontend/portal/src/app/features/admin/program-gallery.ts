@@ -3,7 +3,9 @@ import { Component, ElementRef, computed, inject, input, output, signal, viewChi
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ProgramImageDto } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, DialogService, Field, Icon, InputDirective, Pill, ToastService,
 } from '../../shared/ui';
@@ -14,9 +16,9 @@ export const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 /** Why a picked file cannot be uploaded, or null when it can. */
 export function fileProblem(file: Pick<File, 'name' | 'type' | 'size'>): string | null {
-  if (!IMAGE_TYPES.includes(file.type)) return `${file.name}: only PNG, JPEG or WebP images.`;
-  if (file.size === 0) return `${file.name} is empty.`;
-  if (file.size > IMAGE_LIMITS.maxBytes) return `${file.name} is larger than 5 MB.`;
+  if (!IMAGE_TYPES.includes(file.type)) return t('programEditor.gallery.wrongType', { name: file.name });
+  if (file.size === 0) return t('programEditor.gallery.emptyFile', { name: file.name });
+  if (file.size > IMAGE_LIMITS.maxBytes) return t('programEditor.gallery.tooLarge', { name: file.name });
   return null;
 }
 
@@ -30,7 +32,7 @@ interface ImageEdit {
 /** Upload, describe, order and pick the cover of a program's photos. */
 @Component({
   selector: 'app-program-gallery',
-  imports: [FormsModule, Banner, ButtonDirective, Field, Icon, InputDirective, Pill],
+  imports: [FormsModule, TPipe, Banner, ButtonDirective, Field, Icon, InputDirective, Pill],
   templateUrl: './program-gallery.html',
   styleUrl: './program-gallery.scss',
 })
@@ -100,40 +102,40 @@ export class ProgramGallery {
     const room = IMAGE_LIMITS.maxImages - this.images().length;
     const problems = files.map(fileProblem).filter((p): p is string => p !== null);
     const ok = files.filter(f => fileProblem(f) === null).slice(0, Math.max(0, room));
-    if (files.length - problems.length > room) problems.push(`A program can have at most ${IMAGE_LIMITS.maxImages} images.`);
+    if (files.length - problems.length > room) problems.push(t('programEditor.gallery.tooMany', { n: IMAGE_LIMITS.maxImages }));
 
     this.busy.set(true);
     this.error.set(null);
     let uploaded = 0;
     try {
       for (const file of ok) {
-        this.progress.set(`Uploading ${uploaded + 1} of ${ok.length}…`);
+        this.progress.set(t('programEditor.gallery.uploading', { n: uploaded + 1, total: ok.length }));
         const form = new FormData();
         form.append('file', file, file.name);
         await firstValueFrom(this.http.post<ProgramImageDto>(`/api/v1/programs/${this.programId()}/images`, form));
         uploaded++;
       }
     } catch (err) {
-      problems.push(problemMessage(err, 'An image could not be uploaded.'));
+      problems.push(problemMessage(err, t('programEditor.gallery.uploadFailed')));
     } finally {
       this.busy.set(false);
       this.progress.set(null);
     }
     if (problems.length > 0) this.error.set(problems.join(' '));
     if (uploaded > 0) {
-      this.toasts.show(uploaded === 1 ? 'Image uploaded' : `${uploaded} images uploaded`);
+      this.toasts.show(uploaded === 1 ? t('programEditor.gallery.uploadedOne') : t('programEditor.gallery.uploadedMany', { n: uploaded }));
       this.changed.emit();
     }
   }
 
   async save(img: ProgramImageDto): Promise<void> {
     const e = this.edit(img);
-    await this.act(() => this.put(img, { caption: e.caption, altText: e.altText, isCover: img.isCover }), 'Image details saved');
+    await this.act(() => this.put(img, { caption: e.caption, altText: e.altText, isCover: img.isCover }), t('programEditor.gallery.detailsSaved'));
   }
 
   async makeCover(img: ProgramImageDto): Promise<void> {
     const e = this.edit(img);
-    await this.act(() => this.put(img, { caption: e.caption, altText: e.altText, isCover: true }), 'Cover image changed');
+    await this.act(() => this.put(img, { caption: e.caption, altText: e.altText, isCover: true }), t('programEditor.gallery.coverChanged'));
   }
 
   async move(index: number, by: -1 | 1): Promise<void> {
@@ -142,21 +144,19 @@ export class ProgramGallery {
     if (target < 0 || target >= ids.length) return;
     [ids[index], ids[target]] = [ids[target], ids[index]];
     await this.act(() => firstValueFrom(this.http.put(`/api/v1/programs/${this.programId()}/images/order`, { imageIds: ids })),
-      'Order saved');
+      t('programEditor.gallery.orderSaved'));
   }
 
   async remove(img: ProgramImageDto): Promise<void> {
     const ok = await this.dialogs.confirm({
-      title: 'Delete this image?',
-      message: img.isCover
-        ? 'It is the cover. The next image in the gallery becomes the cover.'
-        : 'Agencies stop seeing it straight away.',
-      confirmLabel: 'Delete image',
+      title: t('programEditor.gallery.deleteTitle'),
+      message: t(img.isCover ? 'programEditor.gallery.deleteCover' : 'programEditor.gallery.deleteMessage'),
+      confirmLabel: t('programEditor.gallery.deleteConfirm'),
       destructive: true,
     });
     if (!ok) return;
     await this.act(() => firstValueFrom(this.http.delete(`/api/v1/programs/${this.programId()}/images/${img.id}`)),
-      'Image deleted');
+      t('programEditor.gallery.deleted'));
   }
 
   private put(img: ProgramImageDto, body: { caption: string; altText: string; isCover: boolean }): Promise<unknown> {
@@ -175,7 +175,7 @@ export class ProgramGallery {
       this.toasts.show(done);
       this.changed.emit();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('programEditor.saveFailed')));
     } finally {
       this.busy.set(false);
     }

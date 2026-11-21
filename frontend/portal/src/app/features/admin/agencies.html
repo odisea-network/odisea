@@ -1,17 +1,17 @@
-<ui-page-header title="Agencies" [sub]="(agencies.value()?.length ?? 0) + ' partner agencies'">
-  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />Add agency</button>
+<ui-page-header [title]="'nav.agencies' | t" [sub]="'agencies.sub' | t: { n: agencies.value()?.length ?? 0 }">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />{{ 'agencies.add' | t }}</button>
 </ui-page-header>
 
 @if (agencies.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load agencies" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="agencies.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'agencies.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="agencies.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (agencies.isLoading()) {
   <ui-card><ui-skeleton [lines]="5" /></ui-card>
 } @else if (agencies.value(); as all) {
   @if (all.length === 0) {
-    <ui-empty-state icon="building" title="No agencies yet" description="Add your first partner agency to let them search and book.">
-      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">Add agency</button>
+    <ui-empty-state icon="building" [title]="'agencies.emptyTitle' | t" [description]="'agencies.emptyText' | t">
+      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">{{ 'agencies.add' | t }}</button>
     </ui-empty-state>
   } @else {
     <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" />
@@ -20,24 +20,24 @@
       <div class="toolbar">
         <label class="search">
           <ui-icon name="search" size="sm" />
-          <input name="q" placeholder="Name, email, legal name or EIK" aria-label="Search agencies" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+          <input name="q" [placeholder]="'agencies.searchPlaceholder' | t" [attr.aria-label]="'agencies.search' | t" [ngModel]="query()" (ngModelChange)="query.set($event)" />
         </label>
         <div class="grow"></div>
-        <span class="small muted num">{{ filtered().length }} shown</span>
+        <span class="small muted num">{{ 'agencies.shown' | t: { n: filtered().length } }}</span>
       </div>
       @if (filtered().length === 0) {
-        <div class="none">No agencies match.</div>
+        <div class="none">{{ 'agencies.none' | t }}</div>
       } @else {
         <div class="tw">
           <table class="tbl">
             <thead>
               <tr>
-                <th>Agency</th>
-                <th>Status</th>
-                <th>Plan</th>
-                <th class="r">Credit limit</th>
-                <th>Contact</th>
-                <th>Partner since</th>
+                <th>{{ 'agencies.colAgency' | t }}</th>
+                <th>{{ 'agencies.colStatus' | t }}</th>
+                <th>{{ 'agencies.colPlan' | t }}</th>
+                <th class="r">{{ 'agencies.colCreditLimit' | t }}</th>
+                <th>{{ 'agencies.colContact' | t }}</th>
+                <th>{{ 'agencies.colSince' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -54,9 +54,9 @@
                   </td>
                   <td>
                     @if (a.status === 'Active') {
-                      <ui-pill tone="ok"><ui-icon name="check-circle" size="sm" />Active</ui-pill>
+                      <ui-pill tone="ok"><ui-icon name="check-circle" size="sm" />{{ 'agencies.active' | t }}</ui-pill>
                     } @else {
-                      <ui-pill tone="bad"><ui-icon name="slash-circle" size="sm" />Suspended</ui-pill>
+                      <ui-pill tone="bad"><ui-icon name="slash-circle" size="sm" />{{ 'agencies.suspended' | t }}</ui-pill>
                     }
                   </td>
                   <td>{{ a.plan }}</td>
@@ -73,28 +73,28 @@
   }
 }
 
-<ui-sheet [(open)]="createOpen" title="Add agency" sub="They can sign in once you add a user.">
+<ui-sheet [(open)]="createOpen" [title]="'agencies.createTitle' | t" [sub]="'agencies.createSub' | t">
   <form id="create-agency" (ngSubmit)="create()">
     @if (error(); as message) {
       <ui-banner tone="bad">{{ message }}</ui-banner>
     }
-    <ui-field label="Agency name" for="ag-name">
+    <ui-field [label]="'agencies.name' | t" for="ag-name">
       <input uiInput id="ag-name" name="name" [(ngModel)]="form.name" required maxlength="200" />
     </ui-field>
     <div class="two">
-      <ui-field label="Country" for="ag-country" hint="2-letter code">
+      <ui-field [label]="'agencies.country' | t" for="ag-country" [hint]="'agencies.countryHint' | t">
         <input uiInput id="ag-country" name="country" [(ngModel)]="form.country" maxlength="2" placeholder="BG" />
       </ui-field>
-      <ui-field label="Credit limit" for="ag-credit" hint="EUR, 0 for none">
+      <ui-field [label]="'agencies.creditLimit' | t" for="ag-credit" [hint]="'agencies.creditLimitHint' | t">
         <input uiInput id="ag-credit" name="creditLimit" type="number" min="0" step="100" class="m" [(ngModel)]="form.creditLimit" />
       </ui-field>
     </div>
-    <ui-field label="Contact email" for="ag-email" optional>
+    <ui-field [label]="'agencies.contactEmail' | t" for="ag-email" optional>
       <input uiInput id="ag-email" name="contactEmail" type="email" [(ngModel)]="form.contactEmail" />
     </ui-field>
   </form>
-  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">{{ 'common.cancel' | t }}</button>
   <button sheetActions type="submit" form="create-agency" uiButton="primary" [disabled]="busy() || !formValid()">
-    {{ busy() ? 'Adding…' : 'Add agency' }}
+    {{ (busy() ? 'agencies.adding' : 'agencies.add') | t }}
   </button>
 </ui-sheet>

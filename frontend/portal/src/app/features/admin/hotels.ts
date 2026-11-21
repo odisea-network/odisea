@@ -3,7 +3,9 @@ import { Component, computed, effect, inject, input, resource, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DestinationDto, HotelDto, HotelMappingDto } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ToastService,
@@ -13,7 +15,7 @@ import {
 @Component({
   selector: 'app-admin-hotels',
   imports: [
-    FormsModule,
+    FormsModule, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ],
   templateUrl: './hotels.html',
@@ -91,7 +93,7 @@ export class AdminHotels {
     if (!this.formValid()) return;
     await this.act(() => firstValueFrom(this.http.post<HotelDto>('/api/v1/hotels', {
       name: this.form.name.trim(), destinationId: this.form.destinationId, stars: Number(this.form.stars),
-    })), `${this.form.name.trim()} added`, () => { this.createOpen.set(false); this.hotels.reload(); });
+    })), t('hotels.added', { name: this.form.name.trim() }), () => { this.createOpen.set(false); this.hotels.reload(); });
   }
 
   openMappings(h: HotelDto): void {
@@ -109,7 +111,7 @@ export class AdminHotels {
     if (!h || !this.mappingValid()) return;
     await this.act(() => firstValueFrom(this.http.post<HotelMappingDto>(`/api/v1/hotels/${h.id}/mappings`, {
       providerCode: this.mapping.providerCode.trim().toLowerCase(), externalHotelCode: this.mapping.externalHotelCode.trim(),
-    })), 'Mapping added', () => { this.mapping = { ...this.mapping, externalHotelCode: '' }; this.mappings.reload(); });
+    })), t('hotels.codeAdded'), () => { this.mapping = { ...this.mapping, externalHotelCode: '' }; this.mappings.reload(); });
   }
 
   closeMappings(open: boolean): void {
@@ -124,7 +126,7 @@ export class AdminHotels {
       this.toasts.show(done);
       after?.();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('hotels.saveFailed')));
     } finally {
       this.busy.set(false);
     }

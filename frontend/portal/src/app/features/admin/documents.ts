@@ -5,9 +5,11 @@ import { firstValueFrom } from 'rxjs';
 import {
   AgencyDto, IssueInvoiceRequest, OperatorBookingSummary, OperatorDocumentDto, PagedResult,
 } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, DialogService, EmptyState, Field, Icon, InputDirective, PageHeader, Pill,
   Sheet, Skeleton, ToastService,
@@ -18,7 +20,7 @@ import { VAT_TREATMENT_LABELS, documentKindLabel, vatTreatmentShort } from './do
 @Component({
   selector: 'app-admin-documents',
   imports: [
-    FormsModule, MoneyPipe, OdDatePipe,
+    FormsModule, MoneyPipe, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton,
   ],
   templateUrl: './documents.html',
@@ -86,7 +88,7 @@ export class AdminDocuments {
     await this.act(() => firstValueFrom(this.http.post<OperatorDocumentDto>('/api/v1/documents/invoices', {
       bookingId: this.issue.bookingId, vatTreatment: this.issue.vatTreatment,
       exemptionGrounds: this.issue.exemptionGrounds?.trim() || null, dueInDays: Number(this.issue.dueInDays),
-    })), doc => `Invoice ${doc.number} issued`, () => this.issueOpen.set(false));
+    })), doc => t('adminDocuments.invoiceIssued', { number: doc.number }), () => this.issueOpen.set(false));
   }
 
   openCredit(doc: OperatorDocumentDto): void {
@@ -104,20 +106,20 @@ export class AdminDocuments {
     if (!invoice || !this.creditReason.trim()) return;
     await this.act(() => firstValueFrom(this.http.post<OperatorDocumentDto>('/api/v1/documents/credit-notes', {
       invoiceId: invoice.id, reason: this.creditReason.trim(),
-    })), doc => `Credit note ${doc.number} issued`, () => this.creditFor.set(null));
+    })), doc => t('adminDocuments.creditIssued', { number: doc.number }), () => this.creditFor.set(null));
   }
 
   async annul(doc: OperatorDocumentDto): Promise<void> {
     const decision = await this.dialogs.confirm({
-      title: `Annul ${doc.number}?`,
-      message: 'The number stays in the series and the document is kept, marked as annulled with your reason. This can’t be undone.',
-      confirmLabel: 'Annul document',
+      title: t('adminDocuments.annulTitle', { number: doc.number }),
+      message: t('adminDocuments.annulMessage'),
+      confirmLabel: t('adminDocuments.annulConfirm'),
       destructive: true,
-      reason: { label: 'Reason', placeholder: 'e.g. wrong recipient', required: true },
+      reason: { label: t('adminDocuments.reason'), placeholder: t('adminDocuments.annulPlaceholder'), required: true },
     });
     if (!decision) return;
     await this.act(() => firstValueFrom(this.http.post<OperatorDocumentDto>(`/api/v1/documents/${doc.id}/annul`, { reason: decision.reason })),
-      () => `${doc.number} annulled`);
+      () => t('adminDocuments.annulled', { number: doc.number }));
   }
 
   async download(doc: OperatorDocumentDto): Promise<void> {
@@ -131,7 +133,7 @@ export class AdminDocuments {
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      this.toasts.show(`Download of ${doc.number} failed`, { tone: 'bad' });
+      this.toasts.show(t('agencyDocuments.downloadFailed', { number: doc.number }), { tone: 'bad' });
     } finally {
       this.downloading.set(null);
     }
@@ -146,7 +148,7 @@ export class AdminDocuments {
       this.toasts.show(done(doc));
       after?.();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The document could not be issued.'));
+      this.error.set(problemMessage(err, t('adminDocuments.failed')));
     } finally {
       this.busy.set(false);
     }

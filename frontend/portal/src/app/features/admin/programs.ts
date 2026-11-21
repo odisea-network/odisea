@@ -4,9 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CreateProgramRequest, DestinationDto, ProgramDetail, ProgramListItem } from '../../core/api.types';
+import { t, tOptional } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { placeName } from '../../core/program-format';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, SegmentOption,
   Segmented, Sheet, Skeleton, ToastService,
@@ -24,11 +26,15 @@ export function programTone(status: string): 'neutral' | 'ok' | 'warn' {
   return PROGRAM_STATUS_TONE[status] ?? 'neutral';
 }
 
+export function programStatusLabel(status: string): string {
+  return tOptional(`adminPrograms.status.${status}`) ?? status;
+}
+
 /** What the operator sells: programs the agencies can search once published. */
 @Component({
   selector: 'app-admin-programs',
   imports: [
-    FormsModule, RouterLink, OdDatePipe,
+    FormsModule, RouterLink, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Segmented, Sheet,
     Skeleton,
   ],
@@ -53,16 +59,17 @@ export class AdminPrograms {
   readonly error = signal<string | null>(null);
 
   readonly tone = programTone;
+  readonly statusLabel = programStatusLabel;
   readonly place = placeName;
 
   readonly views = computed<SegmentOption[]>(() => {
     const list = this.programs.value() ?? [];
     const count = (s: string) => list.filter(p => p.status === s).length;
     return [
-      { value: 'all', label: 'All', count: list.length },
-      { value: 'Draft', label: 'Drafts', count: count('Draft') },
-      { value: 'Published', label: 'Published', count: count('Published') },
-      { value: 'Archived', label: 'Archived', count: count('Archived') },
+      { value: 'all', label: t('common.all'), count: list.length },
+      { value: 'Draft', label: t('adminPrograms.viewDrafts'), count: count('Draft') },
+      { value: 'Published', label: t('adminPrograms.viewPublished'), count: count('Published') },
+      { value: 'Archived', label: t('adminPrograms.viewArchived'), count: count('Archived') },
     ];
   });
 
@@ -104,10 +111,10 @@ export class AdminPrograms {
         description: this.form.description?.trim() || null,
       }));
       this.createOpen.set(false);
-      this.toasts.show(`${created.name} created as a draft`);
+      this.toasts.show(t('adminPrograms.created', { name: created.name }));
       await this.router.navigate(['/admin/programs', created.id]);
     } catch (err) {
-      this.error.set(problemMessage(err, 'Could not create the program.'));
+      this.error.set(problemMessage(err, t('adminPrograms.createFailed')));
     } finally {
       this.busy.set(false);
     }

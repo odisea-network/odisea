@@ -1,30 +1,30 @@
-<ui-page-header title="Destinations" sub="Where programs go. Supplier codes connect each destination to the provider's locations.">
-  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />Add destination</button>
+<ui-page-header [title]="'nav.destinations' | t" [sub]="'destinations.sub' | t">
+  <button actions type="button" uiButton="primary" (click)="openCreate()"><ui-icon name="plus" />{{ 'destinations.add' | t }}</button>
 </ui-page-header>
 
 @if (destinations.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load destinations" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="destinations.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'destinations.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="destinations.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (destinations.isLoading()) {
   <ui-card><ui-skeleton [lines]="4" /></ui-card>
 } @else if (destinations.value(); as list) {
   @if (list.length === 0) {
-    <ui-empty-state icon="map-pin" title="No destinations yet" description="Add one before hotels and programs.">
-      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">Add destination</button>
+    <ui-empty-state icon="map-pin" [title]="'destinations.emptyTitle' | t" [description]="'destinations.emptyText' | t">
+      <button type="button" uiButton="primary" size="sm" (click)="openCreate()">{{ 'destinations.add' | t }}</button>
     </ui-empty-state>
   } @else {
     <ui-card flush>
       <div class="tw">
         <table class="tbl">
-          <thead><tr><th>Destination</th><th>Country</th><th class="r">Hotels</th><th>Supplier codes</th></tr></thead>
+          <thead><tr><th>{{ 'adminPrograms.colDestination' | t }}</th><th>{{ 'agencies.country' | t }}</th><th class="r">{{ 'nav.hotels' | t }}</th><th>{{ 'hotels.colCodes' | t }}</th></tr></thead>
           <tbody>
             @for (d of list; track d.id) {
               <tr>
                 <td><b>{{ d.name }}</b></td>
                 <td>{{ d.country }}</td>
                 <td class="r num">{{ hotelCount(d.id) }}</td>
-                <td><button type="button" uiButton="ghost" size="sm" (click)="openMappings(d)"><ui-icon name="box" />Mappings</button></td>
+                <td><button type="button" uiButton="ghost" size="sm" (click)="openMappings(d)"><ui-icon name="box" />{{ 'hotels.codes' | t }}</button></td>
               </tr>
             }
           </tbody>
@@ -34,25 +34,25 @@
   }
 }
 
-<ui-sheet [(open)]="createOpen" title="Add destination">
+<ui-sheet [(open)]="createOpen" [title]="'destinations.createTitle' | t">
   <form id="create-destination" (ngSubmit)="create()">
     @if (error(); as message) {
       <ui-banner tone="bad">{{ message }}</ui-banner>
     }
-    <ui-field label="Name" for="ds-name"><input uiInput id="ds-name" name="name" [(ngModel)]="form.name" required maxlength="200" placeholder="e.g. Antalya" /></ui-field>
-    <ui-field label="Country" for="ds-country" hint="2-letter code"><input uiInput id="ds-country" name="country" [(ngModel)]="form.country" maxlength="2" /></ui-field>
+    <ui-field [label]="'adminPrograms.name' | t" for="ds-name"><input uiInput id="ds-name" name="name" [(ngModel)]="form.name" required maxlength="200" [placeholder]="'destinations.namePlaceholder' | t" /></ui-field>
+    <ui-field [label]="'agencies.country' | t" for="ds-country" [hint]="'agencies.countryHint' | t"><input uiInput id="ds-country" name="country" [(ngModel)]="form.country" maxlength="2" /></ui-field>
   </form>
-  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">Cancel</button>
-  <button sheetActions type="submit" form="create-destination" uiButton="primary" [disabled]="busy() || !formValid()">Add destination</button>
+  <button sheetActions type="button" uiButton (click)="createOpen.set(false)">{{ 'common.cancel' | t }}</button>
+  <button sheetActions type="submit" form="create-destination" uiButton="primary" [disabled]="busy() || !formValid()">{{ 'destinations.add' | t }}</button>
 </ui-sheet>
 
-<ui-sheet [open]="mappingFor() !== null" (openChange)="closeMappings($event)" [title]="'Supplier codes · ' + (mappingFor()?.name ?? '')" sub="One code per provider. Unmapped destinations never return offers.">
+<ui-sheet [open]="mappingFor() !== null" (openChange)="closeMappings($event)" [title]="'hotels.mappingsTitle' | t: { name: mappingFor()?.name ?? '' }" [sub]="'destinations.mappingsSub' | t">
   @if (error(); as message) {
     <ui-banner tone="bad">{{ message }}</ui-banner>
   }
   @if (mappings.value(); as list) {
     @if (list.length === 0) {
-      <p class="small muted">No supplier codes yet.</p>
+      <p class="small muted">{{ 'hotels.noCodes' | t }}</p>
     } @else {
       <ul class="maps">
         @for (m of list; track m.id) {
@@ -65,10 +65,10 @@
   }
   <form id="add-location-mapping" (ngSubmit)="addMapping()">
     <div class="two">
-      <ui-field label="Provider" for="lm-provider"><input uiInput id="lm-provider" name="providerCode" class="mono" [(ngModel)]="mapping.providerCode" required maxlength="30" /></ui-field>
-      <ui-field label="External location code" for="lm-code"><input uiInput id="lm-code" name="externalLocationCode" class="mono" [(ngModel)]="mapping.externalLocationCode" required maxlength="100" /></ui-field>
+      <ui-field [label]="'hotels.provider' | t" for="lm-provider"><input uiInput id="lm-provider" name="providerCode" class="mono" [(ngModel)]="mapping.providerCode" required maxlength="30" /></ui-field>
+      <ui-field [label]="'destinations.externalCode' | t" for="lm-code"><input uiInput id="lm-code" name="externalLocationCode" class="mono" [(ngModel)]="mapping.externalLocationCode" required maxlength="100" /></ui-field>
     </div>
   </form>
-  <button sheetActions type="button" uiButton (click)="mappingFor.set(null)">Close</button>
-  <button sheetActions type="submit" form="add-location-mapping" uiButton="primary" [disabled]="busy() || !mappingValid()">Add code</button>
+  <button sheetActions type="button" uiButton (click)="mappingFor.set(null)">{{ 'common.close' | t }}</button>
+  <button sheetActions type="submit" form="add-location-mapping" uiButton="primary" [disabled]="busy() || !mappingValid()">{{ 'hotels.addCode' | t }}</button>
 </ui-sheet>

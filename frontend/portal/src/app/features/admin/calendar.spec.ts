@@ -5,7 +5,7 @@ describe('monthGrid', () => {
   it('starts on Monday with leading blanks and marks the given dates', () => {
     // 1 April 2027 is a Thursday → three blanks (Mon, Tue, Wed).
     const grid = monthGrid(2027, 3, new Map([['2027-04-03', 'ok'], ['2027-04-17', 'warn']]));
-    expect(grid.label).toBe('April 2027');
+    expect(grid.label).toBe('Април 2027');
     expect(grid.cells.slice(0, 3).every(c => c.date === null)).toBe(true);
     expect(grid.cells.length).toBe(3 + 30);
     expect(grid.cells.find(c => c.date === '2027-04-03')?.mark).toBe('ok');

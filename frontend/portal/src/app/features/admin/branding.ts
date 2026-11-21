@@ -5,8 +5,10 @@ import { firstValueFrom } from 'rxjs';
 import { BrandingDto, UpdateBrandingRequest } from '../../core/api.types';
 import { AuthService } from '../../core/auth.service';
 import { BrandingService } from '../../core/branding.service';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { contrastRatio, deriveBrandTheme } from '../../core/theme';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, DialogService, Field, Icon, InputDirective, PageHeader, Pill, ToastService,
 } from '../../shared/ui';
@@ -19,7 +21,7 @@ const MAX_LOGO_BYTES = 512 * 1024;
 /** Settings › Branding: how the portal looks to agencies and staff, previewed before publishing. */
 @Component({
   selector: 'app-admin-branding',
-  imports: [FormsModule, Banner, ButtonDirective, Card, Field, Icon, InputDirective, PageHeader, Pill, SettingsNav],
+  imports: [FormsModule, TPipe, Banner, ButtonDirective, Card, Field, Icon, InputDirective, PageHeader, Pill, SettingsNav],
   templateUrl: './branding.html',
   styleUrl: './branding.scss',
 })
@@ -84,7 +86,7 @@ export class AdminBranding {
     await this.run(async () => {
       const saved = await firstValueFrom(this.http.put<BrandingDto>('/api/v1/branding', request));
       this.brand.apply(saved);
-      this.toasts.show('Branding published — every page now uses it');
+      this.toasts.show(t('branding.publishedDone'));
     });
   }
 
@@ -94,7 +96,7 @@ export class AdminBranding {
     inputEl.value = '';
     if (!file) return;
     if (file.size > MAX_LOGO_BYTES) {
-      this.error.set('The logo must be at most 512 KB.');
+      this.error.set(t('branding.logoTooLarge'));
       return;
     }
     const form = new FormData();
@@ -102,22 +104,22 @@ export class AdminBranding {
     await this.run(async () => {
       const saved = await firstValueFrom(this.http.put<BrandingDto>('/api/v1/branding/logo', form));
       this.brand.apply(saved);
-      this.toasts.show('Logo updated');
+      this.toasts.show(t('branding.logoUpdated'));
     });
   }
 
   async removeLogo(): Promise<void> {
     const decision = await this.dialogs.confirm({
-      title: 'Remove the logo?',
-      message: 'The portal falls back to the first letter of the display name.',
-      confirmLabel: 'Remove logo',
+      title: t('branding.removeTitle'),
+      message: t('branding.removeMessage'),
+      confirmLabel: t('branding.removeConfirm'),
       destructive: true,
     });
     if (!decision) return;
     await this.run(async () => {
       const saved = await firstValueFrom(this.http.delete<BrandingDto>('/api/v1/branding/logo'));
       this.brand.apply(saved);
-      this.toasts.show('Logo removed');
+      this.toasts.show(t('branding.logoRemoved'));
     });
   }
 
@@ -127,7 +129,7 @@ export class AdminBranding {
     try {
       await action();
     } catch (err) {
-      this.error.set(problemMessage(err, 'The change was not saved.'));
+      this.error.set(problemMessage(err, t('branding.saveFailed')));
     } finally {
       this.busy.set(false);
     }
