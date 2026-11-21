@@ -46,7 +46,15 @@ export const routes: Routes = [
         path: 'ledger',
         canActivate: [featureGuard('ReservationLedger')],
         children: [
-          { path: '', pathMatch: 'full', redirectTo: 'reservations' },
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () => import('./features/agency/ledger/overview').then(m => m.LedgerOverview),
+          },
+          {
+            path: 'operators',
+            loadComponent: () => import('./features/agency/ledger/operators').then(m => m.LedgerOperators),
+          },
           {
             path: 'reservations',
             loadComponent: () => import('./features/agency/ledger/reservations').then(m => m.LedgerReservations),

@@ -6,6 +6,8 @@ import {
 } from './ledger.model';
 import { commissionOf, formOf } from './reservation-form';
 import { statusActions, suggestedPayment } from './reservation-detail';
+import { fileSize } from './documents';
+import { perCurrency } from './overview';
 import { dueFilter } from './reservations';
 
 describe('ledger schedule helpers', () => {
@@ -144,5 +146,24 @@ describe('ledger screens', () => {
     expect(commissionOf(fixed)).toEqual({ type: 'Fixed', rate: null, base: 'Manual', amount: 75 });
 
     expect(commissionOf(formOf({ ...base, commission: null }))).toBeNull();
+  });
+});
+
+describe('ledger overview', () => {
+  const totals = [
+    { currency: 'EUR', outstanding: 2600, overdue: 200, dueIn7Days: 300, dueIn30Days: 1000, commissionExpected: 56, commissionReceived: 20 },
+    { currency: 'USD', outstanding: 500, overdue: 0, dueIn7Days: 500, dueIn30Days: 500, commissionExpected: 0, commissionReceived: 0 },
+  ];
+
+  it('lists a figure per currency instead of adding currencies together', () => {
+    expect(perCurrency(totals, row => row.dueIn7Days)).toMatch(/^300,00.+ · 500,00/);
+    expect(perCurrency(totals, row => row.overdue)).toMatch(/^200,00\s?€$/);
+    expect(perCurrency([], row => row.overdue)).toBe('');
+  });
+
+  it('writes file sizes the way people read them', () => {
+    expect(fileSize(300)).toBe('1 KB');
+    expect(fileSize(48_000)).toBe('47 KB');
+    expect(fileSize(2_500_000)).toBe('2.4 MB');
   });
 });

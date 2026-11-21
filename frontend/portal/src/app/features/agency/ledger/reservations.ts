@@ -1,6 +1,6 @@
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LedgerReservationStatus, LedgerReservationSummaryDto } from '../../../core/api.types';
 import { t } from '../../../core/i18n/i18n';
 import { ViewportService } from '../../../core/viewport';
@@ -70,6 +70,15 @@ export class LedgerReservations {
       page: params.page, pageSize: PAGE_SIZE,
     }),
   });
+
+  constructor() {
+    // A figure on the overview links here with the view or status it counts.
+    const query = inject(ActivatedRoute).snapshot.queryParamMap;
+    const view = query.get('view');
+    if (view === 'overdue' || view === 'week' || view === 'month') this.view.set(view);
+    const status = query.get('status') as LedgerReservationStatus | null;
+    if (status && STATUSES.includes(status)) this.status.set(status);
+  }
 
   protected readonly hasFilters = computed(() =>
     this.q() !== '' || this.status() !== '' || this.operatorId() !== '' || this.view() !== 'all');

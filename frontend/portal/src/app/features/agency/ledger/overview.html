@@ -1,0 +1,87 @@
+<ui-page-header [title]="'ledger.dashboard.title' | t"
+  [sub]="dashboard.value() ? ('ledger.dashboard.sub' | t: { date: (dashboard.value()!.today | odDate) }) : null">
+  <a actions uiButton="primary" routerLink="/agency/ledger/reservations/new"><ui-icon name="plus" />{{ 'ledger.list.add' | t }}</a>
+</ui-page-header>
+
+@if (dashboard.error()) {
+  <ui-empty-state tone="error" icon="refresh" [title]="'ledger.dashboard.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="dashboard.reload()">{{ 'common.retry' | t }}</button>
+  </ui-empty-state>
+} @else if (!dashboard.hasValue()) {
+  <ui-card><ui-skeleton [lines]="6" /></ui-card>
+} @else if (dashboard.value(); as d) {
+  <div class="kpis">
+    <ui-kpi icon="alert-triangle" tone="bad" [label]="'ledger.dashboard.overdue' | t" [value]="d.overdueReservations"
+      [foot]="foot(d.totals, overdueOf, overdueNone)" [link]="list" [queryParams]="{ view: 'overdue' }" />
+    <ui-kpi icon="clock" tone="warn" [label]="'ledger.dashboard.week' | t" [value]="d.dueIn7DaysReservations"
+      [foot]="foot(d.totals, weekOf, dueFoot)" [link]="list" [queryParams]="{ view: 'week' }" />
+    <ui-kpi icon="calendar" tone="info" [label]="'ledger.dashboard.month' | t" [value]="d.dueIn30DaysReservations"
+      [foot]="foot(d.totals, monthOf, dueFoot)" [link]="list" [queryParams]="{ view: 'month' }" />
+    <ui-kpi icon="check-circle" tone="ok" [label]="'ledger.dashboard.active' | t" [value]="d.activeReservations"
+      [foot]="'ledger.dashboard.activeFoot' | t" [link]="list" [queryParams]="{ status: 'Confirmed' }" />
+  </div>
+
+  <ui-card flush>
+    <div class="head">
+      <div><h2 class="h2">{{ 'ledger.dashboard.actionTitle' | t }}</h2><p class="small muted">{{ 'ledger.dashboard.actionSub' | t }}</p></div>
+      <a uiButton="ghost" size="sm" [routerLink]="list">{{ 'ledger.dashboard.all' | t }}</a>
+    </div>
+    @for (item of d.needsAction; track item.reservationId + item.dueDate + item.label) {
+      <a class="item" [routerLink]="[list, item.reservationId]">
+        <div class="item__text">
+          <span class="row"><span class="ref">{{ item.reference }}</span><span class="small muted">{{ item.tourOperatorName }}</span></span>
+          <span class="small">{{ item.holderName }} · {{ labelText(item) }}</span>
+        </div>
+        <div class="item__when">
+          <span class="m strong">{{ item.remainingAmount | money: item.currency }}</span>
+          <span class="small num" [class.u-over]="item.isOverdue">
+            {{ item.dueDate | odDate }}
+          </span>
+        </div>
+        @if (item.isOverdue) {
+          <ui-pill tone="bad">{{ 'ledger.dashboard.overdueTag' | t }}</ui-pill>
+        }
+      </a>
+    } @empty {
+      <p class="small muted pad">{{ 'ledger.dashboard.actionEmpty' | t }}</p>
+    }
+  </ui-card>
+
+  <ui-card flush>
+    <div class="head">
+      <div><h2 class="h2">{{ 'ledger.dashboard.totalsTitle' | t }}</h2><p class="small muted">{{ 'ledger.dashboard.totalsSub' | t }}</p></div>
+    </div>
+    @if (d.totals.length === 0) {
+      <p class="small muted pad">{{ 'ledger.dashboard.totalsEmpty' | t }}</p>
+    } @else {
+      <div class="tw">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>{{ 'ledger.dashboard.colCurrency' | t }}</th>
+              <th class="r">{{ 'ledger.dashboard.colOutstanding' | t }}</th>
+              <th class="r">{{ 'ledger.dashboard.colOverdue' | t }}</th>
+              <th class="r">{{ 'ledger.dashboard.colWeek' | t }}</th>
+              <th class="r">{{ 'ledger.dashboard.colMonth' | t }}</th>
+              <th class="r">{{ 'ledger.dashboard.colCommissionExpected' | t }}</th>
+              <th class="r">{{ 'ledger.dashboard.colCommissionReceived' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of d.totals; track row.currency) {
+              <tr>
+                <td><b>{{ row.currency }}</b></td>
+                <td class="r m strong">{{ row.outstanding | money: row.currency }}</td>
+                <td class="r m" [class.u-over]="row.overdue > 0">{{ row.overdue | money: row.currency }}</td>
+                <td class="r m">{{ row.dueIn7Days | money: row.currency }}</td>
+                <td class="r m">{{ row.dueIn30Days | money: row.currency }}</td>
+                <td class="r m">{{ row.commissionExpected | money: row.currency }}</td>
+                <td class="r m">{{ row.commissionReceived | money: row.currency }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </ui-card>
+}
