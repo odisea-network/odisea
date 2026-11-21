@@ -112,6 +112,9 @@ public static class AgenciesModule
                       .RequireClaim(AuthClaims.Role, AuthClaims.RoleOperatorAdmin));
             options.AddPolicy(AuthPolicies.Agency,
                 p => p.RequireClaim(AuthClaims.UserType, AuthClaims.UserTypeAgency));
+            options.AddPolicy(AuthPolicies.AgencyAdmin,
+                p => p.RequireClaim(AuthClaims.UserType, AuthClaims.UserTypeAgency)
+                      .RequireClaim(AuthClaims.Role, AuthClaims.RoleAgencyAdmin));
         });
 
         return services;

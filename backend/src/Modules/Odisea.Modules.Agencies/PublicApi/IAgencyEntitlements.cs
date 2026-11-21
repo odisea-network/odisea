@@ -11,6 +11,8 @@ public enum AgencyFeature
     InquiryForms,
     /// Outbound e-mail on the agency's behalf (inquiry notifications, auto-replies).
     EmailNotifications,
+    /// Register of bookings made with any tour operator: instalments, payments, commission, documents.
+    ReservationLedger,
 }
 
 public sealed record AgencyEntitlements(Guid AgencyId, string Plan, bool IsActive, IReadOnlyList<AgencyFeature> Features)

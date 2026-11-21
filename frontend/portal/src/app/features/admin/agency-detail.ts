@@ -36,6 +36,22 @@ export function keyExpiresAt(choice: KeyExpiry, now = new Date()): string | null
   return at.toISOString();
 }
 
+export const PLANS: AgencyPlan[] = ['Core', 'Ledger', 'Workspace'];
+
+export const PLAN_SUMMARY: Record<AgencyPlan, string> = {
+  Core: 'Search and booking only',
+  Ledger: 'Reservation ledger: operators, payments, commission, documents',
+  Workspace: 'Ledger, external reservations, inquiry forms, e-mail',
+};
+
+/** What the operator is told before a plan change; a move down the list takes features away. */
+export function planChangeMessage(from: AgencyPlan, to: AgencyPlan): string {
+  const includes = `${to} includes: ${PLAN_SUMMARY[to].toLowerCase()}.`;
+  return PLANS.indexOf(to) < PLANS.indexOf(from)
+    ? `${includes} Features outside ${to} stop being available to them. Their data stays.`
+    : includes;
+}
+
 const ROLE_LABELS: Record<string, string> = { AgencyAdmin: 'Agency admin', Agent: 'Agent' };
 
 /** One partner agency: profile and billing, its people, its machine keys. */
@@ -59,6 +75,8 @@ export class AdminAgencyDetail {
 
   readonly tab = signal<Tab>('overview');
   readonly busy = signal(false);
+  readonly plans = PLANS;
+  readonly planSummary = PLAN_SUMMARY;
   readonly error = signal<string | null>(null);
   readonly editOpen = signal(false);
   readonly billingOpen = signal(false);
@@ -153,18 +171,24 @@ export class AdminAgencyDetail {
     }, suspending ? `${a.name} suspended` : `${a.name} reactivated`);
   }
 
-  async setPlan(plan: AgencyPlan): Promise<void> {
+  async pickPlan(event: Event): Promise<void> {
+    const select = event.target as HTMLSelectElement;
+    const current = this.agency()?.plan;
+    // A declined confirmation leaves the model untouched, so the control has to be put back by hand.
+    if (!(await this.setPlan(select.value as AgencyPlan)) && current) select.value = current;
+  }
+
+  async setPlan(plan: AgencyPlan): Promise<boolean> {
     const a = this.agency();
-    if (!a || a.plan === plan) return;
+    if (!a || a.plan === plan) return false;
     const decision = await this.dialogs.confirm({
       title: `Move ${a.name} to the ${plan} plan?`,
-      message: plan === 'Workspace'
-        ? 'Unlocks the workspace features: external reservations, inquiry forms and e-mail on their behalf.'
-        : 'Workspace features stop being available to them. Their data stays.',
+      message: planChangeMessage(a.plan, plan),
       confirmLabel: `Set ${plan}`,
     });
-    if (!decision) return;
+    if (!decision) return false;
     await this.save(`/api/v1/agencies/${a.id}/plan`, 'put', { plan }, `Plan set to ${plan}`);
+    return true;
   }
 
   openBilling(): void {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apiKeyState, keyExpiresAt } from './agency-detail';
+import { apiKeyState, keyExpiresAt, planChangeMessage } from './agency-detail';
 
 describe('apiKeyState', () => {
   const now = new Date('2026-10-26T12:00:00Z');
@@ -22,5 +22,14 @@ describe('keyExpiresAt', () => {
     expect(keyExpiresAt('90d', now)).toBe('2027-01-24T12:00:00.000Z');
     expect(keyExpiresAt('1y', now)).toBe('2027-10-26T12:00:00.000Z');
     expect(keyExpiresAt('never', now)).toBeNull();
+  });
+});
+
+describe('planChangeMessage', () => {
+  it('warns about lost features only when moving down', () => {
+    expect(planChangeMessage('Core', 'Ledger')).not.toContain('stop being available');
+    expect(planChangeMessage('Ledger', 'Workspace')).not.toContain('stop being available');
+    expect(planChangeMessage('Workspace', 'Ledger')).toContain('Features outside Ledger stop being available');
+    expect(planChangeMessage('Ledger', 'Core')).toContain('Their data stays');
   });
 });
