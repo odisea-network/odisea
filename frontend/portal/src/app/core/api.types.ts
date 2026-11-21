@@ -370,7 +370,7 @@ export interface RecordPaymentRequest {
 // --- Agencies admin (served by /api/v1/agencies/**) ---
 
 export type AgencyStatus = 'Active' | 'Suspended';
-export type AgencyPlan = 'Core' | 'Workspace';
+export type AgencyPlan = 'Core' | 'Ledger' | 'Workspace';
 export type AgencyUserRole = 'AgencyAdmin' | 'Agent';
 
 export interface AgencyBillingDto {
@@ -383,7 +383,7 @@ export interface AgencyBillingDto {
 }
 
 export interface AgencyDetailDto extends AgencyDto {
-  plan: AgencyPlan | string;
+  plan: AgencyPlan;
   commissionLevelId: string | null;
   billing: AgencyBillingDto | null;
   createdAt: string;

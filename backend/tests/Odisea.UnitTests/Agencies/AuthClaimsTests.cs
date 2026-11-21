@@ -11,4 +11,8 @@ public class AuthClaimsTests
     [Fact]
     public void Operator_admin_claim_value_matches_the_role_enum() =>
         Assert.Equal(AuthClaims.RoleOperatorAdmin, OperatorRole.Admin.ToString());
+
+    [Fact]
+    public void Agency_admin_claim_value_matches_the_role_enum() =>
+        Assert.Equal(AuthClaims.RoleAgencyAdmin, AgencyUserRole.AgencyAdmin.ToString());
 }

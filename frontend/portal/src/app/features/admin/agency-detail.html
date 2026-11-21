@@ -36,13 +36,15 @@
       <div class="row between">
         <span class="small muted">Plan</span>
         @if (isAdmin()) {
-          <button type="button" uiButton="ghost" size="sm" class="tile__link" (click)="setPlan(a.plan === 'Core' ? 'Workspace' : 'Core')" [disabled]="busy()">
-            {{ a.plan === 'Core' ? 'Upgrade' : 'Downgrade' }}
-          </button>
+          <select uiInput size="sm" class="tile__link" aria-label="Change plan" (change)="pickPlan($event)" [disabled]="busy()">
+            @for (p of plans; track p) {
+              <option [value]="p" [selected]="p === a.plan">{{ p }}</option>
+            }
+          </select>
         }
       </div>
       <div class="tile__v">{{ a.plan }}</div>
-      <span class="small muted">{{ a.plan === 'Workspace' ? 'External reservations, inquiry forms, e-mail' : 'Search and booking only' }}</span>
+      <span class="small muted">{{ planSummary[a.plan] }}</span>
     </div>
     <div class="tile">
       <span class="small muted">Users</span>

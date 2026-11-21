@@ -9,6 +9,10 @@ public static class AuthPolicies
     public const string OperatorAdmin = "OperatorAdmin";
 
     public const string Agency = "Agency";
+
+    /// Agency user with role AgencyAdmin: corrections to recorded money (void a payment, change a paid price).
+    /// API keys never satisfy it.
+    public const string AgencyAdmin = "AgencyAdmin";
 }
 
 public static class AuthClaims
@@ -25,6 +29,9 @@ public static class AuthClaims
 
     /// Must equal OperatorRole.Admin.ToString() — a unit test pins the two together.
     public const string RoleOperatorAdmin = "Admin";
+
+    /// Must equal AgencyUserRole.AgencyAdmin.ToString() — a unit test pins the two together.
+    public const string RoleAgencyAdmin = "AgencyAdmin";
 
     /// The role an API key authenticates as. Not an AgencyUserRole: keys are machines, not people.
     public const string RoleApiClient = "ApiClient";

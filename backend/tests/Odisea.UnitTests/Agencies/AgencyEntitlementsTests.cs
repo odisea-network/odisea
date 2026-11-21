@@ -28,6 +28,22 @@ public class AgencyEntitlementsTests
     }
 
     [Fact]
+    public void Ledger_unlocks_only_the_reservation_ledger()
+    {
+        Assert.Equal([AgencyFeature.ReservationLedger], PlanFeatures.For(AgencyPlan.Ledger));
+    }
+
+    [Fact]
+    public void Every_plan_has_an_explicit_feature_mapping_that_fits_the_column()
+    {
+        foreach (var plan in Enum.GetValues<AgencyPlan>())
+        {
+            Assert.True(plan.ToString().Length <= 20);
+            Assert.All(PlanFeatures.For(plan), f => Assert.Contains(f, PlanFeatures.For(AgencyPlan.Workspace)));
+        }
+    }
+
+    [Fact]
     public async Task New_agencies_start_on_core()
     {
         var agency = await AgencyAsync(default);
