@@ -34,7 +34,9 @@ export class AgencyShell {
   private readonly ledger: NavGroup = {
     label: t('ledger.nav.group'),
     items: [
+      { label: t('ledger.nav.overview'), link: '/agency/ledger', icon: 'home', exact: true },
       { label: t('ledger.nav.reservations'), link: '/agency/ledger/reservations', icon: 'card' },
+      { label: t('ledger.nav.operators'), link: '/agency/ledger/operators', icon: 'building' },
     ],
   };
 

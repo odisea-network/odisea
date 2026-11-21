@@ -1,0 +1,92 @@
+<ui-page-header [title]="'ledger.operators.title' | t" [sub]="'ledger.operators.sub' | t">
+  <button actions type="button" uiButton="primary" (click)="open(null)"><ui-icon name="plus" />{{ 'ledger.operators.add' | t }}</button>
+</ui-page-header>
+
+@if (error(); as message) {
+  <ui-banner tone="bad">{{ message }}</ui-banner>
+}
+
+@if (operators.error()) {
+  <ui-empty-state tone="error" icon="refresh" [title]="'ledger.operators.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="operators.reload()">{{ 'common.retry' | t }}</button>
+  </ui-empty-state>
+} @else if (!operators.hasValue()) {
+  <ui-card><ui-skeleton [lines]="4" /></ui-card>
+} @else if (operators.value(); as list) {
+  @if (list.length === 0) {
+    <ui-empty-state icon="building" [title]="'ledger.operators.emptyTitle' | t" [description]="'ledger.operators.emptyText' | t">
+      <button type="button" uiButton="primary" size="sm" (click)="open(null)">{{ 'ledger.operators.add' | t }}</button>
+    </ui-empty-state>
+  } @else {
+    <ui-card flush>
+      <div class="tw">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>{{ 'ledger.operators.colName' | t }}</th>
+              <th>{{ 'ledger.operators.colContact' | t }}</th>
+              <th>{{ 'ledger.operators.colNotes' | t }}</th>
+              <th><span class="sr-only">{{ 'common.actions' | t }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of list; track o.id) {
+              <tr [class.archived]="o.isArchived">
+                <td>
+                  <b>{{ o.name }}</b>
+                  @if (o.isArchived) {
+                    <ui-pill class="tag">{{ 'ledger.operators.archived' | t }}</ui-pill>
+                  }
+                </td>
+                <td>
+                  {{ o.contactEmail ?? '—' }}
+                  @if (o.contactPhone) {
+                    <div class="sub-line">{{ o.contactPhone }}</div>
+                  }
+                </td>
+                <td class="notes">{{ o.notes ?? '—' }}</td>
+                <td class="r">
+                  <span class="row end">
+                    <button type="button" uiButton size="sm" (click)="open(o)" [disabled]="busy()">{{ 'ledger.operators.edit' | t }}</button>
+                    @if (isAdmin()) {
+                      <button type="button" uiButton="ghost" size="sm" (click)="setArchived(o, !o.isArchived)" [disabled]="busy()">
+                        {{ (o.isArchived ? 'ledger.operators.unarchive' : 'ledger.operators.archive') | t }}
+                      </button>
+                    }
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (!isAdmin()) {
+        <p class="why pad"><ui-icon name="lock" size="sm" />{{ 'ledger.operators.archiveAdminOnly' | t }}</p>
+      }
+    </ui-card>
+  }
+}
+
+<ui-sheet [(open)]="sheetOpen" [title]="(editing() ? 'ledger.operatorSheet.editTitle' : 'ledger.operatorSheet.title') | t">
+  <form id="lo-form" (ngSubmit)="save()">
+    @if (sheetError(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field [label]="'ledger.operatorSheet.name' | t" for="lo-name">
+      <input uiInput id="lo-name" name="name" [(ngModel)]="form.name" required maxlength="200" />
+    </ui-field>
+    <ui-field [label]="'ledger.operatorSheet.email' | t" for="lo-email" optional>
+      <input uiInput id="lo-email" name="contactEmail" type="email" maxlength="320" [(ngModel)]="form.contactEmail" />
+    </ui-field>
+    <ui-field [label]="'ledger.operatorSheet.phone' | t" for="lo-phone" optional>
+      <input uiInput id="lo-phone" name="contactPhone" type="tel" maxlength="30" [(ngModel)]="form.contactPhone" />
+    </ui-field>
+    <ui-field [label]="'ledger.operatorSheet.notes' | t" for="lo-notes" optional>
+      <textarea uiInput id="lo-notes" name="notes" rows="3" maxlength="2000" [(ngModel)]="form.notes"></textarea>
+    </ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="sheetOpen.set(false)">{{ 'common.cancel' | t }}</button>
+  <button sheetActions type="submit" form="lo-form" uiButton="primary" [disabled]="busy() || !form.name.trim()">
+    {{ busy() ? ('common.saving' | t) : ('ledger.operatorSheet.save' | t) }}
+  </button>
+</ui-sheet>

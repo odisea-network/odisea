@@ -1,0 +1,47 @@
+<ui-card [title]="'ledger.docs.title' | t" flush>
+  @if (error(); as message) {
+    <div class="pad"><ui-banner tone="bad">{{ message }}</ui-banner></div>
+  }
+
+  @if (documents.error()) {
+    <p class="small muted pad">
+      {{ 'ledger.docs.loadFailed' | t }}
+      <button type="button" uiButton="ghost" size="sm" (click)="documents.reload()">{{ 'common.retry' | t }}</button>
+    </p>
+  } @else if (!documents.hasValue()) {
+    <div class="pad"><ui-skeleton [lines]="2" /></div>
+  } @else {
+    @for (doc of documents.value(); track doc.id) {
+      <div class="doc">
+        <ui-icon name="file" />
+        <div class="doc__text">
+          <b class="doc__name">{{ doc.fileName }}</b>
+          <span class="small muted">{{ typeText(doc.type) }} · {{ size(doc.sizeBytes) }} · {{ doc.uploadedAt | odDateTime }}</span>
+        </div>
+        <button type="button" uiButton size="sm" (click)="download(doc)" [disabled]="working() === doc.id">
+          <ui-icon name="download" />{{ 'ledger.docs.download' | t }}
+        </button>
+        @if (isAdmin()) {
+          <button type="button" uiButton="danger-quiet" size="sm" (click)="remove(doc)" [disabled]="working() === doc.id">
+            {{ 'ledger.docs.delete' | t }}
+          </button>
+        }
+      </div>
+    } @empty {
+      <p class="small muted pad">{{ 'ledger.docs.empty' | t }}</p>
+    }
+  }
+
+  <div class="add">
+    <select uiInput size="sm" name="docType" [attr.aria-label]="'ledger.docs.type' | t" [(ngModel)]="type" [disabled]="busy()">
+      @for (option of types; track option) {
+        <option [value]="option">{{ typeText(option) }}</option>
+      }
+    </select>
+    <label uiButton size="sm" class="upload" [class.ui-btn--disabled]="busy()">
+      <ui-icon name="plus" />{{ (busy() ? 'ledger.docs.uploading' : 'ledger.docs.upload') | t }}
+      <input type="file" accept="application/pdf,image/jpeg,image/png" (change)="upload($event)" [disabled]="busy()" />
+    </label>
+    <span class="small muted">{{ 'ledger.docs.hint' | t }}</span>
+  </div>
+</ui-card>

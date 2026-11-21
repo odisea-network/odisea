@@ -138,6 +138,8 @@
         }
       </ui-card>
 
+      <app-ledger-documents [reservationId]="r.id" [isAdmin]="isAdmin()" (changed)="history.reload()" />
+
       <ui-card [title]="'ledger.detail.historyTitle' | t">
         @if (timeline().length === 0) {
           <p class="small muted note">{{ 'ledger.detail.historyEmpty' | t }}</p>

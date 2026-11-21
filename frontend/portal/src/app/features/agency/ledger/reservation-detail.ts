@@ -15,6 +15,7 @@ import {
   Banner, ButtonDirective, Card, Crumb, DialogService, EmptyState, Field, Icon, InputDirective, PageHeader, Pill,
   Sheet, Skeleton, Timeline, ToastService,
 } from '../../../shared/ui';
+import { LedgerDocuments } from './documents';
 import { LedgerApi } from './ledger-api';
 import {
   ScheduleRow, auditTimeline, installmentStatusLabel, installmentTone, isoToday, roundMoney, scheduleValid,
@@ -50,7 +51,7 @@ export function suggestedPayment(r: Pick<LedgerReservationDto, 'installments' | 
   imports: [
     FormsModule, RouterLink, MoneyPipe, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, EmptyState, Field, Icon, InputDirective, PageHeader, Pill, Sheet, Skeleton, Timeline,
-    LedgerScheduleEditor,
+    LedgerDocuments, LedgerScheduleEditor,
   ],
   templateUrl: './reservation-detail.html',
   styleUrl: './reservation-detail.scss',
