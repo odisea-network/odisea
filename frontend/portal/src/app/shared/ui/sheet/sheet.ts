@@ -1,4 +1,5 @@
 import { Component, ElementRef, effect, input, model, viewChild } from '@angular/core';
+import { TPipe } from '../../pipes/t.pipe';
 import { ButtonDirective } from '../button/button.directive';
 import { Icon } from '../icon/icon';
 
@@ -9,7 +10,7 @@ import { Icon } from '../icon/icon';
  */
 @Component({
   selector: 'ui-sheet',
-  imports: [ButtonDirective, Icon],
+  imports: [TPipe, ButtonDirective, Icon],
   template: `
     <dialog #dialog class="sheet" [attr.aria-label]="title()" (close)="open.set(false)" (cancel)="$event.preventDefault(); open.set(false)">
       <header class="sheet__head">
@@ -19,7 +20,7 @@ import { Icon } from '../icon/icon';
             <p class="sheet__sub">{{ text }}</p>
           }
         </div>
-        <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Close" (click)="open.set(false)">
+        <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'common.close' | t" (click)="open.set(false)">
           <ui-icon name="x" />
         </button>
       </header>

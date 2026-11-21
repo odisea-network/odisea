@@ -1,5 +1,5 @@
-<ui-page-header title="Bookings" sub="Every reservation made by your agency">
-  <a actions uiButton="primary" routerLink="/agency/search"><ui-icon name="plus" />New booking</a>
+<ui-page-header [title]="'nav.bookings' | t" [sub]="'bookings.sub' | t">
+  <a actions uiButton="primary" routerLink="/agency/search"><ui-icon name="plus" />{{ 'nav.newBooking' | t }}</a>
 </ui-page-header>
 
 @if (error(); as message) {
@@ -7,21 +7,21 @@
 }
 
 @if (bookings.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load bookings" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="bookings.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'bookings.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="bookings.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (bookings.isLoading()) {
   <ui-card><ui-skeleton [lines]="5" /></ui-card>
 } @else if (bookings.value(); as all) {
   @if (all.length === 0) {
-    <ui-empty-state icon="bookings" title="No bookings yet" description="Search for a package to make your first booking.">
-      <a uiButton="primary" size="sm" routerLink="/agency/search">Search packages</a>
+    <ui-empty-state icon="bookings" [title]="'bookings.emptyTitle' | t" [description]="'bookings.emptyText' | t">
+      <a uiButton="primary" size="sm" routerLink="/agency/search">{{ 'book.searchPackages' | t }}</a>
     </ui-empty-state>
   } @else {
     <ui-segmented [options]="views()" [value]="view()" (valueChange)="setView($event)" [stretch]="phone()" />
 
     @if (filtered().length === 0) {
-      <ui-card><div class="none">Nothing in this view.</div></ui-card>
+      <ui-card><div class="none">{{ 'bookings.none' | t }}</div></ui-card>
     } @else if (phone()) {
       <ui-card flush>
         @for (b of filtered(); track b.id) {
@@ -37,7 +37,7 @@
               <span class="small muted">{{ b.hotelName }} · {{ b.checkIn | odDate }}</span>
             </div>
             <div class="row between">
-              <span class="small due"><span class="muted">Due</span><b class="m">{{ b.sellPrice === null ? '—' : (b.balanceDue | money: b.currency) }}</b></span>
+              <span class="small due"><span class="muted">{{ 'bookings.due' | t }}</span><b class="m">{{ b.sellPrice === null ? '—' : (b.balanceDue | money: b.currency) }}</b></span>
               @if (b.status === 'AwaitingPayment' && b.paymentDueAt) {
                 <ui-deadline [at]="b.paymentDueAt" />
               }
@@ -51,15 +51,15 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th>Ref</th>
-                <th>Travellers</th>
-                <th>Package</th>
-                <th>Travel dates</th>
-                <th>Status</th>
-                <th class="r">Paid</th>
-                <th class="r">Balance due</th>
-                <th>Pay by</th>
-                <th><span class="sr-only">Actions</span></th>
+                <th>{{ 'bookings.colRef' | t }}</th>
+                <th>{{ 'bookings.colPassengers' | t }}</th>
+                <th>{{ 'bookings.colPackage' | t }}</th>
+                <th>{{ 'bookings.colDates' | t }}</th>
+                <th>{{ 'bookings.colStatus' | t }}</th>
+                <th class="r">{{ 'bookings.colPaid' | t }}</th>
+                <th class="r">{{ 'bookings.colBalance' | t }}</th>
+                <th>{{ 'bookings.colPayBy' | t }}</th>
+                <th><span class="sr-only">{{ 'common.actions' | t }}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -73,7 +73,7 @@
                         <span class="muted"> +{{ b.passengers.length - 1 }}</span>
                       }
                     } @else {
-                      <span class="muted">{{ b.adults }} ad. {{ b.children }} ch.</span>
+                      <span class="muted">{{ 'bookings.paxShort' | t: { adults: b.adults, children: b.children } }}</span>
                     }
                   </td>
                   <td>{{ b.hotelName }}<div class="sub-line">{{ b.programName }}</div></td>
@@ -88,10 +88,10 @@
                   </td>
                   <td class="r">
                     @if (b.status === 'Draft' || b.status === 'PriceConfirmed') {
-                      <a uiButton size="sm" [routerLink]="['/agency/book']" [queryParams]="{ bookingId: b.id }" (click)="$event.stopPropagation()">Continue</a>
+                      <a uiButton size="sm" [routerLink]="['/agency/book']" [queryParams]="{ bookingId: b.id }" (click)="$event.stopPropagation()">{{ 'bookings.continue' | t }}</a>
                     } @else if (cancellable(b)) {
                       <button type="button" uiButton="danger-quiet" size="sm" (click)="cancel(b, $event)" [disabled]="busy()">
-                        Cancel
+                        {{ 'bookings.cancel' | t }}
                       </button>
                     }
                   </td>

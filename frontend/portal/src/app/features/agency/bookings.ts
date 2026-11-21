@@ -3,10 +3,12 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BookingDto, PassengerDto } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { ViewportService } from '../../core/viewport';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Icon, PageHeader, SegmentOption, Segmented,
   Skeleton, StatusChip, ToastService,
@@ -36,7 +38,7 @@ export function matchesView(b: BookingDto, view: View, today: string): boolean {
 @Component({
   selector: 'app-agency-bookings',
   imports: [
-    RouterLink, MoneyPipe, OdDatePipe,
+    RouterLink, MoneyPipe, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, Deadline, EmptyState, Icon, PageHeader, Segmented, Skeleton, StatusChip,
   ],
   templateUrl: './bookings.html',
@@ -63,11 +65,11 @@ export class AgencyBookings {
     const list = this.bookings.value() ?? [];
     const count = (view: View) => list.filter(b => matchesView(b, view, this.today)).length;
     return [
-      { value: 'all', label: 'All', count: list.length },
-      { value: 'due', label: 'Needs payment', count: count('due') },
-      { value: 'upcoming', label: 'Upcoming', count: count('upcoming') },
-      { value: 'drafts', label: 'Drafts', count: count('drafts') },
-      { value: 'closed', label: 'Closed' },
+      { value: 'all', label: t('common.all'), count: list.length },
+      { value: 'due', label: t('bookings.viewDue'), count: count('due') },
+      { value: 'upcoming', label: t('bookings.viewUpcoming'), count: count('upcoming') },
+      { value: 'drafts', label: t('bookings.viewDrafts'), count: count('drafts') },
+      { value: 'closed', label: t('bookings.viewClosed') },
     ];
   });
 
@@ -94,10 +96,10 @@ export class AgencyBookings {
     event.stopPropagation();
     // Cancellation is terminal server-side — never fire it from a bare click.
     const decision = await this.dialogs.confirm({
-      title: `Cancel booking ${b.ref}?`,
-      message: 'The reservation is withdrawn and any supplier hold is released. This can’t be undone.',
-      confirmLabel: 'Cancel booking',
-      cancelLabel: 'Keep booking',
+      title: t('bookings.cancelTitle', { ref: b.ref }),
+      message: t('bookings.cancelMessage'),
+      confirmLabel: t('bookings.cancelConfirm'),
+      cancelLabel: t('bookings.cancelKeep'),
       destructive: true,
     });
     if (!decision) return;
@@ -106,10 +108,10 @@ export class AgencyBookings {
     this.error.set(null);
     try {
       await firstValueFrom(this.http.post(`/api/v1/bookings/${b.id}/cancel`, {}));
-      this.toasts.show(`${b.ref} cancelled`);
+      this.toasts.show(t('bookings.cancelled', { ref: b.ref }));
       this.bookings.reload();
     } catch (err) {
-      this.error.set(problemMessage(err, 'Cancellation failed.'));
+      this.error.set(problemMessage(err, t('bookings.cancelFailed')));
     } finally {
       this.busy.set(false);
     }

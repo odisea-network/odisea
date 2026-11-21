@@ -1,8 +1,8 @@
-<ui-page-header title="Programs" sub="What the operator sells. Open a program for the itinerary, what's included and the policies." />
+<ui-page-header [title]="'nav.programs' | t" [sub]="'programs.sub' | t" />
 
 @if (programs.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load programs" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="programs.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'programs.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="programs.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (programs.isLoading()) {
   <div class="grid">
@@ -12,16 +12,16 @@
   </div>
 } @else if (programs.value(); as all) {
   @if (all.length === 0) {
-    <ui-empty-state icon="layers" title="No programs on sale yet" description="The operator has not published any programs. Check back soon." />
+    <ui-empty-state icon="layers" [title]="'programs.emptyTitle' | t" [description]="'programs.emptyText' | t" />
   } @else {
     <div class="filters">
       <label class="filters__q">
         <ui-icon name="search" size="sm" />
-        <input uiInput type="search" placeholder="Search by name, place or tag" aria-label="Search programs"
+        <input uiInput type="search" [placeholder]="'programs.searchPlaceholder' | t" [attr.aria-label]="'programs.search' | t"
           [ngModel]="query()" (ngModelChange)="query.set($event)" />
       </label>
       @if (tags().length > 0) {
-        <div class="row wrap filters__tags" role="group" aria-label="Filter by tag">
+        <div class="row wrap filters__tags" role="group" [attr.aria-label]="'programs.filterByTag' | t">
           @for (t of tags(); track t) {
             <button type="button" class="chip" [class.chip--on]="tag() === t" [attr.aria-pressed]="tag() === t" (click)="toggleTag(t)">{{ t }}</button>
           }
@@ -30,8 +30,8 @@
     </div>
 
     @if (filtered().length === 0) {
-      <ui-empty-state icon="search" title="No program matches" description="Try fewer words or another tag.">
-        <button type="button" uiButton size="sm" (click)="clear()">Clear filters</button>
+      <ui-empty-state icon="search" [title]="'programs.noneTitle' | t" [description]="'programs.noneText' | t">
+        <button type="button" uiButton size="sm" (click)="clear()">{{ 'programs.clearFilters' | t }}</button>
       </ui-empty-state>
     } @else {
       <ul class="grid">
@@ -55,10 +55,10 @@
                 }
                 <div class="row wrap pcard__meta">
                   @if (p.nextDeparture) {
-                    <span class="small strong row"><ui-icon name="calendar" size="sm" />From {{ p.nextDeparture | odDate }}</span>
-                    <span class="small muted">{{ p.upcomingDepartures }} {{ p.upcomingDepartures === 1 ? 'date' : 'dates' }}</span>
+                    <span class="small strong row"><ui-icon name="calendar" size="sm" />{{ 'programs.from' | t: { date: (p.nextDeparture | odDate) } }}</span>
+                    <span class="small muted">{{ (p.upcomingDepartures === 1 ? 'programs.datesOne' : 'programs.datesMany') | t: { n: p.upcomingDepartures } }}</span>
                   } @else {
-                    <span class="small muted">No upcoming dates</span>
+                    <span class="small muted">{{ 'programs.noDates' | t }}</span>
                   }
                 </div>
                 @if (p.tags.length > 0) {

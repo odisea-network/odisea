@@ -4,9 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BookingDto, PassengerDto, RePriceResponse } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, Deadline, DialogService, EmptyState, Field, Icon, InputDirective,
   PageHeader, Skeleton, StatusChip,
@@ -19,10 +21,10 @@ import {
 type Step = 'passengers' | 'price' | 'submit' | 'done';
 
 const STEPS: { key: Step; label: string; title: string }[] = [
-  { key: 'passengers', label: 'Travellers', title: 'Who’s travelling?' },
-  { key: 'price', label: 'Price', title: 'Review the price' },
-  { key: 'submit', label: 'Submit', title: 'Ready to submit' },
-  { key: 'done', label: 'Result', title: 'Booking submitted' },
+  { key: 'passengers', label: t('book.stepPassengers'), title: t('book.titlePassengers') },
+  { key: 'price', label: t('book.stepPrice'), title: t('book.titlePrice') },
+  { key: 'submit', label: t('book.stepSubmit'), title: t('book.titleSubmit') },
+  { key: 'done', label: t('book.stepDone'), title: t('book.titleDone') },
 ];
 
 /** A saved draft comes back as a booking; the wizard needs it in the shape search produced. */
@@ -71,7 +73,7 @@ export function formFromPassenger(p: PassengerDto): PassengerForm {
 @Component({
   selector: 'app-agency-book',
   imports: [
-    FormsModule, RouterLink, MoneyPipe, OdDatePipe,
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe, TPipe,
     Banner, ButtonDirective, Card, Deadline, EmptyState, Field, Icon, InputDirective, PageHeader, Skeleton,
     StatusChip,
   ],
@@ -123,14 +125,16 @@ export class AgencyBook {
     });
   }
 
-  /** "Traveller 2 · Adult", with a warning suffix when the birth date says otherwise. */
+  /** "Пътник 2 · Възрастен", with a warning suffix when the birth date says otherwise. */
   cardTitle(index: number, p: PassengerForm): string {
     const ctx = this.context();
-    if (!ctx) return `Traveller ${index + 1}`;
+    if (!ctx) return t('passenger.label', { n: index + 1 });
     const slot = index < ctx.adults ? 'Adult' : 'Child';
     const actual = p.birthDate && p.birthDate <= ctx.checkIn ? passengerTypeAt(p.birthDate, ctx.checkIn) : null;
-    const mismatch = actual && actual !== slot ? ` · ${actual.toLowerCase()} at check-in` : '';
-    return `Traveller ${index + 1} · ${slot}${mismatch}`;
+    const mismatch = actual && actual !== slot
+      ? ` · ${t('book.typeAtCheckIn', { type: t(`passenger.type.${actual}`).toLowerCase() })}`
+      : '';
+    return t('book.passengerSlot', { n: index + 1, type: t(`passenger.type.${slot}`) }) + mismatch;
   }
 
   problems(): string[] {
@@ -144,7 +148,7 @@ export class AgencyBook {
 
   travellerNames(): string {
     return this.passengers
-      .map((p, i) => `${p.firstName} ${p.lastName}${i === this.leadIndex ? ' (lead)' : ''}`.trim())
+      .map((p, i) => `${p.firstName} ${p.lastName}${i === this.leadIndex ? ` ${t('book.leadSuffix')}` : ''}`.trim())
       .join(', ');
   }
 
@@ -203,10 +207,10 @@ export class AgencyBook {
     const id = this.booking()?.id ?? this.draftId;
     if (!id) return;
     const decision = await this.dialogs.confirm({
-      title: 'Discard this reservation?',
-      message: 'The draft is cancelled. Nothing has been sent to the supplier or charged.',
-      confirmLabel: 'Discard reservation',
-      cancelLabel: 'Keep editing',
+      title: t('book.discardTitle'),
+      message: t('book.discardMessage'),
+      confirmLabel: t('book.discard'),
+      cancelLabel: t('book.discardKeep'),
       destructive: true,
     });
     if (!decision) return;
@@ -235,7 +239,7 @@ export class AgencyBook {
       this.leadIndex = Math.max(0, b.passengers.findIndex(p => p.isLead));
       this.booking.set(b);
     } catch (err) {
-      this.error.set(problemMessage(err, 'Could not load this draft.'));
+      this.error.set(problemMessage(err, t('book.draftLoadFailed')));
     } finally {
       this.loading.set(false);
     }
@@ -247,7 +251,7 @@ export class AgencyBook {
     try {
       await action();
     } catch (err) {
-      this.error.set(problemMessage(err, 'Something went wrong.'));
+      this.error.set(problemMessage(err, t('book.failed')));
     } finally {
       this.busy.set(false);
     }

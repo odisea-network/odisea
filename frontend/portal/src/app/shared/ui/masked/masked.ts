@@ -1,4 +1,5 @@
 import { Component, computed, input, signal } from '@angular/core';
+import { TPipe } from '../../pipes/t.pipe';
 import { ButtonDirective } from '../button/button.directive';
 import { Icon } from '../icon/icon';
 
@@ -9,7 +10,7 @@ import { Icon } from '../icon/icon';
  */
 @Component({
   selector: 'ui-masked',
-  imports: [ButtonDirective, Icon],
+  imports: [TPipe, ButtonDirective, Icon],
   template: `
     <span class="mask">{{ shown() }}</span>
     @if (value()) {
@@ -19,7 +20,7 @@ import { Icon } from '../icon/icon';
         size="sm"
         iconOnly
         (click)="revealed.set(!revealed())"
-        [attr.aria-label]="(revealed() ? 'Hide ' : 'Reveal ') + subject()"
+        [attr.aria-label]="(revealed() ? 'masked.hide' : 'masked.reveal') | t: { subject: subject() }"
         [attr.aria-pressed]="revealed()"
       >
         <ui-icon [name]="revealed() ? 'eye-off' : 'eye'" />
@@ -30,7 +31,7 @@ import { Icon } from '../icon/icon';
 })
 export class Masked {
   readonly value = input.required<string | null | undefined>();
-  /** What is being revealed, for the button label: "passport number for Maria Georgieva". */
+  /** What is being revealed, for the button label: "номера на документа на Maria Georgieva". */
   readonly subject = input.required<string>();
   readonly visibleDigits = input(4);
 

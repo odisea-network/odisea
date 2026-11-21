@@ -4,20 +4,20 @@
   @if (error(); as message) {
     <ui-banner tone="bad">{{ message }}</ui-banner>
   }
-  <ui-empty-state icon="search" title="No offer selected" description="Pick a package from Search to start a booking.">
-    <a uiButton="primary" size="sm" routerLink="/agency/search">Search packages</a>
+  <ui-empty-state icon="search" [title]="'book.noOfferTitle' | t" [description]="'book.noOfferText' | t">
+    <a uiButton="primary" size="sm" routerLink="/agency/search">{{ 'book.searchPackages' | t }}</a>
   </ui-empty-state>
 } @else if (context(); as ctx) {
   <ui-page-header
     [title]="title()"
-    [crumbs]="[{ label: 'Search', link: '/agency/search' }, { label: ctx.offer.hotelName }]"
+    [crumbs]="[{ label: ('nav.search' | t), link: '/agency/search' }, { label: ctx.offer.hotelName }]"
   >
     @if (booking(); as b) {
-      <span status class="small muted saved"><ui-icon name="check" size="sm" />Draft {{ b.ref }} saved</span>
+      <span status class="small muted saved"><ui-icon name="check" size="sm" />{{ 'book.draftSaved' | t: { ref: b.ref } }}</span>
     }
   </ui-page-header>
 
-  <ol class="steps" aria-label="Progress">
+  <ol class="steps" [attr.aria-label]="'book.progress' | t">
     @for (s of steps; track s.key; let i = $index) {
       <li
         class="steps__item"
@@ -44,62 +44,62 @@
           <ui-card [title]="cardTitle(i, p)">
             <label cardActions class="lead" [class.lead--on]="i === leadIndex">
               <input type="radio" class="ui-chk" name="lead" [value]="i" [(ngModel)]="leadIndex" />
-              Lead traveller
+              {{ 'book.lead' | t }}
             </label>
 
             <div class="grid">
-              <ui-field label="Title" [for]="'title' + i" optional>
+              <ui-field [label]="'book.fieldTitle' | t" [for]="'title' + i" optional>
                 <select uiInput id="title{{ i }}" name="title{{ i }}" [(ngModel)]="p.title">
                   <option value="">—</option>
                   <option>Mr</option><option>Mrs</option><option>Ms</option><option>Mstr</option><option>Miss</option>
                 </select>
               </ui-field>
-              <ui-field label="Gender" [for]="'gender' + i">
+              <ui-field [label]="'book.gender' | t" [for]="'gender' + i">
                 <select uiInput id="gender{{ i }}" name="gender{{ i }}" [(ngModel)]="p.gender">
-                  <option value="">Choose…</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
+                  <option value="">{{ 'book.choose' | t }}</option>
+                  <option value="Male">{{ 'book.male' | t }}</option>
+                  <option value="Female">{{ 'book.female' | t }}</option>
                 </select>
               </ui-field>
-              <ui-field label="First name (Latin)" [for]="'fn' + i">
+              <ui-field [label]="'book.firstName' | t" [for]="'fn' + i">
                 <input uiInput id="fn{{ i }}" name="fn{{ i }}" [(ngModel)]="p.firstName" autocomplete="off" />
               </ui-field>
-              <ui-field label="Last name (Latin)" [for]="'ln' + i">
+              <ui-field [label]="'book.lastName' | t" [for]="'ln' + i">
                 <input uiInput id="ln{{ i }}" name="ln{{ i }}" [(ngModel)]="p.lastName" autocomplete="off" />
               </ui-field>
-              <ui-field label="Birth date" [for]="'bd' + i">
+              <ui-field [label]="'book.birthDate' | t" [for]="'bd' + i">
                 <input uiInput id="bd{{ i }}" name="bd{{ i }}" type="date" [(ngModel)]="p.birthDate" [max]="ctx.checkIn" />
               </ui-field>
-              <ui-field label="Nationality" [for]="'nat' + i" hint="2-letter code, e.g. BG">
+              <ui-field [label]="'book.nationality' | t" [for]="'nat' + i" [hint]="'book.nationalityHint' | t">
                 <input uiInput id="nat{{ i }}" name="nat{{ i }}" [(ngModel)]="p.nationality" maxlength="2" placeholder="BG" />
               </ui-field>
             </div>
 
             <div class="grid">
-              <ui-field label="Document" [for]="'dt' + i">
+              <ui-field [label]="'book.document' | t" [for]="'dt' + i">
                 <select uiInput id="dt{{ i }}" name="dt{{ i }}" [(ngModel)]="p.documentType">
-                  <option value="">Choose…</option>
-                  <option value="Passport">Passport</option>
-                  <option value="IdCard">ID card</option>
+                  <option value="">{{ 'book.choose' | t }}</option>
+                  <option value="Passport">{{ 'book.passport' | t }}</option>
+                  <option value="IdCard">{{ 'book.idCard' | t }}</option>
                 </select>
               </ui-field>
-              <ui-field label="Number" [for]="'dn' + i">
+              <ui-field [label]="'book.documentNumber' | t" [for]="'dn' + i">
                 <input uiInput class="mono" id="dn{{ i }}" name="dn{{ i }}" [(ngModel)]="p.documentNumber" maxlength="20" autocomplete="off" />
               </ui-field>
-              <ui-field label="Issuing country" [for]="'dc' + i">
+              <ui-field [label]="'book.issuingCountry' | t" [for]="'dc' + i">
                 <input uiInput id="dc{{ i }}" name="dc{{ i }}" [(ngModel)]="p.documentIssuingCountry" maxlength="2" placeholder="BG" />
               </ui-field>
-              <ui-field label="Expiry" [for]="'de' + i" hint="Must be valid after the trip">
+              <ui-field [label]="'book.expiry' | t" [for]="'de' + i" [hint]="'book.expiryHint' | t">
                 <input uiInput id="de{{ i }}" name="de{{ i }}" type="date" [(ngModel)]="p.documentExpiryDate" [min]="ctx.checkOut" />
               </ui-field>
             </div>
 
             @if (i === leadIndex) {
               <div class="grid grid--2">
-                <ui-field label="Email (lead only)" [for]="'em' + i">
+                <ui-field [label]="'book.email' | t" [for]="'em' + i">
                   <input uiInput id="em{{ i }}" name="em{{ i }}" type="email" [(ngModel)]="p.email" />
                 </ui-field>
-                <ui-field label="Phone (lead only)" [for]="'ph' + i">
+                <ui-field [label]="'book.phone' | t" [for]="'ph' + i">
                   <input uiInput id="ph{{ i }}" name="ph{{ i }}" type="tel" [(ngModel)]="p.phone" placeholder="+359 …" />
                 </ui-field>
               </div>
@@ -110,7 +110,7 @@
         @if (problems(); as issues) {
           @if (issues.length > 0) {
             <ui-banner tone="warn">
-              <b>{{ issues.length }} {{ issues.length === 1 ? 'thing' : 'things' }} to fix before continuing</b>
+              <b>{{ (issues.length === 1 ? 'book.issuesOne' : 'book.issuesMany') | t: { n: issues.length } }}</b>
               <ul class="issues">
                 @for (issue of issues; track issue) {
                   <li>{{ issue }}</li>
@@ -122,37 +122,36 @@
 
         <div class="wizard__nav">
           <span class="small muted">
-            Search price <b class="m">{{ ctx.searchSellPrice | money: ctx.offer.currency }}</b> — re-checked with the supplier next.
+            {{ 'book.searchPrice' | t }} <b class="m">{{ ctx.searchSellPrice | money: ctx.offer.currency }}</b> {{ 'book.searchPriceNote' | t }}
           </span>
           <div class="row">
             @if (booking()) {
-              <a uiButton="ghost" routerLink="/agency/bookings">Save draft &amp; exit</a>
+              <a uiButton="ghost" routerLink="/agency/bookings">{{ 'book.saveDraftExit' | t }}</a>
             }
             <button type="button" uiButton="primary" (click)="continueToPrice()" [disabled]="busy() || problems().length > 0">
-              {{ busy() ? 'Checking price…' : 'Continue' }}
+              {{ (busy() ? 'book.checkingPrice' : 'book.continue') | t }}
             </button>
           </div>
         </div>
       }
 
       @if (step() === 'price' && booking(); as b) {
-        <ui-card title="Confirm the price">
+        <ui-card [title]="'book.confirmPrice' | t">
           @if (drifted()) {
             <ui-banner tone="warn">
-              <b>The price changed since your search.</b>
-              Was {{ ctx.searchSellPrice | money: b.currency }}, now {{ b.sellPrice | money: b.currency }}.
-              Check with your client before you continue.
+              <b>{{ 'book.priceChanged' | t }}</b>
+              {{ 'book.priceChangedDetail' | t: { was: (ctx.searchSellPrice | money: b.currency), now: (b.sellPrice | money: b.currency) } }}
             </ui-banner>
           } @else {
-            <ui-banner tone="ok">Price confirmed by the supplier — unchanged since your search.</ui-banner>
+            <ui-banner tone="ok">{{ 'book.priceUnchanged' | t }}</ui-banner>
           }
           <div class="price">
             <div class="price__row">
-              <span>{{ ctx.adults }} {{ ctx.adults === 1 ? 'adult' : 'adults' }}@if (ctx.children > 0) {, {{ ctx.children }} {{ ctx.children === 1 ? 'child' : 'children' }}} · {{ ctx.nights }} nights</span>
+              <span>{{ (ctx.adults === 1 ? 'common.adultOne' : 'common.adultMany') | t: { n: ctx.adults } }}@if (ctx.children > 0) {, {{ (ctx.children === 1 ? 'common.childOne' : 'common.childMany') | t: { n: ctx.children } }}} · {{ 'common.nights' | t: { n: ctx.nights } }}</span>
               <span class="m">{{ b.sellPrice | money: b.currency }}</span>
             </div>
             <div class="price__row">
-              <b>Total sell price</b>
+              <b>{{ 'book.totalSell' | t }}</b>
               <span class="row">
                 @if (drifted()) {
                   <s class="m muted small">{{ ctx.searchSellPrice | money: b.currency }}</s>
@@ -161,51 +160,50 @@
               </span>
             </div>
             <div class="price__row">
-              <span>Your commission</span>
+              <span>{{ 'book.commission' | t }}</span>
               <span class="m strong price__ok">{{ b.agencyCommission | money: b.currency }}</span>
             </div>
           </div>
           @if (drifted()) {
             <label class="row accept">
               <input type="checkbox" class="ui-chk" [checked]="accepted()" (change)="accepted.set(!accepted())" />
-              <span>I confirm the new total of <b class="m">{{ b.sellPrice | money: b.currency }}</b> with my client</span>
+              <span>{{ 'book.acceptNewTotal' | t }} <b class="m">{{ b.sellPrice | money: b.currency }}</b></span>
             </label>
           }
         </ui-card>
 
         <div class="wizard__nav">
-          <button type="button" uiButton (click)="back()" [disabled]="busy()">Back</button>
+          <button type="button" uiButton (click)="back()" [disabled]="busy()">{{ 'book.back' | t }}</button>
           <div class="row">
-            <a uiButton="ghost" routerLink="/agency/bookings">Save draft &amp; exit</a>
+            <a uiButton="ghost" routerLink="/agency/bookings">{{ 'book.saveDraftExit' | t }}</a>
             <button type="button" uiButton="primary" (click)="continueToSubmit()" [disabled]="busy() || (drifted() && !accepted())">
-              Continue
+              {{ 'book.continue' | t }}
             </button>
           </div>
         </div>
       }
 
       @if (step() === 'submit' && booking(); as b) {
-        <ui-card title="Submit to the operator">
+        <ui-card [title]="'book.submitTitle' | t">
           <p class="muted">
-            We’ll ask the supplier to hold the rooms and seats. If it works you get a payment deadline;
-            nothing is charged until then. The operator confirms the booking once the payment is received.
+            {{ 'book.submitText' | t }}
           </p>
           <dl class="kv summary__kv inset submit__kv">
-            <dt>Package</dt><dd>{{ ctx.offer.hotelName }}@if (ctx.offer.roomType) { · {{ ctx.offer.roomType }} · {{ ctx.offer.board }}}</dd>
-            <dt>Program</dt><dd>{{ ctx.programName }}</dd>
-            <dt>Dates</dt><dd>{{ ctx.checkIn | odDate }} → {{ ctx.checkOut | odDate }} · {{ ctx.nights }} nights</dd>
-            <dt>Travellers</dt><dd>{{ travellerNames() }}</dd>
-            <dt>Total</dt><dd class="m strong">{{ b.sellPrice | money: b.currency }}</dd>
-            <dt>Reservation</dt><dd class="num">{{ b.ref }}</dd>
+            <dt>{{ 'book.package' | t }}</dt><dd>{{ ctx.offer.hotelName }}@if (ctx.offer.roomType) { · {{ ctx.offer.roomType }} · {{ ctx.offer.board }}}</dd>
+            <dt>{{ 'book.program' | t }}</dt><dd>{{ ctx.programName }}</dd>
+            <dt>{{ 'book.dates' | t }}</dt><dd>{{ ctx.checkIn | odDate }} → {{ ctx.checkOut | odDate }} · {{ 'common.nights' | t: { n: ctx.nights } }}</dd>
+            <dt>{{ 'book.passengers' | t }}</dt><dd>{{ travellerNames() }}</dd>
+            <dt>{{ 'book.total' | t }}</dt><dd class="m strong">{{ b.sellPrice | money: b.currency }}</dd>
+            <dt>{{ 'book.reservation' | t }}</dt><dd class="num">{{ b.ref }}</dd>
           </dl>
         </ui-card>
 
         <div class="wizard__nav">
-          <button type="button" uiButton (click)="back()" [disabled]="busy()">Back</button>
+          <button type="button" uiButton (click)="back()" [disabled]="busy()">{{ 'book.back' | t }}</button>
           <div class="row">
-            <button type="button" uiButton="danger-quiet" (click)="cancel()" [disabled]="busy()">Discard</button>
+            <button type="button" uiButton="danger-quiet" (click)="cancel()" [disabled]="busy()">{{ 'book.discard' | t }}</button>
             <button type="button" uiButton="primary" (click)="submit()" [disabled]="busy()">
-              {{ busy() ? 'Submitting…' : 'Submit booking' }}
+              {{ (busy() ? 'book.submitting' : 'book.submit') | t }}
             </button>
           </div>
         </div>
@@ -218,57 +216,56 @@
               <span class="result__icon result__icon--warn"><ui-icon name="clock" size="lg" /></span>
               <div class="col result__text">
                 <ui-status-chip [status]="b.status" />
-                <h2 class="result__title">Rooms held — booking {{ b.ref }}</h2>
-                <p class="muted">Pay before the deadline or the hold is released automatically.</p>
+                <h2 class="result__title">{{ 'book.heldTitle' | t: { ref: b.ref } }}</h2>
+                <p class="muted">{{ 'book.heldText' | t }}</p>
               </div>
             </div>
             <div class="facts">
               <div class="fact">
-                <span class="small muted">Amount due</span>
+                <span class="small muted">{{ 'book.amountDue' | t }}</span>
                 <div class="m fact__big">{{ b.balanceDue | money: b.currency }}</div>
               </div>
               <div class="fact">
-                <span class="small muted">Pay by</span>
+                <span class="small muted">{{ 'book.payBy' | t }}</span>
                 <ui-deadline [at]="b.paymentDueAt" />
               </div>
               <div class="fact">
-                <span class="small muted">Payment reference</span>
+                <span class="small muted">{{ 'book.paymentReference' | t }}</span>
                 <div class="mono strong">{{ b.ref }}</div>
               </div>
             </div>
             <p class="small muted">
-              The operator records your payment when it arrives and confirms the booking. Use the booking
-              reference on the transfer.
+              {{ 'book.heldNote' | t }}
             </p>
             <div class="row wrap">
-              <a uiButton="primary" [routerLink]="['/agency/bookings', b.id]">Open booking</a>
-              <a uiButton routerLink="/agency/search">New booking</a>
+              <a uiButton="primary" [routerLink]="['/agency/bookings', b.id]">{{ 'book.open' | t }}</a>
+              <a uiButton routerLink="/agency/search">{{ 'nav.newBooking' | t }}</a>
             </div>
           } @else if (b.status === 'Failed') {
             <div class="result">
               <span class="result__icon result__icon--bad"><ui-icon name="alert-triangle" size="lg" /></span>
               <div class="col result__text">
-                <h2 class="result__title">The supplier couldn’t hold these rooms</h2>
-                <p class="muted">Nothing was booked or charged.</p>
+                <h2 class="result__title">{{ 'book.failedTitle' | t }}</h2>
+                <p class="muted">{{ 'book.failedText' | t }}</p>
               </div>
             </div>
             @if (b.history.at(-1)?.note; as note) {
-              <ui-banner tone="bad"><b>Supplier said:</b> “{{ note }}”</ui-banner>
+              <ui-banner tone="bad"><b>{{ 'book.supplierSaid' | t }}</b> „{{ note }}“</ui-banner>
             }
             <div class="row wrap">
-              <a uiButton="primary" routerLink="/agency/search">Find similar offers</a>
-              <a uiButton [routerLink]="['/agency/bookings', b.id]">Open booking</a>
+              <a uiButton="primary" routerLink="/agency/search">{{ 'book.findSimilar' | t }}</a>
+              <a uiButton [routerLink]="['/agency/bookings', b.id]">{{ 'book.open' | t }}</a>
             </div>
           } @else {
             <div class="result">
               <span class="result__icon"><ui-icon name="info" size="lg" /></span>
               <div class="col result__text">
                 <ui-status-chip [status]="b.status" />
-                <h2 class="result__title">Reservation {{ b.ref }}</h2>
-                <p class="muted">See the booking for the details and history.</p>
+                <h2 class="result__title">{{ 'book.otherTitle' | t: { ref: b.ref } }}</h2>
+                <p class="muted">{{ 'book.otherText' | t }}</p>
               </div>
             </div>
-            <a uiButton="primary" [routerLink]="['/agency/bookings', b.id]">Open booking</a>
+            <a uiButton="primary" [routerLink]="['/agency/bookings', b.id]">{{ 'book.open' | t }}</a>
           }
         </ui-card>
       }
@@ -283,7 +280,7 @@
         <div class="col summary__hotel">
           <b>{{ ctx.offer.hotelName }}</b>
           @if (ctx.offer.stars > 0) {
-            <span class="stars" role="img" [attr.aria-label]="ctx.offer.stars + ' stars'">
+            <span class="stars" role="img" [attr.aria-label]="'common.stars' | t: { n: ctx.offer.stars }">
               @for (star of stars(ctx.offer.stars); track $index) {
                 <ui-icon name="star" size="sm" />
               }
@@ -294,17 +291,17 @@
           }
         </div>
         <dl class="kv summary__kv">
-          <dt>Program</dt><dd>{{ ctx.programName }}</dd>
-          <dt>Dates</dt><dd>{{ ctx.checkIn | odDate }} → {{ ctx.checkOut | odDate }} · {{ ctx.nights }} nights</dd>
-          <dt>Travellers</dt><dd>{{ ctx.adults }} {{ ctx.adults === 1 ? 'adult' : 'adults' }}@if (ctx.children > 0) {, {{ ctx.children }} {{ ctx.children === 1 ? 'child' : 'children' }}}</dd>
+          <dt>{{ 'book.program' | t }}</dt><dd>{{ ctx.programName }}</dd>
+          <dt>{{ 'book.dates' | t }}</dt><dd>{{ ctx.checkIn | odDate }} → {{ ctx.checkOut | odDate }} · {{ 'common.nights' | t: { n: ctx.nights } }}</dd>
+          <dt>{{ 'book.passengers' | t }}</dt><dd>{{ (ctx.adults === 1 ? 'common.adultOne' : 'common.adultMany') | t: { n: ctx.adults } }}@if (ctx.children > 0) {, {{ (ctx.children === 1 ? 'common.childOne' : 'common.childMany') | t: { n: ctx.children } }}}</dd>
         </dl>
         <hr class="hr" />
         <div class="row between">
-          <span class="muted">Total</span>
+          <span class="muted">{{ 'book.total' | t }}</span>
           <b class="m summary__total">{{ total() | money: ctx.offer.currency }}</b>
         </div>
         <div class="row between small">
-          <span class="muted">You earn</span>
+          <span class="muted">{{ 'book.youEarn' | t }}</span>
           <span class="m strong">{{ commission() | money: ctx.offer.currency }}</span>
         </div>
       </ui-card>

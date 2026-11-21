@@ -1,5 +1,6 @@
 import { Component, booleanAttribute, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { t } from '../../../core/i18n/i18n';
 import { Icon } from '../icon/icon';
 
 export interface Crumb {
@@ -17,7 +18,7 @@ export interface Crumb {
   template: `
     <div class="ph__main">
       @if (crumbs().length > 0) {
-        <nav class="ph__crumb" aria-label="Breadcrumb">
+        <nav class="ph__crumb" [attr.aria-label]="breadcrumbLabel">
           @for (crumb of crumbs(); track $index; let last = $last) {
             @if (crumb.link) {
               <a [routerLink]="crumb.link">{{ crumb.label }}</a>
@@ -43,6 +44,8 @@ export interface Crumb {
   styleUrl: './page-header.scss',
 })
 export class PageHeader {
+  protected readonly breadcrumbLabel = t('kit.breadcrumb');
+
   readonly title = input.required<string>();
   readonly sub = input<string | null>(null);
   readonly crumbs = input<Crumb[]>([]);

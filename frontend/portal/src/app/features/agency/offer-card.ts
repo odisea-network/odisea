@@ -1,31 +1,32 @@
 import { Component, booleanAttribute, computed, input, output } from '@angular/core';
 import { HotelOffer } from '../../core/api.types';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import { ButtonDirective, Icon, Pill } from '../../shared/ui';
 
 /** One live-priced offer. `compact` is the phone layout (photo on the left). */
 @Component({
   selector: 'app-offer-card',
-  imports: [MoneyPipe, ButtonDirective, Icon, Pill],
+  imports: [MoneyPipe, TPipe, ButtonDirective, Icon, Pill],
   template: `
     <div class="offer__img" aria-hidden="true">
       <span class="offer__initial">{{ initial() }}</span>
-      <ui-pill class="offer__av" [tone]="expired() ? 'bad' : 'ok'">{{ expired() ? 'Expired' : 'Available' }}</ui-pill>
+      <ui-pill class="offer__av" [tone]="expired() ? 'bad' : 'ok'">{{ (expired() ? 'offer.expired' : 'offer.available') | t }}</ui-pill>
     </div>
     <div class="offer__body">
       <div class="offer__head">
         <h3 class="offer__name">{{ offer().hotelName }}</h3>
-        <span class="offer__stars" role="img" [attr.aria-label]="offer().stars + ' stars'">
+        <span class="offer__stars" role="img" [attr.aria-label]="'common.stars' | t: { n: offer().stars }">
           @for (star of stars(); track $index) {
             <ui-icon name="star" size="sm" />
           }
         </span>
       </div>
-      <span class="small muted">{{ offer().roomType }} · <b>{{ offer().board }}</b> · {{ nights() }} nights</span>
+      <span class="small muted">{{ offer().roomType }} · <b>{{ offer().board }}</b> · {{ 'common.nights' | t: { n: nights() } }}</span>
       <div class="offer__foot">
         <div class="offer__price">
           <span class="m offer__total">{{ offer().sellPrice | money: offer().currency }}</span>
-          <span class="small muted">total · you earn <b class="m">{{ offer().agencyCommission | money: offer().currency }}</b></span>
+          <span class="small muted">{{ 'offer.totalEarn' | t }} <b class="m">{{ offer().agencyCommission | money: offer().currency }}</b></span>
         </div>
         <div class="offer__actions">
           @if (!compact()) {
@@ -37,10 +38,10 @@ import { ButtonDirective, Icon, Pill } from '../../shared/ui';
               [disabled]="expired() || (!compared() && compareFull())"
               (click)="toggleCompare.emit()"
             >
-              {{ compared() ? 'Added' : 'Compare' }}
+              {{ (compared() ? 'offer.added' : 'offer.compare') | t }}
             </button>
           }
-          <button type="button" uiButton="primary" size="sm" [disabled]="expired()" (click)="book.emit()">Book</button>
+          <button type="button" uiButton="primary" size="sm" [disabled]="expired()" (click)="book.emit()">{{ 'offer.book' | t }}</button>
         </div>
       </div>
     </div>

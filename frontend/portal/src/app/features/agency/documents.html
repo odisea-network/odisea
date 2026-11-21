@@ -1,27 +1,27 @@
-<ui-page-header title="Documents" sub="Invoices and credit notes issued to your agency" />
+<ui-page-header [title]="'nav.documents' | t" [sub]="'agencyDocuments.sub' | t" />
 
 @if (documents.error()) {
-  <ui-empty-state tone="error" icon="refresh" title="Couldn't load documents" description="Check your connection and try again.">
-    <button type="button" uiButton size="sm" (click)="documents.reload()">Retry</button>
+  <ui-empty-state tone="error" icon="refresh" [title]="'agencyDocuments.loadFailed' | t" [description]="'common.checkConnection' | t">
+    <button type="button" uiButton size="sm" (click)="documents.reload()">{{ 'common.retry' | t }}</button>
   </ui-empty-state>
 } @else if (documents.isLoading()) {
   <ui-card><ui-skeleton [lines]="4" /></ui-card>
 } @else if (documents.value(); as list) {
   @if (list.length === 0) {
-    <ui-empty-state icon="file" title="No documents yet" description="The invoice for a booking appears here once the operator confirms it." />
+    <ui-empty-state icon="file" [title]="'agencyDocuments.emptyTitle' | t" [description]="'agencyDocuments.emptyText' | t" />
   } @else {
     <ui-card flush>
       <div class="tw">
         <table class="tbl">
           <thead>
             <tr>
-              <th>Number</th>
-              <th>Type</th>
-              <th>Date</th>
-              <th>Booking</th>
-              <th class="r">Amount</th>
-              <th>Status</th>
-              <th><span class="sr-only">Download</span></th>
+              <th>{{ 'agencyDocuments.colNumber' | t }}</th>
+              <th>{{ 'agencyDocuments.colType' | t }}</th>
+              <th>{{ 'agencyDocuments.colDate' | t }}</th>
+              <th>{{ 'agencyDocuments.colBooking' | t }}</th>
+              <th class="r">{{ 'agencyDocuments.colAmount' | t }}</th>
+              <th>{{ 'agencyDocuments.colStatus' | t }}</th>
+              <th><span class="sr-only">{{ 'agencyDocuments.colDownload' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -39,9 +39,9 @@
                 <td class="r m strong">{{ d.total | money: d.currency }}</td>
                 <td>
                   @if (d.status === 'Annulled') {
-                    <ui-pill>Annulled · Анулиран</ui-pill>
+                    <ui-pill>{{ 'agencyDocuments.annulled' | t }}</ui-pill>
                   } @else {
-                    <ui-pill tone="ok">Issued · Издаден</ui-pill>
+                    <ui-pill tone="ok">{{ 'agencyDocuments.issued' | t }}</ui-pill>
                   }
                 </td>
                 <td class="r">
@@ -51,7 +51,7 @@
                     size="sm"
                     (click)="download(d)"
                     [disabled]="downloading() === d.id"
-                    [attr.aria-label]="'Download PDF ' + d.number"
+                    [attr.aria-label]="'agencyDocuments.downloadPdf' | t: { number: d.number }"
                   >
                     <ui-icon name="download" />{{ downloading() === d.id ? '…' : 'PDF' }}
                   </button>

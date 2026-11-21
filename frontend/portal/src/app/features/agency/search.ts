@@ -6,10 +6,12 @@ import { firstValueFrom } from 'rxjs';
 import {
   HotelOffer, ProgramDetail, ProgramListItem, SearchResponse,
 } from '../../core/api.types';
+import { t } from '../../core/i18n/i18n';
 import { problemMessage } from '../../core/problem';
 import { ViewportService } from '../../core/viewport';
 import { OdDatePipe } from '../../shared/pipes/date.pipe';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import {
   Banner, ButtonDirective, Card, EmptyState, Icon, InputDirective, PageHeader, Pill, SegmentOption, Segmented,
   Skeleton,
@@ -35,7 +37,7 @@ export function sortOffers(offers: HotelOffer[], sort: Sort): HotelOffer[] {
 @Component({
   selector: 'app-agency-search',
   imports: [
-    FormsModule, RouterLink, MoneyPipe, OdDatePipe, OfferCard,
+    FormsModule, RouterLink, MoneyPipe, OdDatePipe, TPipe, OfferCard,
     Banner, ButtonDirective, Card, EmptyState, Icon, InputDirective, PageHeader, Pill, Segmented, Skeleton,
   ],
   templateUrl: './search.html',
@@ -68,8 +70,8 @@ export class AgencySearch {
   readonly compareOpen = signal(false);
 
   readonly views: SegmentOption[] = [
-    { value: 'cards', label: 'Cards' },
-    { value: 'table', label: 'Table' },
+    { value: 'cards', label: t('search.viewCards') },
+    { value: 'table', label: t('search.viewTable') },
   ];
 
   private readonly compareDialog = viewChild<ElementRef<HTMLDialogElement>>('compareDialog');
@@ -173,7 +175,7 @@ export class AgencySearch {
         children: this.children,
       })));
     } catch (err) {
-      this.error.set(problemMessage(err, 'Search failed.'));
+      this.error.set(problemMessage(err, t('search.failed')));
     } finally {
       this.searching.set(false);
     }
@@ -183,7 +185,7 @@ export class AgencySearch {
     const search = this.results();
     if (!search) return;
     if (this.expired(offer)) {
-      this.error.set('This offer has expired — please search again.');
+      this.error.set(t('search.offerExpired'));
       return;
     }
     this.compareOpen.set(false);
