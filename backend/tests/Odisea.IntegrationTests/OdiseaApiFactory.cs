@@ -112,6 +112,37 @@ public sealed class OdiseaApiFactory : WebApplicationFactory<Program>, IAsyncLif
         return client;
     }
 
+    /// A user in a brand-new agency (or in an existing one). The token is minted directly instead of
+    /// logging in: logins share one 10-per-minute bucket in tests.
+    public async Task<(HttpClient Client, Guid AgencyId)> ClientForNewAgencyUserAsync(
+        AgencyPlan plan, AgencyUserRole role, Guid? existingAgencyId = null)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AgenciesDbContext>();
+        var agencyId = existingAgencyId ?? Guid.Empty;
+        if (existingAgencyId is null)
+        {
+            var agency = new Agency { Name = $"Test agency {Guid.NewGuid():N}", Country = "BG", Plan = plan };
+            db.Agencies.Add(agency);
+            agencyId = agency.Id;
+        }
+        var user = new AgencyUser
+        {
+            AgencyId = agencyId,
+            Email = $"user-{Guid.NewGuid():N}@test.local",
+            PasswordHash = "not-a-login",
+            FullName = "Test User",
+            Role = role,
+        };
+        db.AgencyUsers.Add(user);
+        await db.SaveChangesAsync();
+
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer", scope.ServiceProvider.GetRequiredService<TokenService>().IssueFor(user).Token);
+        return (client, agencyId);
+    }
+
     private async Task<string> LoginAsync(string email, string password)
     {
         using var client = CreateClient();
