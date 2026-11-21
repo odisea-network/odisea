@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { featureGuard } from './core/entitlements.service';
 import { adminGuard, agencyGuard } from './core/guards';
 
 export const routes: Routes = [
@@ -40,6 +41,29 @@ export const routes: Routes = [
       {
         path: 'documents',
         loadComponent: () => import('./features/agency/documents').then(m => m.AgencyDocuments),
+      },
+      {
+        path: 'ledger',
+        canActivate: [featureGuard('ReservationLedger')],
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'reservations' },
+          {
+            path: 'reservations',
+            loadComponent: () => import('./features/agency/ledger/reservations').then(m => m.LedgerReservations),
+          },
+          {
+            path: 'reservations/new',
+            loadComponent: () => import('./features/agency/ledger/reservation-form').then(m => m.LedgerReservationForm),
+          },
+          {
+            path: 'reservations/:id',
+            loadComponent: () => import('./features/agency/ledger/reservation-detail').then(m => m.LedgerReservationDetail),
+          },
+          {
+            path: 'reservations/:id/edit',
+            loadComponent: () => import('./features/agency/ledger/reservation-form').then(m => m.LedgerReservationForm),
+          },
+        ],
       },
     ],
   },

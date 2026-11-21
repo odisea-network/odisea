@@ -267,6 +267,9 @@ export interface FinancialDocumentDto {
 }
 
 export interface ProblemDetails {
+  type?: string;
+  /** Stable machine code on some rejections, mapped to the portal's own wording. */
+  code?: string;
   title?: string;
   detail?: string;
   status?: number;
@@ -653,4 +656,222 @@ export interface OperatorDashboardDto {
   confirmedMargin: number;
   currency: string;
   topAgencies: OperatorAgencyFigure[];
+}
+
+// --- Reservation ledger (served by /api/v1/agency/ledger/** and /api/v1/agency/tour-operators) ---
+
+export type LedgerReservationStatus = 'Draft' | 'Confirmed' | 'Cancelled' | 'Completed';
+export type LedgerInstallmentLabel = 'Deposit' | 'Balance' | 'Other';
+export type LedgerPaymentMethod = 'BankTransfer' | 'Card' | 'Cash' | 'Other';
+export type InstallmentPaymentStatus = 'Unpaid' | 'PartiallyPaid' | 'Paid';
+export type CommissionType = 'Percent' | 'Fixed';
+export type CommissionBase = 'OperatorTotal' | 'CustomerSale' | 'Manual';
+export type CommissionStatus = 'Expected' | 'PartiallyReceived' | 'Received';
+export type LedgerDocumentType = 'OperatorContract' | 'Confirmation' | 'Invoice' | 'PaymentProof' | 'Other';
+
+export interface TourOperatorDto {
+  id: string;
+  name: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  notes: string | null;
+  isArchived: boolean;
+}
+
+export interface SaveTourOperatorRequest {
+  name: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  notes: string | null;
+}
+
+export interface InstallmentRequest {
+  label: LedgerInstallmentLabel;
+  amount: number;
+  /** Calendar date, `yyyy-MM-dd`. */
+  dueDate: string;
+}
+
+export interface CommissionRequest {
+  type: CommissionType;
+  rate: number | null;
+  base: CommissionBase | null;
+  amount: number | null;
+}
+
+export interface SaveLedgerReservationRequest {
+  tourOperatorId: string;
+  reference: string;
+  holderName: string;
+  bookedOn: string;
+  travelStart: string;
+  travelEnd: string | null;
+  operatorTotal: number;
+  currency: string;
+  customerSaleAmount: number | null;
+  notes: string | null;
+  commission: CommissionRequest | null;
+}
+
+export interface CreateLedgerReservationRequest extends SaveLedgerReservationRequest {
+  status: LedgerReservationStatus;
+  installments: InstallmentRequest[];
+}
+
+/** `version` is the value last read; a stale one is answered with 409 `stale_version`. */
+export interface UpdateLedgerReservationRequest extends SaveLedgerReservationRequest {
+  version: number;
+  reason: string | null;
+}
+
+export interface LedgerInstallmentDto {
+  id: string;
+  label: LedgerInstallmentLabel;
+  amount: number;
+  dueDate: string;
+  sortOrder: number;
+  paidAmount: number;
+  remainingAmount: number;
+  status: InstallmentPaymentStatus;
+  isOverdue: boolean;
+}
+
+export interface LedgerPaymentDto {
+  id: string;
+  amount: number;
+  currency: string;
+  paidOn: string;
+  method: LedgerPaymentMethod;
+  reference: string | null;
+  note: string | null;
+  recordedByUserId: string;
+  createdAt: string;
+  isVoided: boolean;
+  voidedAt: string | null;
+  voidReason: string | null;
+}
+
+export interface LedgerCommissionDto {
+  type: CommissionType;
+  rate: number | null;
+  base: CommissionBase;
+  expectedAmount: number | null;
+  receivedAmount: number;
+  status: CommissionStatus | null;
+}
+
+export interface LedgerReservationDto {
+  id: string;
+  reference: string;
+  tourOperatorId: string;
+  tourOperatorName: string;
+  holderName: string;
+  bookedOn: string;
+  travelStart: string;
+  travelEnd: string | null;
+  operatorTotal: number;
+  currency: string;
+  customerSaleAmount: number | null;
+  status: LedgerReservationStatus;
+  notes: string | null;
+  cancellationNote: string | null;
+  commission: LedgerCommissionDto | null;
+  scheduledTotal: number;
+  /** Operator price minus the scheduled instalments; not zero means the schedule is incomplete. */
+  scheduleDifference: number;
+  paidTotal: number;
+  outstanding: number;
+  overpaid: number;
+  overdueAmount: number;
+  nextDueDate: string | null;
+  installments: LedgerInstallmentDto[];
+  payments: LedgerPaymentDto[];
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LedgerReservationSummaryDto {
+  id: string;
+  reference: string;
+  tourOperatorId: string;
+  tourOperatorName: string;
+  holderName: string;
+  travelStart: string;
+  travelEnd: string | null;
+  operatorTotal: number;
+  currency: string;
+  paidTotal: number;
+  outstanding: number;
+  overdueAmount: number;
+  nextDueDate: string | null;
+  expectedCommission: number | null;
+  status: LedgerReservationStatus;
+}
+
+export interface RecordLedgerPaymentRequest {
+  amount: number;
+  currency: string | null;
+  paidOn: string;
+  method: LedgerPaymentMethod;
+  reference: string | null;
+  note: string | null;
+  /** Made once per opened form, so a retried save records nothing twice. */
+  idempotencyKey: string;
+}
+
+export interface LedgerAuditEventDto {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  actorType: string;
+  actorId: string;
+  reason: string | null;
+  changes: Record<string, { from?: unknown; to?: unknown; changed?: boolean }>;
+  occurredAt: string;
+}
+
+export interface LedgerDocumentDto {
+  id: string;
+  paymentId: string | null;
+  type: LedgerDocumentType;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedByUserId: string;
+  uploadedAt: string;
+}
+
+export interface LedgerCurrencyTotalsDto {
+  currency: string;
+  outstanding: number;
+  overdue: number;
+  dueIn7Days: number;
+  dueIn30Days: number;
+  commissionExpected: number;
+  commissionReceived: number;
+}
+
+export interface LedgerDueItemDto {
+  reservationId: string;
+  reference: string;
+  tourOperatorName: string;
+  holderName: string;
+  reservationStatus: LedgerReservationStatus;
+  label: LedgerInstallmentLabel;
+  dueDate: string;
+  remainingAmount: number;
+  currency: string;
+  isOverdue: boolean;
+}
+
+export interface LedgerDashboardDto {
+  today: string;
+  activeReservations: number;
+  overdueReservations: number;
+  dueIn7DaysReservations: number;
+  dueIn30DaysReservations: number;
+  totals: LedgerCurrencyTotalsDto[];
+  needsAction: LedgerDueItemDto[];
 }

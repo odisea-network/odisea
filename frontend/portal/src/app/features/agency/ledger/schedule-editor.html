@@ -1,0 +1,67 @@
+<div class="split">
+  <label class="split__field">
+    <span class="small muted">{{ 'ledger.schedule.depositPercent' | t }}</span>
+    <input uiInput size="sm" type="number" min="0" max="100" step="1" class="m split__pct" name="depositPercent"
+      [ngModel]="depositPercent()" (ngModelChange)="depositPercent.set($event)" [disabled]="disabled()" />
+  </label>
+  <label class="split__field">
+    <span class="small muted">{{ 'ledger.schedule.depositDue' | t }}</span>
+    <input uiInput size="sm" type="date" name="depositDue" [ngModel]="depositDue()" (ngModelChange)="depositDue.set($event)" [disabled]="disabled()" />
+  </label>
+  <label class="split__field">
+    <span class="small muted">{{ 'ledger.schedule.balanceDue' | t }}</span>
+    <input uiInput size="sm" type="date" name="balanceDue" [ngModel]="balanceDue()" (ngModelChange)="balanceDue.set($event)" [disabled]="disabled()" />
+  </label>
+  <button type="button" uiButton size="sm" (click)="split()" [disabled]="!canSplit()">{{ 'ledger.schedule.split' | t }}</button>
+</div>
+
+@if (rows().length === 0) {
+  <p class="small muted none">{{ 'ledger.schedule.empty' | t }}</p>
+} @else {
+  <div class="rows">
+    <div class="rows__head small muted" aria-hidden="true">
+      <span>{{ 'ledger.schedule.label' | t }}</span>
+      <span class="r">{{ 'ledger.schedule.amount' | t }} ({{ currency() }})</span>
+      <span>{{ 'ledger.schedule.dueDate' | t }}</span>
+      <span></span>
+    </div>
+    @for (row of rows(); track $index) {
+      <div class="rows__row">
+        <select uiInput size="sm" [name]="'inst-label-' + $index" [attr.aria-label]="'ledger.schedule.label' | t"
+          [ngModel]="row.label" (ngModelChange)="patch($index, { label: $event })" [disabled]="disabled()">
+          @for (label of labels; track label) {
+            <option [value]="label">{{ labelText(label) }}</option>
+          }
+        </select>
+        <input uiInput size="sm" type="number" min="0.01" step="0.01" class="m r" [name]="'inst-amount-' + $index"
+          [attr.aria-label]="'ledger.schedule.amount' | t" [invalid]="(row.amount ?? 0) <= 0"
+          [ngModel]="row.amount" (ngModelChange)="patch($index, { amount: $event })" [disabled]="disabled()" />
+        <input uiInput size="sm" type="date" [name]="'inst-due-' + $index" [attr.aria-label]="'ledger.schedule.dueDate' | t"
+          [invalid]="!row.dueDate" [ngModel]="row.dueDate" (ngModelChange)="patch($index, { dueDate: $event })" [disabled]="disabled()" />
+        <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'ledger.schedule.remove' | t"
+          (click)="remove($index)" [disabled]="disabled()">
+          <ui-icon name="x" />
+        </button>
+      </div>
+    }
+  </div>
+}
+
+<div class="foot">
+  <button type="button" uiButton size="sm" (click)="add()" [disabled]="!canAdd()">
+    <ui-icon name="plus" />{{ 'ledger.schedule.add' | t }}
+  </button>
+  <span class="small">{{ 'ledger.schedule.total' | t }}: <b class="m">{{ total() | money: currency() }}</b></span>
+</div>
+
+@if (!valid()) {
+  <ui-banner tone="bad">{{ 'ledger.schedule.invalid' | t }}</ui-banner>
+} @else if (operatorTotal() !== null && rows().length > 0) {
+  @if (difference() === 0) {
+    <ui-banner tone="ok">{{ 'ledger.schedule.matches' | t }}</ui-banner>
+  } @else if (difference() > 0) {
+    <ui-banner tone="warn">{{ 'ledger.schedule.short' | t: { amount: (difference() | money: currency()) } }}</ui-banner>
+  } @else {
+    <ui-banner tone="warn">{{ 'ledger.schedule.over' | t: { amount: (-difference() | money: currency()) } }}</ui-banner>
+  }
+}

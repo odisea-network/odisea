@@ -1,0 +1,154 @@
+<ui-page-header [title]="title()" [crumbs]="crumbs()" />
+
+@if (id() && existing.error()) {
+  <ui-empty-state tone="error" icon="alert-circle" [title]="'ledger.detail.notFoundTitle' | t" [description]="'ledger.detail.notFoundText' | t">
+    <a uiButton size="sm" routerLink="/agency/ledger/reservations">{{ 'ledger.detail.back' | t }}</a>
+  </ui-empty-state>
+} @else if (id() && !existing.hasValue()) {
+  <ui-card><ui-skeleton [lines]="6" /></ui-card>
+} @else {
+  <form class="form" (ngSubmit)="submit()">
+    @if (error(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+
+    <ui-card [title]="'ledger.form.sectionBooking' | t">
+      <div class="grid">
+        <ui-field [label]="'ledger.form.operator' | t" for="lr-operator">
+          <div class="with-action">
+            <select uiInput id="lr-operator" name="operatorId" [(ngModel)]="form.operatorId" required>
+              <option value="" disabled>{{ 'ledger.form.chooseOperator' | t }}</option>
+              @for (o of operators.value(); track o.id) {
+                <option [value]="o.id">{{ o.name }}</option>
+              }
+              @if (existing.value(); as e) {
+                @if (!operatorListed(e.tourOperatorId)) {
+                  <option [value]="e.tourOperatorId">{{ e.tourOperatorName }}</option>
+                }
+              }
+            </select>
+            <button type="button" uiButton iconOnly [attr.aria-label]="'ledger.form.newOperator' | t" [title]="'ledger.form.newOperator' | t" (click)="operatorSheet.set(true)"><ui-icon name="plus" /></button>
+          </div>
+        </ui-field>
+        <ui-field [label]="'ledger.form.reference' | t" for="lr-ref" [hint]="'ledger.form.referenceHint' | t">
+          <input uiInput id="lr-ref" name="reference" [(ngModel)]="form.reference" required maxlength="50" />
+        </ui-field>
+        <ui-field [label]="'ledger.form.holder' | t" for="lr-holder">
+          <input uiInput id="lr-holder" name="holderName" [(ngModel)]="form.holderName" required maxlength="200" autocomplete="off" />
+        </ui-field>
+        <ui-field [label]="'ledger.form.bookedOn' | t" for="lr-booked">
+          <input uiInput id="lr-booked" name="bookedOn" type="date" [(ngModel)]="form.bookedOn" required />
+        </ui-field>
+        <ui-field [label]="'ledger.form.travelStart' | t" for="lr-start">
+          <input uiInput id="lr-start" name="travelStart" type="date" [(ngModel)]="form.travelStart" required />
+        </ui-field>
+        <ui-field [label]="'ledger.form.travelEnd' | t" for="lr-end" optional>
+          <input uiInput id="lr-end" name="travelEnd" type="date" [(ngModel)]="form.travelEnd" [min]="form.travelStart" />
+        </ui-field>
+        @if (!id()) {
+          <ui-field [label]="'ledger.form.status' | t" for="lr-status">
+            <select uiInput id="lr-status" name="status" [(ngModel)]="form.status">
+              <option value="Confirmed">{{ 'ledger.status.Confirmed' | t }}</option>
+              <option value="Draft">{{ 'ledger.status.Draft' | t }}</option>
+            </select>
+          </ui-field>
+        }
+      </div>
+      <ui-field [label]="'ledger.form.notes' | t" for="lr-notes" optional>
+        <textarea uiInput id="lr-notes" name="notes" rows="2" maxlength="4000" [(ngModel)]="form.notes"></textarea>
+      </ui-field>
+    </ui-card>
+
+    <ui-card [title]="'ledger.form.sectionMoney' | t">
+      @if (priceLocked) {
+        <ui-banner tone="info">{{ 'ledger.form.priceLockedAgent' | t }}</ui-banner>
+      }
+      <div class="grid">
+        <ui-field [label]="'ledger.form.operatorTotal' | t" for="lr-total" [hint]="'ledger.form.operatorTotalHint' | t">
+          <input uiInput id="lr-total" name="operatorTotal" type="number" min="0" step="0.01" class="m"
+            [(ngModel)]="form.operatorTotal" required [disabled]="priceLocked" />
+        </ui-field>
+        <ui-field [label]="'ledger.form.currency' | t" for="lr-currency" [hint]="hasPayments ? ('ledger.form.currencyLocked' | t) : null">
+          <select uiInput id="lr-currency" name="currency" [(ngModel)]="form.currency" [disabled]="hasPayments">
+            @for (c of currencies; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </ui-field>
+        <ui-field [label]="'ledger.form.customerSale' | t" for="lr-sale" optional [hint]="'ledger.form.customerSaleHint' | t">
+          <input uiInput id="lr-sale" name="customerSale" type="number" min="0" step="0.01" class="m" [(ngModel)]="form.customerSale" />
+        </ui-field>
+      </div>
+      @if (needsReason) {
+        <ui-field [label]="'ledger.form.reason' | t" for="lr-reason" [hint]="'ledger.form.reasonHint' | t">
+          <input uiInput id="lr-reason" name="reason" [(ngModel)]="form.reason" required maxlength="500" />
+        </ui-field>
+      }
+    </ui-card>
+
+    <ui-card [title]="'ledger.form.sectionCommission' | t">
+      <div class="grid">
+        <ui-field [label]="'ledger.form.commissionType' | t" for="lr-ctype">
+          <select uiInput id="lr-ctype" name="commissionType" [(ngModel)]="form.commissionType">
+            <option value="">{{ 'ledger.form.commissionNone' | t }}</option>
+            <option value="Percent">{{ 'ledger.form.commissionPercent' | t }}</option>
+            <option value="Fixed">{{ 'ledger.form.commissionFixed' | t }}</option>
+          </select>
+        </ui-field>
+        @if (form.commissionType === 'Percent') {
+          <ui-field [label]="'ledger.form.commissionRate' | t" for="lr-crate">
+            <input uiInput id="lr-crate" name="commissionRate" type="number" min="0.01" max="100" step="0.01" class="m" [(ngModel)]="form.commissionRate" />
+          </ui-field>
+          <ui-field [label]="'ledger.form.commissionBase' | t" for="lr-cbase">
+            <select uiInput id="lr-cbase" name="commissionBase" [(ngModel)]="form.commissionBase">
+              <option value="OperatorTotal">{{ 'ledger.form.baseOperatorTotal' | t }}</option>
+              <option value="CustomerSale">{{ 'ledger.form.baseCustomerSale' | t }}</option>
+            </select>
+          </ui-field>
+        } @else if (form.commissionType === 'Fixed') {
+          <ui-field [label]="'ledger.form.commissionAmount' | t" for="lr-camount">
+            <input uiInput id="lr-camount" name="commissionAmount" type="number" min="0" step="0.01" class="m" [(ngModel)]="form.commissionAmount" />
+          </ui-field>
+        }
+      </div>
+      @if (form.commissionType !== '') {
+        <p class="small muted note">
+          @if (commissionPreview !== null) {
+            <b class="m">{{ 'ledger.form.commissionPreview' | t: { amount: (commissionPreview | money: form.currency) } }}</b> ·
+          }
+          {{ 'ledger.form.commissionInfo' | t }}
+        </p>
+      }
+    </ui-card>
+
+    <ui-card [title]="'ledger.form.sectionSchedule' | t">
+      @if (id()) {
+        <p class="small muted note">{{ 'ledger.form.scheduleLater' | t }}</p>
+      } @else {
+        <app-ledger-schedule-editor [(rows)]="rows" [operatorTotal]="form.operatorTotal" [currency]="form.currency" />
+      }
+    </ui-card>
+
+    <div class="actions">
+      <a uiButton [routerLink]="existing.value() ? ['/agency/ledger/reservations', existing.value()!.id] : '/agency/ledger/reservations'">{{ 'common.cancel' | t }}</a>
+      <button type="submit" uiButton="primary" [disabled]="busy() || !valid">
+        {{ busy() ? ('common.saving' | t) : ((id() ? 'ledger.form.save' : 'ledger.form.create') | t) }}
+      </button>
+    </div>
+  </form>
+}
+
+<ui-sheet [(open)]="operatorSheet" [title]="'ledger.operatorSheet.title' | t">
+  <form id="lr-new-operator" (ngSubmit)="addOperator()">
+    @if (operatorError(); as message) {
+      <ui-banner tone="bad">{{ message }}</ui-banner>
+    }
+    <ui-field [label]="'ledger.operatorSheet.name' | t" for="lr-op-name">
+      <input uiInput id="lr-op-name" name="operatorName" [(ngModel)]="operatorName" required maxlength="200" />
+    </ui-field>
+  </form>
+  <button sheetActions type="button" uiButton (click)="operatorSheet.set(false)">{{ 'common.cancel' | t }}</button>
+  <button sheetActions type="submit" form="lr-new-operator" uiButton="primary" [disabled]="!operatorName.trim()">
+    {{ 'ledger.operatorSheet.save' | t }}
+  </button>
+</ui-sheet>

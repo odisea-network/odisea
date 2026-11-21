@@ -1,0 +1,121 @@
+<ui-page-header [title]="'ledger.list.title' | t" [sub]="'ledger.list.sub' | t">
+  <a actions uiButton="primary" routerLink="/agency/ledger/reservations/new"><ui-icon name="plus" />{{ 'ledger.list.add' | t }}</a>
+</ui-page-header>
+
+<ui-segmented [options]="views" [value]="view()" (valueChange)="setView($event)" [stretch]="phone()" />
+
+<ui-card flush>
+  <div class="toolbar">
+    <form class="search" role="search" (ngSubmit)="search()">
+      <ui-icon name="search" size="sm" />
+      <input name="q" type="search" [(ngModel)]="draft" [placeholder]="'ledger.list.searchPlaceholder' | t"
+        [attr.aria-label]="'ledger.list.search' | t" />
+    </form>
+    <select uiInput size="sm" name="status" [attr.aria-label]="'ledger.list.status' | t" [ngModel]="status()" (ngModelChange)="setStatus($event)">
+      <option value="">{{ 'ledger.list.allStatuses' | t }}</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ statusLabel(s) }}</option>
+      }
+    </select>
+    <select uiInput size="sm" name="operator" [attr.aria-label]="'ledger.list.operator' | t" [ngModel]="operatorId()" (ngModelChange)="setOperator($event)">
+      <option value="">{{ 'ledger.list.allOperators' | t }}</option>
+      @for (o of operators.value(); track o.id) {
+        <option [value]="o.id">{{ o.name }}</option>
+      }
+    </select>
+    @if (hasFilters()) {
+      <button type="button" uiButton="ghost" size="sm" (click)="clear()">{{ 'ledger.list.clearFilters' | t }}</button>
+    }
+  </div>
+
+  @if (reservations.error()) {
+    <ui-empty-state tone="error" icon="refresh" [title]="'ledger.list.loadFailed' | t" [description]="'common.checkConnection' | t">
+      <button type="button" uiButton size="sm" (click)="reservations.reload()">{{ 'common.retry' | t }}</button>
+    </ui-empty-state>
+  } @else if (!reservations.hasValue()) {
+    <div class="pad"><ui-skeleton [lines]="5" /></div>
+  } @else if (reservations.value(); as result) {
+    @if (result.totalCount === 0) {
+      @if (hasFilters()) {
+        <ui-empty-state icon="search" [title]="'ledger.list.noneTitle' | t" [description]="'ledger.list.noneText' | t">
+          <button type="button" uiButton size="sm" (click)="clear()">{{ 'ledger.list.clearFilters' | t }}</button>
+        </ui-empty-state>
+      } @else {
+        <ui-empty-state icon="bookings" [title]="'ledger.list.emptyTitle' | t" [description]="'ledger.list.emptyText' | t">
+          <a uiButton="primary" size="sm" routerLink="/agency/ledger/reservations/new">{{ 'ledger.list.add' | t }}</a>
+        </ui-empty-state>
+      }
+    } @else if (phone()) {
+      <div [class.stale]="reservations.isLoading()">
+        @for (r of result.items; track r.id) {
+          <a class="item" [routerLink]="['/agency/ledger/reservations', r.id]">
+            <div class="row between">
+              <span class="ref">{{ r.reference }}</span>
+              <ui-pill [tone]="tone(r.status)">{{ statusLabel(r.status) }}</ui-pill>
+            </div>
+            <div class="col">
+              <b>{{ r.holderName }}</b>
+              <span class="small muted">{{ r.tourOperatorName }} · {{ r.travelStart | odDate }}</span>
+            </div>
+            <div class="row between">
+              <span class="small due"><span class="muted">{{ 'ledger.list.colOutstanding' | t }}</span><b class="m">{{ r.outstanding | money: r.currency }}</b></span>
+              @if (r.nextDueDate) {
+                <span class="small" [class.u-over]="r.overdueAmount > 0">{{ r.nextDueDate | odDate }}</span>
+              }
+            </div>
+          </a>
+        }
+      </div>
+    } @else {
+      <div class="tw" [class.stale]="reservations.isLoading()">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>{{ 'ledger.list.colReference' | t }}</th>
+              <th>{{ 'ledger.list.colHolder' | t }}</th>
+              <th>{{ 'ledger.list.colTravel' | t }}</th>
+              <th>{{ 'ledger.list.status' | t }}</th>
+              <th class="r">{{ 'ledger.list.colTotal' | t }}</th>
+              <th class="r">{{ 'ledger.list.colPaid' | t }}</th>
+              <th class="r">{{ 'ledger.list.colOutstanding' | t }}</th>
+              <th>{{ 'ledger.list.colNextDue' | t }}</th>
+              <th class="r">{{ 'ledger.list.colCommission' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of result.items; track r.id) {
+              <tr class="clickable" (click)="open(r)">
+                <td>
+                  <a class="ref" [routerLink]="['/agency/ledger/reservations', r.id]" (click)="$event.stopPropagation()">{{ r.reference }}</a>
+                  <div class="sub-line">{{ r.tourOperatorName }}</div>
+                </td>
+                <td><b>{{ r.holderName }}</b></td>
+                <td class="num">
+                  {{ r.travelStart | odDate }}@if (r.travelEnd) { – {{ r.travelEnd | odDate }}}
+                </td>
+                <td><ui-pill [tone]="tone(r.status)">{{ statusLabel(r.status) }}</ui-pill></td>
+                <td class="r m">{{ r.operatorTotal | money: r.currency }}</td>
+                <td class="r m">{{ r.paidTotal | money: r.currency }}</td>
+                <td class="r m strong">{{ r.outstanding | money: r.currency }}</td>
+                <td class="num">
+                  @if (r.nextDueDate) {
+                    <span [class.u-over]="r.overdueAmount > 0">{{ r.nextDueDate | odDate }}</span>
+                    @if (r.overdueAmount > 0) {
+                      <div class="sub-line u-over">{{ 'ledger.list.overdueAmount' | t: { amount: (r.overdueAmount | money: r.currency) } }}</div>
+                    }
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td class="r m">{{ r.expectedCommission | money: r.currency }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (result.totalCount > pageSize) {
+      <ui-pager [page]="page()" [pageSize]="pageSize" [total]="result.totalCount" (pageChange)="page.set($event)" />
+    }
+  }
+</ui-card>

@@ -1,0 +1,89 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// Headline figures: what is owed is the one that stands out.
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 16px;
+  margin: 0;
+
+  dt {
+    font-size: 12px;
+    color: var(--mute);
+    margin-bottom: 4px;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.figures__main {
+  font-size: 24px !important;
+}
+
+.detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.detail__main {
+  flex: 999 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail__aside {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pad {
+  margin: 0;
+  padding: 12px 16px;
+}
+
+.note {
+  margin: 10px 0 0;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.notes {
+  white-space: pre-wrap;
+  font-weight: 400;
+}
+
+// A voided payment stays readable but clearly no longer counts.
+.voided {
+  color: var(--mute);
+
+  .amount {
+    text-decoration: line-through;
+  }
+}
+
+.received {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+
+  ui-field {
+    flex: 1;
+  }
+}
