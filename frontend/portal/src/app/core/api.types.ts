@@ -371,6 +371,17 @@ export interface RecordPaymentRequest {
 
 export type AgencyStatus = 'Active' | 'Suspended';
 export type AgencyPlan = 'Core' | 'Ledger' | 'Workspace';
+
+export type AgencyFeature = 'ExternalReservations' | 'InquiryForms' | 'EmailNotifications' | 'ReservationLedger';
+
+/** `GET /api/v1/agency/plan` — what the caller's agency may use. */
+export interface AgencyPlanDto {
+  agencyId: string;
+  plan: AgencyPlan;
+  isActive: boolean;
+  features: AgencyFeature[];
+}
+
 export type AgencyUserRole = 'AgencyAdmin' | 'Agent';
 
 export interface AgencyBillingDto {

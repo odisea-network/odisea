@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../core/auth.service';
 import { BrandingService } from '../core/branding.service';
+import { TPipe } from '../shared/pipes/t.pipe';
 import { ButtonDirective, Icon } from '../shared/ui';
 import { NavAction, NavGroup, NavItem, SideNav } from './side-nav';
 
@@ -13,7 +14,7 @@ import { NavAction, NavGroup, NavItem, SideNav } from './side-nav';
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SideNav, ButtonDirective, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SideNav, ButtonDirective, Icon, TPipe],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })

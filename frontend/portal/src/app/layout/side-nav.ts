@@ -2,6 +2,8 @@ import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService, SessionUser } from '../core/auth.service';
 import { BrandingService } from '../core/branding.service';
+import { MessageKey, t } from '../core/i18n/i18n';
+import { TPipe } from '../shared/pipes/t.pipe';
 import { ButtonDirective, Icon, IconName } from '../shared/ui';
 
 export interface NavItem {
@@ -24,22 +26,23 @@ export interface NavAction {
   icon: IconName;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  'agency:AgencyAdmin': 'Agency admin',
-  'agency:Agent': 'Agent',
-  'operator:Admin': 'Operator admin',
-  'operator:Operator': 'Operator',
+const ROLE_LABELS: Record<string, MessageKey> = {
+  'agency:AgencyAdmin': 'roles.agencyAdmin',
+  'agency:Agent': 'roles.agent',
+  'operator:Admin': 'roles.operatorAdmin',
+  'operator:Operator': 'roles.operator',
 };
 
 export function roleLabel(user: SessionUser | null): string {
   if (!user) return '';
-  return ROLE_LABELS[`${user.userType}:${user.role}`] ?? user.role;
+  const key = ROLE_LABELS[`${user.userType}:${user.role}`];
+  return key ? t(key) : user.role;
 }
 
 /** The branded sidebar: operator mark, one primary action, grouped links, the signed-in user. */
 @Component({
   selector: 'app-side-nav',
-  imports: [RouterLink, RouterLinkActive, ButtonDirective, Icon],
+  imports: [RouterLink, RouterLinkActive, ButtonDirective, Icon, TPipe],
   templateUrl: './side-nav.html',
   styleUrl: './side-nav.scss',
   host: { role: 'navigation', '[attr.aria-label]': 'area()' },

@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandingService } from '../../core/branding.service';
+import { t } from '../../core/i18n/i18n';
+import { TPipe } from '../../shared/pipes/t.pipe';
 import { Banner, ButtonDirective, Field, Icon, InputDirective } from '../../shared/ui';
 
 interface LoginError {
@@ -13,7 +15,7 @@ interface LoginError {
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, Banner, ButtonDirective, Field, Icon, InputDirective],
+  imports: [FormsModule, Banner, ButtonDirective, Field, Icon, InputDirective, TPipe],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -45,13 +47,8 @@ export class Login {
 /** Same wording for unknown email and wrong password — the API never says which. */
 function describe(err: unknown): LoginError {
   if (err instanceof HttpErrorResponse) {
-    const detail = (err.error?.detail as string | undefined) ?? undefined;
-    if (err.status === 423) {
-      return { tone: 'warn', message: detail ?? 'Too many attempts. Sign-in is paused for 15 minutes.' };
-    }
-    if (err.status === 401) {
-      return { tone: 'bad', message: detail ?? 'Email or password is incorrect.' };
-    }
+    if (err.status === 423) return { tone: 'warn', message: t('login.locked') };
+    if (err.status === 401) return { tone: 'bad', message: t('login.invalid') };
   }
-  return { tone: 'bad', message: 'Could not reach the server. Try again in a moment.' };
+  return { tone: 'bad', message: t('login.unreachable') };
 }

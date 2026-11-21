@@ -8,14 +8,14 @@
           <span class="login__mark" aria-hidden="true">{{ brand.initial() }}</span>
         }
         <h1 class="login__title">{{ brand.branding().displayName }}</h1>
-        <p class="login__sub">Partner &amp; operations portal</p>
+        <p class="login__sub">{{ 'login.subtitle' | t }}</p>
       </div>
 
       @if (error(); as problem) {
         <ui-banner [tone]="problem.tone">{{ problem.message }}</ui-banner>
       }
 
-      <ui-field label="Work email" for="login-email">
+      <ui-field [label]="'login.email' | t" for="login-email">
         <input
           uiInput
           id="login-email"
@@ -29,7 +29,7 @@
         />
       </ui-field>
 
-      <ui-field label="Password" for="login-password">
+      <ui-field [label]="'login.password' | t" for="login-password">
         <span class="login__password">
           <input
             uiInput
@@ -48,7 +48,7 @@
             size="sm"
             iconOnly
             class="login__eye"
-            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            [attr.aria-label]="(showPassword() ? 'login.hidePassword' : 'login.showPassword') | t"
             [attr.aria-pressed]="showPassword()"
             (click)="showPassword.set(!showPassword())"
           >
@@ -58,12 +58,12 @@
       </ui-field>
 
       <button type="submit" uiButton="primary" size="lg" block [disabled]="busy() || !email || !password">
-        {{ busy() ? 'Signing in…' : 'Sign in' }}
+        {{ (busy() ? 'login.submitting' : 'login.submit') | t }}
       </button>
 
       @if (brand.branding().supportEmail; as support) {
         <p class="login__help">
-          Trouble signing in? <a [href]="'mailto:' + support">Contact support</a>
+          {{ 'login.trouble' | t }} <a [href]="'mailto:' + support">{{ 'login.contactSupport' | t }}</a>
         </p>
       }
     </form>

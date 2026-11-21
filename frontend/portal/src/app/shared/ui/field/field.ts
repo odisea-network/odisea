@@ -1,4 +1,5 @@
 import { Component, booleanAttribute, input } from '@angular/core';
+import { t } from '../../../core/i18n/i18n';
 import { Icon } from '../icon/icon';
 
 /**
@@ -13,7 +14,7 @@ import { Icon } from '../icon/icon';
       <label class="field__label" [attr.for]="for()">
         {{ label() }}
         @if (optional()) {
-          <span class="field__optional">(optional)</span>
+          <span class="field__optional">({{ optionalLabel }})</span>
         }
       </label>
       <ng-content />
@@ -35,4 +36,6 @@ export class Field {
   readonly hint = input<string | null>(null);
   readonly error = input<string | null>(null);
   readonly optional = input(false, { transform: booleanAttribute });
+
+  protected readonly optionalLabel = t('common.optional');
 }

@@ -46,7 +46,7 @@
     <span class="side__name">{{ auth.user()?.fullName }}</span>
     <span class="side__role">{{ role() }}</span>
   </span>
-  <button type="button" uiButton="ghost" size="sm" iconOnly aria-label="Sign out" (click)="signOut.emit()">
+  <button type="button" uiButton="ghost" size="sm" iconOnly [attr.aria-label]="'nav.signOut' | t" (click)="signOut.emit()">
     <ui-icon name="logout" />
   </button>
 </div>

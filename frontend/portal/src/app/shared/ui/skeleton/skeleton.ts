@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { t } from '../../../core/i18n/i18n';
 
 const WIDTHS = ['60%', '90%', '75%', '82%', '55%'];
 
@@ -11,9 +12,11 @@ const WIDTHS = ['60%', '90%', '75%', '82%', '55%'];
     }
   `,
   styleUrl: './skeleton.scss',
-  host: { role: 'status', 'aria-label': 'Loading' },
+  host: { role: 'status', '[attr.aria-label]': 'label' },
 })
 export class Skeleton {
+  protected readonly label = t('common.loading');
+
   readonly lines = input(3);
   protected readonly bars = computed(() =>
     Array.from({ length: this.lines() }, (_, i) => WIDTHS[i % WIDTHS.length]));

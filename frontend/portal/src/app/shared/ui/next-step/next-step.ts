@@ -1,4 +1,5 @@
 import { Component, input } from '@angular/core';
+import { t } from '../../../core/i18n/i18n';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -29,5 +30,5 @@ export class NextStep {
   readonly tone = input<NextStepTone>('neutral');
   readonly title = input.required<string>();
   readonly sub = input<string | null>(null);
-  readonly eyebrow = input('Next step');
+  readonly eyebrow = input(t('kit.nextStep'));
 }
