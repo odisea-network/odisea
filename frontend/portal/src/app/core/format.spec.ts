@@ -40,18 +40,18 @@ describe('relativeDeadline', () => {
   const at = (hours: number) => new Date(now.getTime() + hours * 3_600_000).toISOString();
 
   it('flags past deadlines as overdue', () => {
-    expect(relativeDeadline(at(-3), now)).toEqual({ label: 'Overdue 3h', urgency: 'over' });
-    expect(relativeDeadline(at(-50), now)).toEqual({ label: 'Overdue 2 days 2h', urgency: 'over' });
+    expect(relativeDeadline(at(-3), now)).toEqual({ label: 'Просрочено с 3 ч', urgency: 'over' });
+    expect(relativeDeadline(at(-50), now)).toEqual({ label: 'Просрочено с 2 дни 2 ч', urgency: 'over' });
   });
 
   it('treats anything under a day as soon', () => {
-    expect(relativeDeadline(at(19), now)).toEqual({ label: 'in 19h', urgency: 'soon' });
-    expect(relativeDeadline(at(0.5), now)).toEqual({ label: 'in 30 min', urgency: 'soon' });
+    expect(relativeDeadline(at(19), now)).toEqual({ label: 'след 19 ч', urgency: 'soon' });
+    expect(relativeDeadline(at(0.5), now)).toEqual({ label: 'след 30 мин', urgency: 'soon' });
   });
 
   it('counts days beyond that, dropping hours after three days', () => {
-    expect(relativeDeadline(at(65), now)).toEqual({ label: 'in 2 days 17h', urgency: 'ok' });
-    expect(relativeDeadline(at(24 * 4), now)).toEqual({ label: 'in 4 days', urgency: 'ok' });
+    expect(relativeDeadline(at(65), now)).toEqual({ label: 'след 2 дни 17 ч', urgency: 'ok' });
+    expect(relativeDeadline(at(24 * 4), now)).toEqual({ label: 'след 4 дни', urgency: 'ok' });
   });
 
   it('has nothing to say without a deadline', () => {

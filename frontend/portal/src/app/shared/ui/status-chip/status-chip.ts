@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { t } from '../../../core/i18n/i18n';
 import { Icon } from '../icon/icon';
 import { IconName } from '../icon/icons';
 
@@ -11,15 +12,15 @@ export interface StatusMeta {
 
 /** Shape + label + colour for every reservation status, so greyscale and colour-blind users read it too. */
 const BOOKING_STATUS: Record<string, StatusMeta> = {
-  Draft: { label: 'Draft', icon: 'pencil', tone: 'draft' },
-  PriceConfirmed: { label: 'Price confirmed', icon: 'tag', tone: 'priced' },
-  PendingConfirmation: { label: 'Pending confirmation', icon: 'hourglass', tone: 'pending' },
-  AwaitingPayment: { label: 'Awaiting payment', icon: 'clock', tone: 'await' },
-  Confirmed: { label: 'Confirmed', icon: 'check-circle', tone: 'confirmed' },
-  Rejected: { label: 'Rejected', icon: 'x-circle', tone: 'rejected' },
-  Expired: { label: 'Expired', icon: 'stopwatch', tone: 'expired' },
-  Cancelled: { label: 'Cancelled', icon: 'slash-circle', tone: 'cancelled' },
-  Failed: { label: 'Failed', icon: 'alert-triangle', tone: 'failed' },
+  Draft: { label: t('bookingStatus.Draft'), icon: 'pencil', tone: 'draft' },
+  PriceConfirmed: { label: t('bookingStatus.PriceConfirmed'), icon: 'tag', tone: 'priced' },
+  PendingConfirmation: { label: t('bookingStatus.PendingConfirmation'), icon: 'hourglass', tone: 'pending' },
+  AwaitingPayment: { label: t('bookingStatus.AwaitingPayment'), icon: 'clock', tone: 'await' },
+  Confirmed: { label: t('bookingStatus.Confirmed'), icon: 'check-circle', tone: 'confirmed' },
+  Rejected: { label: t('bookingStatus.Rejected'), icon: 'x-circle', tone: 'rejected' },
+  Expired: { label: t('bookingStatus.Expired'), icon: 'stopwatch', tone: 'expired' },
+  Cancelled: { label: t('bookingStatus.Cancelled'), icon: 'slash-circle', tone: 'cancelled' },
+  Failed: { label: t('bookingStatus.Failed'), icon: 'alert-triangle', tone: 'failed' },
 };
 
 export function bookingStatusMeta(status: string): StatusMeta {

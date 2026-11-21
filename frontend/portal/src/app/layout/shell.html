@@ -4,7 +4,7 @@
       type="button"
       uiButton="ghost"
       iconOnly
-      aria-label="Open menu"
+      [attr.aria-label]="'nav.openMenu' | t"
       aria-controls="shell-sidebar"
       [attr.aria-expanded]="drawerOpen()"
       (click)="drawerOpen.set(true)"
@@ -31,7 +31,7 @@
       class="sidecol__close"
       uiButton="ghost"
       iconOnly
-      aria-label="Close menu"
+      [attr.aria-label]="'nav.closeMenu' | t"
       (click)="drawerOpen.set(false)"
     >
       <ui-icon name="x" />
@@ -62,7 +62,7 @@
   </main>
 
   @if (tabs().length > 0) {
-    <nav class="tabbar" aria-label="Primary">
+    <nav class="tabbar" [attr.aria-label]="'nav.primary' | t">
       @for (tab of tabs(); track tab.link) {
         <a class="tabbar__item" [routerLink]="tab.link" routerLinkActive="tabbar__item--on" ariaCurrentWhenActive="page">
           <ui-icon [name]="tab.icon" />{{ tab.label }}

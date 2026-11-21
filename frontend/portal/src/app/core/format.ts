@@ -1,3 +1,5 @@
+import { t } from './i18n/i18n';
+
 /**
  * Display helpers. Money values arrive fully calculated from the API;
  * these only FORMAT — rounding or arithmetic here would be a bug.
@@ -42,7 +44,7 @@ export function formatDateTime(iso: string | null | undefined): string {
 export type Urgency = 'over' | 'soon' | 'ok';
 
 export interface RelativeDeadline {
-  /** Human phrase: "Overdue 3h", "in 19h", "in 2 days 17h", "in 4 days". */
+  /** Human phrase: "Просрочено с 3 ч", "след 19 ч", "след 2 дни 17 ч", "след 4 дни". */
   label: string;
   urgency: Urgency;
 }
@@ -64,12 +66,13 @@ export function relativeDeadline(iso: string | null | undefined, now = new Date(
     const days = Math.floor(ms / DAY);
     const hours = Math.floor((ms % DAY) / HOUR);
     const minutes = Math.floor((ms % HOUR) / 60_000);
-    if (days >= 3) return `${days} days`;
-    if (days >= 1) return hours > 0 ? `${days} day${days > 1 ? 's' : ''} ${hours}h` : `${days} day${days > 1 ? 's' : ''}`;
-    if (hours >= 1) return `${hours}h`;
-    return `${Math.max(minutes, 1)} min`;
+    const dayText = t(days === 1 ? 'deadline.day' : 'deadline.days', { n: days });
+    if (days >= 3) return dayText;
+    if (days >= 1) return hours > 0 ? `${dayText} ${t('deadline.hours', { n: hours })}` : dayText;
+    if (hours >= 1) return t('deadline.hours', { n: hours });
+    return t('deadline.minutes', { n: Math.max(minutes, 1) });
   };
 
-  if (diff < 0) return { label: `Overdue ${span(-diff)}`, urgency: 'over' };
-  return { label: `in ${span(diff)}`, urgency: diff < DAY ? 'soon' : 'ok' };
+  if (diff < 0) return { label: t('deadline.overdue', { span: span(-diff) }), urgency: 'over' };
+  return { label: t('deadline.in', { span: span(diff) }), urgency: diff < DAY ? 'soon' : 'ok' };
 }

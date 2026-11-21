@@ -1,6 +1,7 @@
 import { TimelineItem } from '../shared/ui/timeline/timeline';
 import { bookingStatusMeta } from '../shared/ui/status-chip/status-chip';
 import { formatDateTime } from './format';
+import { t } from './i18n/i18n';
 
 export interface HistoryEntry {
   at: string;
@@ -33,7 +34,7 @@ export function historyTimeline(history: HistoryEntry[]): TimelineItem[] {
       const meta = bookingStatusMeta(entry.to);
       return {
         title: meta.label,
-        detail: hasPrevious(entry) ? `from ${bookingStatusMeta(entry.from).label.toLowerCase()}` : null,
+        detail: hasPrevious(entry) ? t('bookingStatus.from', { status: bookingStatusMeta(entry.from).label.toLowerCase() }) : null,
         meta: `${entry.actor} · ${formatDateTime(entry.at)}`,
         note: entry.note,
         icon: meta.icon,

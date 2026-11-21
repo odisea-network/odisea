@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { t } from '../../../core/i18n/i18n';
 import { ButtonDirective } from '../button/button.directive';
 import { Field } from '../field/field';
 import { InputDirective } from '../input/input.directive';
@@ -28,7 +29,7 @@ import { DialogService } from './dialog.service';
             </dl>
           }
           @if (options.reason; as reason) {
-            <ui-field for="ui-dialog-reason" [label]="reason.label + (reason.required ? ' (required)' : '')">
+            <ui-field for="ui-dialog-reason" [label]="reason.label" [optional]="!reason.required">
               <textarea
                 uiInput
                 name="reason"
@@ -40,9 +41,9 @@ import { DialogService } from './dialog.service';
             </ui-field>
           }
           <div class="dialog__actions">
-            <button type="button" uiButton (click)="dismiss()">{{ options.cancelLabel ?? 'Cancel' }}</button>
+            <button type="button" uiButton (click)="dismiss()">{{ options.cancelLabel ?? cancelLabel }}</button>
             <button type="submit" [uiButton]="options.destructive ? 'danger' : 'primary'" [disabled]="!canConfirm()">
-              {{ options.confirmLabel ?? 'Confirm' }}
+              {{ options.confirmLabel ?? confirmLabel }}
             </button>
           </div>
         </form>
@@ -54,6 +55,9 @@ import { DialogService } from './dialog.service';
 export class DialogHost {
   protected readonly dialogs = inject(DialogService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+
+  protected readonly cancelLabel = t('common.cancel');
+  protected readonly confirmLabel = t('common.confirm');
 
   protected readonly reasonText = signal('');
   protected readonly canConfirm = computed(() => {

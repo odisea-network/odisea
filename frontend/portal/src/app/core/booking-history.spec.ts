@@ -10,10 +10,10 @@ describe('historyTimeline', () => {
 
   it('lists newest first with the status label, the actor and the note', () => {
     const items = historyTimeline(history);
-    expect(items.map(i => i.title)).toEqual(['Awaiting payment', 'Price confirmed', 'Draft']);
+    expect(items.map(i => i.title)).toEqual(['Очаква плащане', 'Потвърдена цена', 'Чернова']);
     expect(items[0].meta).toContain('System');
     expect(items[1].note).toBe('Up €54.00 from search');
-    expect(items[1].detail).toBe('from draft');
+    expect(items[1].detail).toBe('от „чернова“');
   });
 
   it('colours the milestones that matter and leaves the rest neutral', () => {
