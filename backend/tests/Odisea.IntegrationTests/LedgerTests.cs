@@ -14,6 +14,7 @@ public class LedgerTests(OdiseaApiFactory factory)
 {
     private const string Reservations = "/api/v1/agency/ledger/reservations";
     private const string Operators = "/api/v1/agency/tour-operators";
+    private const string Dashboard = "/api/v1/agency/ledger/dashboard";
 
     private static async Task<T> ReadAsync<T>(HttpResponseMessage response, HttpStatusCode expected = HttpStatusCode.OK)
     {
@@ -84,6 +85,15 @@ public class LedgerTests(OdiseaApiFactory factory)
         Assert.Equal(1600m, row.Outstanding);
         Assert.Equal(200m, row.OverdueAmount);
 
+        // The deposit was due long ago, the balance is far away.
+        Assert.Single((await ReadAsync<PagedResult<LedgerReservationSummaryDto>>(await agent.GetAsync($"{Reservations}?overdueOnly=true"))).Items);
+        Assert.Empty((await ReadAsync<PagedResult<LedgerReservationSummaryDto>>(await agent.GetAsync($"{Reservations}?dueWithinDays=30"))).Items);
+        var dashboard = await ReadAsync<LedgerDashboardDto>(await agent.GetAsync(Dashboard));
+        Assert.Equal(1, dashboard.ActiveReservations);
+        Assert.Equal(1, dashboard.OverdueReservations);
+        Assert.Equal(new LedgerCurrencyTotalsDto("EUR", 1600m, 200m, 0m, 0m, 140m, 0m), Assert.Single(dashboard.Totals));
+        Assert.Equal(200m, Assert.Single(dashboard.NeedsAction).RemainingAmount);
+
         // A stale version is refused; the current one goes through.
         var stale = new ChangeLedgerStatusRequest(created.Version, LedgerReservationStatus.Completed, null);
         await ShouldBeCodedAsync(await agent.PostAsJsonAsync($"{Reservations}/{created.Id}/status", stale, Json.Options),
@@ -137,6 +147,7 @@ public class LedgerTests(OdiseaApiFactory factory)
             HttpStatusCode.UnprocessableEntity, "operator_unknown");
 
         Assert.Empty((await ReadAsync<PagedResult<LedgerReservationSummaryDto>>(await stranger.GetAsync(Reservations))).Items);
+        Assert.Empty((await ReadAsync<LedgerDashboardDto>(await stranger.GetAsync(Dashboard))).Totals);
         Assert.Empty(await ReadAsync<List<TourOperatorDto>>(await stranger.GetAsync($"{Operators}?includeArchived=true")));
     }
 
@@ -153,6 +164,9 @@ public class LedgerTests(OdiseaApiFactory factory)
         await (await factory.ClientAs(TestIdentity.Admin).GetAsync(Reservations)).ShouldBeAsync(HttpStatusCode.Forbidden);
         await (await factory.AnonymousClient().GetAsync(Reservations)).ShouldBeAsync(HttpStatusCode.Unauthorized);
         await (await factory.AnonymousClient().GetAsync(Operators)).ShouldBeAsync(HttpStatusCode.Unauthorized);
+        await (await core.GetAsync(Dashboard)).ShouldBeAsync(HttpStatusCode.OK);
+        await (await factory.ClientAs(TestIdentity.Admin).GetAsync(Dashboard)).ShouldBeAsync(HttpStatusCode.Forbidden);
+        await (await factory.AnonymousClient().GetAsync(Dashboard)).ShouldBeAsync(HttpStatusCode.Unauthorized);
     }
 
     private static MultipartFormDataContent FileForm(byte[] bytes, string name, string claimedType, string? type = "Invoice")

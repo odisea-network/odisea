@@ -33,6 +33,7 @@ public static class WorkspaceModule
         services.AddScoped<TourOperatorService>();
         services.AddScoped<LedgerReservationService>();
         services.AddScoped<LedgerDocumentService>();
+        services.AddScoped<LedgerDashboardService>();
         return services;
     }
 }
