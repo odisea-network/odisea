@@ -18,7 +18,7 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("workspace")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -365,6 +365,397 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
                     b.ToTable("inquiry_submissions", "workspace");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerAuditEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("ActorType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("actor_type");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<string>("Changes")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("changes");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReservationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reservation_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ledger_audit_events");
+
+                    b.HasIndex("AgencyId", "ReservationId", "CreatedAt")
+                        .HasDatabaseName("ix_ledger_audit_events_agency_id_reservation_id_created_at");
+
+                    b.ToTable("ledger_audit_events", "workspace");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerInstallment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("label");
+
+                    b.Property<Guid>("ReservationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reservation_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ledger_installments");
+
+                    b.HasIndex("ReservationId")
+                        .HasDatabaseName("ix_ledger_installments_reservation_id");
+
+                    b.HasIndex("AgencyId", "DueDate")
+                        .HasDatabaseName("ix_ledger_installments_agency_id_due_date");
+
+                    b.ToTable("ledger_installments", "workspace");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid?>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("method");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly>("PaidOn")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_on");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<Guid>("ReservationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reservation_id");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("void_reason");
+
+                    b.Property<DateTimeOffset?>("VoidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("voided_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ledger_payments");
+
+                    b.HasIndex("ReservationId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ledger_payments_reservation_id_idempotency_key");
+
+                    b.ToTable("ledger_payments", "workspace");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<DateOnly>("BookedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("booked_on");
+
+                    b.Property<string>("CancellationNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cancellation_note");
+
+                    b.Property<string>("CommissionBase")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("commission_base");
+
+                    b.Property<decimal?>("CommissionExpected")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("commission_expected");
+
+                    b.Property<decimal?>("CommissionRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("commission_rate");
+
+                    b.Property<decimal>("CommissionReceived")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("commission_received");
+
+                    b.Property<string>("CommissionType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("commission_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<decimal?>("CustomerSaleAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("customer_sale_amount");
+
+                    b.Property<string>("HolderName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("holder_name");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("notes");
+
+                    b.Property<decimal>("OperatorTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("operator_total");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TourOperatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tour_operator_id");
+
+                    b.Property<DateOnly?>("TravelEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("travel_end");
+
+                    b.Property<DateOnly>("TravelStart")
+                        .HasColumnType("date")
+                        .HasColumnName("travel_start");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ledger_reservations");
+
+                    b.HasIndex("TourOperatorId")
+                        .HasDatabaseName("ix_ledger_reservations_tour_operator_id");
+
+                    b.HasIndex("AgencyId", "CreatedAt")
+                        .HasDatabaseName("ix_ledger_reservations_agency_id_created_at");
+
+                    b.HasIndex("AgencyId", "Status")
+                        .HasDatabaseName("ix_ledger_reservations_agency_id_status");
+
+                    b.HasIndex("AgencyId", "TravelStart")
+                        .HasDatabaseName("ix_ledger_reservations_agency_id_travel_start");
+
+                    b.HasIndex("AgencyId", "TourOperatorId", "Reference")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ledger_reservations_agency_id_tour_operator_id_reference");
+
+                    b.ToTable("ledger_reservations", "workspace");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.TourOperator", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("contact_email");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("contact_phone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NameKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_key");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tour_operators");
+
+                    b.HasIndex("AgencyId", "NameKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tour_operators_agency_id_name_key");
+
+                    b.ToTable("tour_operators", "workspace");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Workspace.Domain.ExternalReservationEvent", b =>
                 {
                     b.HasOne("Odisea.Modules.Workspace.Domain.ExternalReservation", null)
@@ -385,9 +776,46 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_inquiry_submissions_inquiry_forms_form_id");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerInstallment", b =>
+                {
+                    b.HasOne("Odisea.Modules.Workspace.Domain.Ledger.LedgerReservation", null)
+                        .WithMany("Installments")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ledger_installments_ledger_reservations_reservation_id");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerPayment", b =>
+                {
+                    b.HasOne("Odisea.Modules.Workspace.Domain.Ledger.LedgerReservation", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ledger_payments_ledger_reservations_reservation_id");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerReservation", b =>
+                {
+                    b.HasOne("Odisea.Modules.Workspace.Domain.Ledger.TourOperator", null)
+                        .WithMany()
+                        .HasForeignKey("TourOperatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ledger_reservations_tour_operators_tour_operator_id");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Workspace.Domain.ExternalReservation", b =>
                 {
                     b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerReservation", b =>
+                {
+                    b.Navigation("Installments");
+
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Odisea.Modules.Workspace.Features.ExternalReservations;
 using Odisea.Modules.Workspace.Features.Inquiries;
+using Odisea.Modules.Workspace.Features.Ledger;
 using Odisea.Modules.Workspace.Features.Usage;
 using Odisea.Modules.Workspace.Infrastructure;
 
@@ -27,6 +28,10 @@ public static class WorkspaceModule
         services.AddScoped<ExternalReservationService>();
         services.AddScoped<InquiryFormService>();
         services.AddScoped<WorkspaceUsageService>();
+
+        services.Configure<LedgerOptions>(configuration.GetSection(LedgerOptions.Section));
+        services.AddScoped<TourOperatorService>();
+        services.AddScoped<LedgerReservationService>();
         return services;
     }
 }
