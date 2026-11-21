@@ -16,6 +16,7 @@ public class WorkspaceDbContext(DbContextOptions<WorkspaceDbContext> options) : 
     public DbSet<LedgerReservation> LedgerReservations => Set<LedgerReservation>();
     public DbSet<LedgerInstallment> LedgerInstallments => Set<LedgerInstallment>();
     public DbSet<LedgerPayment> LedgerPayments => Set<LedgerPayment>();
+    public DbSet<LedgerDocument> LedgerDocuments => Set<LedgerDocument>();
     public DbSet<LedgerAuditEvent> LedgerAuditEvents => Set<LedgerAuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -129,6 +130,15 @@ public class WorkspaceDbContext(DbContextOptions<WorkspaceDbContext> options) : 
         payment.Property(p => p.Note).HasMaxLength(500);
         payment.Property(p => p.VoidReason).HasMaxLength(500);
         payment.HasIndex(p => new { p.ReservationId, p.IdempotencyKey }).IsUnique();
+
+        var document = modelBuilder.Entity<LedgerDocument>();
+        document.Property(d => d.Type).HasConversion<string>().HasMaxLength(20);
+        document.Property(d => d.FileName).HasMaxLength(200);
+        document.Property(d => d.ContentType).HasMaxLength(50);
+        document.Property(d => d.Sha256).HasMaxLength(64);
+        document.HasIndex(d => new { d.AgencyId, d.ReservationId });
+        document.HasOne<LedgerReservation>().WithMany().HasForeignKey(d => d.ReservationId).OnDelete(DeleteBehavior.Restrict);
+        document.HasOne<LedgerPayment>().WithMany().HasForeignKey(d => d.PaymentId).OnDelete(DeleteBehavior.Restrict);
 
         var audit = modelBuilder.Entity<LedgerAuditEvent>();
         audit.Property(e => e.EntityType).HasMaxLength(30);

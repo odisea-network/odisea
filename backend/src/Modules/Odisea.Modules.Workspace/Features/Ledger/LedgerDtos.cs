@@ -154,6 +154,18 @@ public sealed record LedgerAuditEventDto(
     JsonElement Changes,
     DateTimeOffset OccurredAt);
 
+public sealed record LedgerDocumentDto(
+    Guid Id,
+    Guid? PaymentId,
+    LedgerDocumentType Type,
+    string FileName,
+    string ContentType,
+    long SizeBytes,
+    Guid UploadedByUserId,
+    DateTimeOffset UploadedAt);
+
+public sealed record LedgerDocumentFile(byte[] Content, string ContentType, string FileName);
+
 public static class LedgerMapping
 {
     public static TourOperatorDto ToDto(this TourOperator o) =>

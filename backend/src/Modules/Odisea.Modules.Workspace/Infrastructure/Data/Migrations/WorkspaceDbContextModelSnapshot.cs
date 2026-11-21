@@ -429,6 +429,81 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
                     b.ToTable("ledger_audit_events", "workspace");
                 });
 
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AgencyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("agency_id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("file_name");
+
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.Property<Guid>("ReservationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reservation_id");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sha256");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ledger_documents");
+
+                    b.HasIndex("PaymentId")
+                        .HasDatabaseName("ix_ledger_documents_payment_id");
+
+                    b.HasIndex("ReservationId")
+                        .HasDatabaseName("ix_ledger_documents_reservation_id");
+
+                    b.HasIndex("AgencyId", "ReservationId")
+                        .HasDatabaseName("ix_ledger_documents_agency_id_reservation_id");
+
+                    b.ToTable("ledger_documents", "workspace");
+                });
+
             modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerInstallment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -774,6 +849,22 @@ namespace Odisea.Modules.Workspace.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_inquiry_submissions_inquiry_forms_form_id");
+                });
+
+            modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerDocument", b =>
+                {
+                    b.HasOne("Odisea.Modules.Workspace.Domain.Ledger.LedgerPayment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_ledger_documents_ledger_payments_payment_id");
+
+                    b.HasOne("Odisea.Modules.Workspace.Domain.Ledger.LedgerReservation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ledger_documents_ledger_reservations_reservation_id");
                 });
 
             modelBuilder.Entity("Odisea.Modules.Workspace.Domain.Ledger.LedgerInstallment", b =>
